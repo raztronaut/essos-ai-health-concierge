@@ -1,0 +1,102 @@
+# Example Questions and Scenarios
+
+## Quick Examples
+
+- Passport expired before trip.
+- Flight delay/cancellation — need to update driver/clinic of new pickup time.
+- Concerns with hospital staff.
+- Questions about pre-op (we have the source of truth on this):
+  - When do I need to stop eating?
+- Questions about post-op (we may not always have the source of truth and they need to talk to clinic).
+- Recommendations for places to eat in Istanbul.
+- Questions about itinerary (we have the source of truth on this):
+  - Hey I'm at the hotel, what is my reservation number?
+
+## Additional Scenarios
+
+A few more example scenarios below that a patient might run into while abroad/in advance of their trip:
+
+### Travel / Logistics
+
+- Patient's flight is delayed and their airport pickup time needs to be changed.
+- Patient lands early and wants to know if the driver can come sooner.
+- Patient cannot find the driver at arrivals.
+- Patient needs the driver's name / phone number.
+- Patient wants to confirm whether transportation is included for a specific appointment.
+- Patient wants to add a companion to airport or clinic transportation.
+- Patient needs to change hotel pickup time for a follow-up visit.
+- Patient asks how much time to leave before going to the airport on their way home.
+
+### Hotel / Accommodation
+
+- Patient arrives at the hotel and does not know the reservation name or confirmation number.
+- Hotel says they do not see the booking.
+- Patient wants to know whether breakfast is included.
+- Patient wants to extend their stay by 1–2 nights.
+- Patient wants to know if the hotel is close enough to walk to the clinic.
+- Patient has an issue and needs to know whether to contact Essos, the clinic, or hotel staff.
+
+### Clinic / Appointment Schedule
+
+- Patient wants to confirm what time they are being picked up for pre-op tests.
+- Patient is unsure whether an appointment is at the clinic or hospital.
+- Patient wants to know how long pre-op testing will take.
+- Patient asks when they will meet the surgeon in person.
+- Patient wants to know when their cast removal / follow-up appointment is scheduled.
+- Patient needs to reschedule a follow-up because they are not feeling well.
+- Patient asks whether they can bring a companion into the consultation.
+
+### Pre-op Instructions
+
+- Patient asks when to stop eating or drinking before surgery.
+- Patient asks whether they can drink water the morning of surgery.
+- Patient asks whether they should stop taking a medication or supplement.
+- Patient asks whether they can smoke / vape before surgery.
+- Patient asks whether they can drink alcohol before surgery.
+- Patient asks what to wear to the hospital.
+- Patient asks what documents they need to bring to the clinic or hospital.
+- Patient asks whether they need to remove nail polish, jewelry, piercings, etc.
+
+### Post-op / Recovery
+
+- Patient is unsure what swelling / bruising is normal versus concerning.
+- Patient asks whether they can shower.
+- Patient asks how to sleep after surgery.
+- Patient asks when they can walk around / leave the hotel.
+- Patient asks whether they can fly with congestion or swelling.
+- Patient asks when they can resume exercise.
+- Patient asks what foods to avoid after surgery.
+- Patient asks when they can wear glasses / makeup / contacts.
+- Patient wants to know what to do if they feel pain, bleeding, nausea, dizziness, fever, etc.
+- Patient asks who to contact after hours if something feels urgent.
+
+### Payments / Documents
+
+- Patient asks for documentation for work, school, or military limited activity.
+- Patient asks what paperwork they need for tax refund / VAT refund.
+
+### Local Recommendations / General Support
+
+- Patient asks where to eat near the hotel or clinic.
+- Patient asks whether they can go sightseeing before or after surgery.
+- Patient asks where to exchange money / whether they need cash.
+- Patient asks whether Uber works locally or if they should use taxis.
+- Patient asks for a nearby grocery store / pharmacy / coffee shop.
+- Patient asks whether an area is safe to walk around.
+- Patient asks what they should do during downtime before surgery.
+
+### Companion / Caregiver
+
+- Patient asks whether their companion can stay with them at the hospital.
+- Patient asks whether their companion's transportation is included.
+- Patient asks whether the hotel booking includes two guests.
+- Patient asks if their companion can speak with the clinic team too.
+- Patient's companion has a logistics question while the patient is recovering.
+
+### Escalation / Source of Truth
+
+- Patient asks a medical question where we should direct them to the clinic.
+- Patient reports a symptom that may need immediate clinical review.
+- Patient asks a schedule/logistics question that Essos may know from itinerary.
+- Patient asks a hotel/transport question that may require clinic coordinator confirmation.
+- Patient asks for something outside the planned package, like extra procedure, extra nights, or unscheduled transport.

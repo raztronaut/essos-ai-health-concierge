@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build / cache
+.next/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# IDE (keep .cursor/plans; ignore local editor state)
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
