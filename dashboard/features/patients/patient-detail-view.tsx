@@ -5,7 +5,13 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, ConfirmDialog, PageHeader, LoadingState, NotFoundCard } from "@/components/ui";
+import {
+  Button,
+  ConfirmDialog,
+  LoadingState,
+  NotFoundCard,
+  PageHeader,
+} from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { AssignControl } from "./assign-control";
 import { CareInstructions } from "./care-instructions";
@@ -30,6 +36,10 @@ export function PatientDetailView({ id }: { id: string }) {
     patientId: id,
     viewAs,
   });
+  const conversation = useQuery(api.queries.getConversationForPatient, {
+    patientId: id,
+    viewAs,
+  });
   const removePatient = useMutation(api.mutations.deletePatient);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -40,9 +50,9 @@ export function PatientDetailView({ id }: { id: string }) {
   if (patient === null) {
     return (
       <NotFoundCard
-        message="Patient not found."
         backHref="/patients"
         backLabel="Patients"
+        message="Patient not found."
       />
     );
   }
@@ -52,6 +62,14 @@ export function PatientDetailView({ id }: { id: string }) {
       <PageHeader
         actions={
           <>
+            {conversation ? (
+              <Link
+                className="focus-ring inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-control border border-border px-3 py-1.5 font-semibold text-ink text-xs transition-colors hover:border-secondary/70 hover:bg-surface"
+                href={`/conversations/${conversation.id}`}
+              >
+                View conversation
+              </Link>
+            ) : null}
             <Button onClick={() => setEditing(true)} variant="ghost">
               Edit
             </Button>

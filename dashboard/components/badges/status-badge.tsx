@@ -1,7 +1,7 @@
 import type { EscalationStatus } from "@essos/shared";
 import { Badge } from "@/components/ui";
-import { humanize } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { humanize } from "@/lib/format";
 
 const STATUS_STYLES: Record<EscalationStatus, string> = {
   open: "bg-high-soft text-high",

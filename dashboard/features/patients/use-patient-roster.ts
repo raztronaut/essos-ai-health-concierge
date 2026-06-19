@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import type { api } from "@convex/_generated/api";
 import type { FunctionReturnType } from "convex/server";
-import { api } from "@convex/_generated/api";
+import { useMemo, useState } from "react";
 
 type Row = FunctionReturnType<typeof api.queries.listPatientsWithMeta>[number];
 export type SortKey = "name" | "created" | "activity" | "flags";

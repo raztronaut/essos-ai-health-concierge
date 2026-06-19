@@ -1,6 +1,12 @@
 "use client";
 
-import { cloneElement, isValidElement, useId, type ReactNode, type ReactElement } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useId,
+} from "react";
 
 /**
  * Labeled form field wrapper.
@@ -30,8 +36,11 @@ export function Field({
     const element = child as ReactElement<any>;
     child = cloneElement(element, {
       id: element.props.id ?? id,
-      "aria-invalid": element.props["aria-invalid"] ?? (error ? "true" : undefined),
-      "aria-describedby": element.props["aria-describedby"] ?? (error ? errorId : hint ? hintId : undefined),
+      "aria-invalid":
+        element.props["aria-invalid"] ?? (error ? "true" : undefined),
+      "aria-describedby":
+        element.props["aria-describedby"] ??
+        (error ? errorId : hint ? hintId : undefined),
     });
   }
 

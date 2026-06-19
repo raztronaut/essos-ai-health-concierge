@@ -212,8 +212,17 @@ export default defineSchema({
     created_at: v.string(),
     /** Promoted from meta for indexable latches: disclosure|handoff_holding|reminder. */
     meta_kind: v.union(v.string(), v.null()),
-    /** Outbound bridge state for concierge replies: pending|sent. */
-    outbound: v.union(v.literal("pending"), v.literal("sent"), v.null()),
+    /** Outbound bridge state for concierge replies: pending|sent|failed. */
+    outbound: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.null()
+    ),
+    /** Delivery attempts so far, for backoff + dead-lettering an outbound row. */
+    outbound_attempts: v.optional(v.number()),
+    /** Last delivery error; set when `outbound = "failed"` so a human can see why. */
+    outbound_error: v.optional(v.union(v.string(), v.null())),
     /** Remaining serialized meta (e.g. event_id) for anything not promoted. */
     meta_json: v.union(v.string(), v.null()),
   })

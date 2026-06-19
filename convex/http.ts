@@ -54,6 +54,7 @@ const MUTATIONS: Record<string, AnyRef> = {
   escalateToHuman: internal.machine.escalateToHuman,
   saveEveSession: internal.machine.saveEveSession,
   markOutboundDelivered: internal.machine.markOutboundDelivered,
+  recordOutboundFailure: internal.machine.recordOutboundFailure,
   recordAgentTurn: internal.machine.recordAgentTurn,
   assignPatient: internal.machine.assignPatient,
   ensureGuestPatient: internal.machine.ensureGuestPatient,

@@ -46,31 +46,33 @@ export function ItineraryTimeline({
         ) : (
           <div className="relative">
             {/* Continuous vertical timeline line */}
-            <div className="absolute bottom-2 top-2 left-[106px] w-px bg-border/80" />
+            <div className="absolute top-2 bottom-2 left-[106px] w-px bg-border/80" />
 
             <ol className="relative space-y-6">
               {visibleEvents.map((event) => (
                 <li className="group relative flex gap-4" key={event.id}>
                   {/* Left: Starts At Timestamp */}
-                  <div className="w-20 shrink-0 text-right text-meta tabular-nums pt-1">
+                  <div className="w-20 shrink-0 pt-1 text-right text-meta tabular-nums">
                     {formatDateTime(event.starts_at)}
                   </div>
 
                   {/* Middle: Timeline Dot */}
                   <div className="relative z-10 flex w-5 shrink-0 justify-center pt-2">
-                    <div className="size-2 rounded-full bg-card border-2 border-stone-90" />
+                    <div className="size-2 rounded-full border-2 border-stone-90 bg-card" />
                   </div>
 
                   {/* Right: Event Content */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center rounded bg-surface px-1.5 py-0.5 text-[10px] font-medium text-muted uppercase tracking-wide">
+                        <span className="inline-flex items-center rounded bg-surface px-1.5 py-0.5 font-medium text-[10px] text-muted uppercase tracking-wide">
                           {event.kind}
                         </span>
-                        <span className="font-medium text-sm text-ink">{event.title}</span>
+                        <span className="font-medium text-ink text-sm">
+                          {event.title}
+                        </span>
                       </div>
-                      <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+                      <div className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-fast group-hover:opacity-100">
                         <Button
                           onClick={() => setEditing(event)}
                           size="sm"
@@ -88,7 +90,9 @@ export function ItineraryTimeline({
                       </div>
                     </div>
                     {event.detail ? (
-                      <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">{event.detail}</p>
+                      <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">
+                        {event.detail}
+                      </p>
                     ) : null}
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-meta">
                       {event.location ? <span>{event.location}</span> : null}
@@ -109,11 +113,11 @@ export function ItineraryTimeline({
 
             {hasMore ? (
               <FoldTrigger
-                expanded={expanded}
-                onToggle={() => setExpanded(!expanded)}
                 count={sorted.length - 5}
-                labelSingular="event"
+                expanded={expanded}
                 labelPlural="events"
+                labelSingular="event"
+                onToggle={() => setExpanded(!expanded)}
               />
             ) : null}
           </div>

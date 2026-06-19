@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
-import { Card, Select, Button } from "@/components/ui";
+import { Button, Card, Select } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 
 /**
@@ -33,15 +33,12 @@ export function AssignControl({
       ? (concierges.find((c) => c.clerkId === nextAssignee)?.name ??
         "concierge")
       : null;
-    toast.promise(
-      assign({ patientId, assigneeUserId: nextAssignee, viewAs }),
-      {
-        loading: "Updating owner…",
-        success: nextName ? `Assigned to ${nextName}` : "Patient unassigned",
-        error: (error) =>
-          error instanceof Error ? error.message : "Couldn’t update owner",
-      },
-    );
+    toast.promise(assign({ patientId, assigneeUserId: nextAssignee, viewAs }), {
+      loading: "Updating owner…",
+      success: nextName ? `Assigned to ${nextName}` : "Patient unassigned",
+      error: (error) =>
+        error instanceof Error ? error.message : "Couldn’t update owner",
+    });
   }
 
   return (

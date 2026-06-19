@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { EssosLogo } from "@/components/brand/essos-logo";
-import { DemoRoleSwitcher } from "@/features/demo/demo-role-switcher";
-import {
-  CommandPaletteTrigger,
-} from "@/features/command/command-palette";
+import { CommandPaletteTrigger } from "@/features/command/command-palette";
 import { NAV_ITEMS } from "@/features/command/nav-items";
+import { DemoRoleSwitcher } from "@/features/demo/demo-role-switcher";
 import { ConciergeIdentity } from "./concierge-identity";
 import { NavLink } from "./nav-link";
 

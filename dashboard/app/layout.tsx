@@ -17,7 +17,16 @@ const repro = localFont({
   display: "swap",
   weight: "100 900",
   variable: "--font-repro",
-  fallback: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+  fallback: [
+    "ui-sans-serif",
+    "system-ui",
+    "-apple-system",
+    "Segoe UI",
+    "Roboto",
+    "Helvetica",
+    "Arial",
+    "sans-serif",
+  ],
 });
 
 /** ABC Repro Mono — for code, IDs, and tabular/technical strings. */
@@ -26,7 +35,13 @@ const reproMono = localFont({
   display: "swap",
   weight: "100 900",
   variable: "--font-repro-mono",
-  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+  fallback: [
+    "ui-monospace",
+    "SFMono-Regular",
+    "Menlo",
+    "Consolas",
+    "monospace",
+  ],
 });
 
 /** PS Times — the Essos serif display face used for the masthead and headings. */
@@ -62,9 +77,7 @@ export default function RootLayout({
               <div className="flex min-h-screen">
                 <Sidebar />
                 <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 md:px-10">
-                  <div className="mx-auto w-full max-w-content">
-                    {children}
-                  </div>
+                  <div className="mx-auto w-full max-w-content">{children}</div>
                 </main>
               </div>
               <Toaster

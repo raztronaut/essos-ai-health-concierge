@@ -3,7 +3,14 @@
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { Badge, Card, LoadingState, EmptyState, SectionHeader, TextLink } from "@/components/ui";
+import {
+  Badge,
+  Card,
+  EmptyState,
+  LoadingState,
+  SectionHeader,
+  TextLink,
+} from "@/components/ui";
 import { humanize } from "@/lib/format";
 
 /** Compact roster snapshot for the overview: unassigned first, then flagged. */
@@ -24,14 +31,10 @@ export function PatientsPanel() {
   return (
     <section className="space-y-3">
       <SectionHeader
+        action={<TextLink href="/patients">View all →</TextLink>}
         title="Patients"
-        action={
-          <TextLink href="/patients">
-            View all →
-          </TextLink>
-        }
       />
-      
+
       {rows === undefined ? (
         <Card>
           <LoadingState message="Loading..." />

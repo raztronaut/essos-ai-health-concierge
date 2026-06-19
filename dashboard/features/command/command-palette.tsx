@@ -1,22 +1,22 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import { Command } from "cmdk";
+import { useQuery } from "convex/react";
 import { useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
+import { demoEnabled, useDemoIdentity } from "@/features/demo/demo-identity";
 import { cn } from "@/lib/cn";
 import { humanize, stripOrgPrefix } from "@/lib/format";
-import { demoEnabled, useDemoIdentity } from "@/features/demo/demo-identity";
 import { NAV_ITEMS } from "./nav-items";
 
 interface CommandPaletteContextValue {
@@ -74,11 +74,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 }
 
 /** Sidebar affordance to open the global command palette. */
-export function CommandPaletteTrigger({
-  className,
-}: {
-  className?: string;
-}) {
+export function CommandPaletteTrigger({ className }: { className?: string }) {
   const { setOpen } = useCommandPaletteContext();
 
   return (
@@ -124,18 +120,18 @@ function CommandPaletteDialog({
 
   return (
     <Command.Dialog
+      className={cn(
+        "pointer-events-auto w-full max-w-lg overflow-hidden rounded-modal border border-border bg-card shadow-card outline-none focus:outline-none",
+        !reduceMotion && "transition-[opacity,transform] duration-150"
+      )}
       contentClassName={cn(
-        "command-palette fixed inset-0 z-[60] flex items-start justify-center border-0 bg-transparent p-0 px-4 pt-[min(20vh,8rem)] shadow-none outline-none focus:outline-none",
+        "command-palette pointer-events-none fixed inset-0 z-[60] flex items-start justify-center border-0 bg-transparent p-0 px-4 pt-[min(20vh,8rem)] shadow-none outline-none focus:outline-none",
         !reduceMotion && "transition-opacity duration-150"
       )}
       label="Global command menu"
       onOpenChange={setOpen}
       open={open}
       overlayClassName="fixed inset-0 z-[60] bg-ink/30 backdrop-blur-[2px]"
-      className={cn(
-        "w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-card outline-none focus:outline-none",
-        !reduceMotion && "transition-[opacity,transform] duration-150"
-      )}
     >
       <div className="flex items-center gap-2 border-border border-b px-4">
         <svg
@@ -157,98 +153,96 @@ function CommandPaletteDialog({
         />
       </div>
       <Command.List className="max-h-80 overflow-y-auto overscroll-contain p-2 outline-none focus:outline-none">
-            <Command.Empty className="px-3 py-8 text-center text-muted text-sm">
-              No results found.
-            </Command.Empty>
+        <Command.Empty className="px-3 py-8 text-center text-muted text-sm">
+          No results found.
+        </Command.Empty>
 
-            <Command.Group
-              className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
-              heading="Navigate"
+        <Command.Group
+          className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
+          heading="Navigate"
+        >
+          {NAV_ITEMS.map((item) => (
+            <CommandItem
+              hint={item.href === "/" ? "Home" : item.href.slice(1)}
+              icon={item.icon}
+              key={item.href}
+              onSelect={() => run(() => router.push(item.href))}
+              value={`${item.label} ${item.keywords ?? ""}`}
             >
-              {NAV_ITEMS.map((item) => (
-                <CommandItem
-                  hint={item.href === "/" ? "Home" : item.href.slice(1)}
-                  icon={item.icon}
-                  key={item.href}
-                  onSelect={() => run(() => router.push(item.href))}
-                  value={`${item.label} ${item.keywords ?? ""}`}
-                >
-                  {item.label}
-                </CommandItem>
-              ))}
-            </Command.Group>
+              {item.label}
+            </CommandItem>
+          ))}
+        </Command.Group>
 
-            {patients && patients.length > 0 ? (
-              <Command.Group
-                className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
-                heading="Patients"
+        {patients && patients.length > 0 ? (
+          <Command.Group
+            className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
+            heading="Patients"
+          >
+            {patients.map((row) => (
+              <CommandItem
+                hint={humanize(row.patient.procedure)}
+                key={row.patient.id}
+                onSelect={() =>
+                  run(() => router.push(`/patients/${row.patient.id}`))
+                }
+                value={`${row.patient.name} ${row.patient.handle} ${row.patient.procedure}`}
               >
-                {patients.map((row) => (
-                  <CommandItem
-                    hint={humanize(row.patient.procedure)}
-                    key={row.patient.id}
-                    onSelect={() =>
-                      run(() => router.push(`/patients/${row.patient.id}`))
-                    }
-                    value={`${row.patient.name} ${row.patient.handle} ${row.patient.procedure}`}
-                  >
-                    {row.patient.name}
-                  </CommandItem>
-                ))}
-              </Command.Group>
-            ) : null}
+                {row.patient.name}
+              </CommandItem>
+            ))}
+          </Command.Group>
+        ) : null}
 
-            {conversations && conversations.length > 0 ? (
-              <Command.Group
-                className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
-                heading="Conversations"
+        {conversations && conversations.length > 0 ? (
+          <Command.Group
+            className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
+            heading="Conversations"
+          >
+            {conversations.map((conversation) => (
+              <CommandItem
+                hint={
+                  conversation.patient_procedure
+                    ? humanize(conversation.patient_procedure)
+                    : undefined
+                }
+                key={conversation.id}
+                onSelect={() =>
+                  run(() => router.push(`/conversations/${conversation.id}`))
+                }
+                value={`${conversation.patient_name ?? "Unknown patient"} ${conversation.patient_procedure ?? ""} ${conversation.last_text ?? ""}`}
               >
-                {conversations.map((conversation) => (
-                  <CommandItem
-                    hint={
-                      conversation.patient_procedure
-                        ? humanize(conversation.patient_procedure)
-                        : undefined
-                    }
-                    key={conversation.id}
-                    onSelect={() =>
-                      run(() =>
-                        router.push(`/conversations/${conversation.id}`)
-                      )
-                    }
-                    value={`${conversation.patient_name ?? "Unknown patient"} ${conversation.patient_procedure ?? ""} ${conversation.last_text ?? ""}`}
-                  >
-                    {conversation.patient_name ?? "Unknown patient"}
-                  </CommandItem>
-                ))}
-              </Command.Group>
-            ) : null}
+                {conversation.patient_name ?? "Unknown patient"}
+              </CommandItem>
+            ))}
+          </Command.Group>
+        ) : null}
 
-            {demoEnabled && concierges.length > 0 ? (
-              <Command.Group
-                className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
-                heading="Demo · view as"
+        {demoEnabled && concierges.length > 0 ? (
+          <Command.Group
+            className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
+            heading="Demo · view as"
+          >
+            <CommandItem
+              hint="Real account"
+              onSelect={() => run(() => setViewAs(null))}
+              value="view as you real account demo"
+            >
+              You (real account)
+            </CommandItem>
+            {concierges.map((concierge) => (
+              <CommandItem
+                hint={stripOrgPrefix(concierge.role)}
+                key={concierge.clerkId}
+                onSelect={() => run(() => setViewAs(concierge.clerkId))}
+                value={`view as ${concierge.name} ${concierge.role} demo`}
               >
-                <CommandItem
-                  hint="Real account"
-                  onSelect={() => run(() => setViewAs(null))}
-                  value="view as you real account demo"
-                >
-                  You (real account)
-                </CommandItem>
-                {concierges.map((concierge) => (
-                  <CommandItem
-                    hint={stripOrgPrefix(concierge.role)}
-                    key={concierge.clerkId}
-                    onSelect={() => run(() => setViewAs(concierge.clerkId))}
-                    value={`view as ${concierge.name} ${concierge.role} demo`}
-                  >
-                    {concierge.name}
-                  </CommandItem>
-                ))}
-              </Command.Group>
-            ) : null}
-          </Command.List>
+                {concierge.name}
+              </CommandItem>
+            ))}
+          </Command.Group>
+        ) : null}
+      </Command.List>
     </Command.Dialog>
   );
 }
@@ -273,9 +267,7 @@ function CommandItem({
       value={value}
     >
       <span className="flex min-w-0 items-center gap-2">
-        {icon ? (
-          <span className="shrink-0 text-muted">{icon}</span>
-        ) : null}
+        {icon ? <span className="shrink-0 text-muted">{icon}</span> : null}
         <span className="truncate">{children}</span>
       </span>
       {hint ? (

@@ -17,9 +17,7 @@ export function NotFoundCard({
   return (
     <Card className="flex flex-col items-start gap-3 py-8">
       <p className="text-muted text-sm">{message}</p>
-      <TextLink href={backHref}>
-        ← {backLabel}
-      </TextLink>
+      <TextLink href={backHref}>← {backLabel}</TextLink>
     </Card>
   );
 }

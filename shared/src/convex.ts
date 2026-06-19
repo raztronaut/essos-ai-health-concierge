@@ -178,6 +178,19 @@ export function listPendingOutbound(): Promise<Message[]> {
 export function markOutboundDelivered(messageId: string): Promise<void> {
   return call("markOutboundDelivered", { messageId });
 }
+/**
+ * Record a failed outbound delivery. A `permanent` failure (e.g. an invalid
+ * address) or exhausting attempts dead-letters the row to `failed`; otherwise
+ * it stays `pending` for the next tick. Returns the resulting state.
+ */
+export function recordOutboundFailure(args: {
+  messageId: string;
+  error: string;
+  permanent: boolean;
+  maxAttempts?: number;
+}): Promise<{ outbound: "pending" | "failed"; attempts: number }> {
+  return call("recordOutboundFailure", args);
+}
 
 // --------------------------- Escalations / handoff ---------------------------
 

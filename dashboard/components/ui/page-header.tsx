@@ -15,7 +15,12 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
+    <header
+      className={cn(
+        "flex flex-wrap items-end justify-between gap-3",
+        className
+      )}
+    >
       <div className="min-w-0">
         {eyebrow ? <div className="mb-1">{eyebrow}</div> : null}
         <h1 className="serif text-balance text-4xl">{title}</h1>

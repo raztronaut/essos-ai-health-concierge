@@ -150,6 +150,10 @@ export interface Message {
   created_at: string;
   id: string;
   meta_json: string | null;
+  /** Outbound bridge state for concierge replies: pending|sent|failed. */
+  outbound?: "pending" | "sent" | "failed" | null;
+  /** Last delivery error; set when `outbound = "failed"`. */
+  outbound_error?: string | null;
   role: MessageRole;
   text: string;
 }

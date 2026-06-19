@@ -3,10 +3,12 @@ import { imessage } from "spectrum-ts/providers/imessage";
 import { CONCIERGE_HANDLES, GUEST_MODE } from "./env.js";
 import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
+import { monitorSpectrumStreamLogs, startStreamHealth } from "./health.js";
 import { type TapbackName, toImessageText } from "./imessageText.js";
 import { startOutboundLoop } from "./outbound.js";
 import { startReminderLoop } from "./reminders.js";
 import { runMessageLoop } from "./runLoop.js";
+import { acquireSingleInstanceLock } from "./singleInstance.js";
 
 /**
  * iMessage tapbacks via the emoji `message.react(...)` accepts. Eve requests

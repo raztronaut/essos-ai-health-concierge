@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { AutomationBadge } from "@/components/badges";
-import { Card, PageHeader, LoadingState, NotFoundCard } from "@/components/ui";
+import { LoadingState, NotFoundCard, PageHeader } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { ActivityLog } from "./activity-log";
 import { ConciergeReplyBox } from "./concierge-reply-box";
@@ -36,8 +36,9 @@ export function ConversationDetailView({ id }: { id: string }) {
 
   const msgs = messages ?? [];
   const escs = escalations ?? [];
-  
-  const { unansweredCount, openEscalation, draftSources } = useConversationThread(msgs, escs);
+
+  const { unansweredCount, openEscalation, draftSources } =
+    useConversationThread(msgs, escs);
 
   if (conversation === undefined) {
     return <LoadingState message="Loading conversation…" />;
@@ -45,9 +46,9 @@ export function ConversationDetailView({ id }: { id: string }) {
   if (conversation === null) {
     return (
       <NotFoundCard
-        message="Conversation not found."
         backHref="/conversations"
         backLabel="All conversations"
+        message="Conversation not found."
       />
     );
   }

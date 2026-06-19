@@ -12,10 +12,10 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import {
   Dialog,
+  DialogForm,
   Field,
   Input,
   Select,
-  DialogForm,
   useDialogForm,
 } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
@@ -27,12 +27,12 @@ import {
 } from "./options";
 
 interface UploadFormState {
-  file: File | null;
-  title: string;
-  kind: SourceDocumentKind;
-  sourceType: CareSourceType;
-  sourceStatus: CareSourceStatus;
   answerPolicy: CareAnswerPolicy;
+  file: File | null;
+  kind: SourceDocumentKind;
+  sourceStatus: CareSourceStatus;
+  sourceType: CareSourceType;
+  title: string;
 }
 
 /** Upload a file to Convex storage and record it as a patient source document. */
@@ -58,8 +58,10 @@ export function DocumentUploadDialog({
     answerPolicy: "answer_reference",
   });
 
-  const set = <K extends keyof UploadFormState>(key: K, value: UploadFormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
+  const set = <K extends keyof UploadFormState>(
+    key: K,
+    value: UploadFormState[K]
+  ) => setForm((f) => ({ ...f, [key]: value }));
 
   const { pending, error, handleSubmit } = useDialogForm(
     async (formData: UploadFormState) => {
@@ -70,7 +72,9 @@ export function DocumentUploadDialog({
       const uploadUrl = await generateUploadUrl({});
       const res = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": formData.file.type || "application/octet-stream" },
+        headers: {
+          "Content-Type": formData.file.type || "application/octet-stream",
+        },
         body: formData.file,
       });
       if (!res.ok) {
@@ -112,8 +116,8 @@ export function DocumentUploadDialog({
         onClose={onClose}
         onSubmit={onSubmit}
         pending={pending}
-        submitLabel="Upload"
         pendingLabel="Uploading…"
+        submitLabel="Upload"
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -135,7 +139,9 @@ export function DocumentUploadDialog({
           </div>
           <Field label="Kind">
             <Select
-              onChange={(e) => set("kind", e.target.value as SourceDocumentKind)}
+              onChange={(e) =>
+                set("kind", e.target.value as SourceDocumentKind)
+              }
               value={form.kind}
             >
               {SOURCE_DOCUMENT_KIND_OPTIONS.map((o) => (
@@ -147,7 +153,9 @@ export function DocumentUploadDialog({
           </Field>
           <Field label="Source type">
             <Select
-              onChange={(e) => set("sourceType", e.target.value as CareSourceType)}
+              onChange={(e) =>
+                set("sourceType", e.target.value as CareSourceType)
+              }
               value={form.sourceType}
             >
               {CARE_SOURCE_TYPE_OPTIONS.map((o) => (
@@ -159,7 +167,9 @@ export function DocumentUploadDialog({
           </Field>
           <Field label="Source status">
             <Select
-              onChange={(e) => set("sourceStatus", e.target.value as CareSourceStatus)}
+              onChange={(e) =>
+                set("sourceStatus", e.target.value as CareSourceStatus)
+              }
               value={form.sourceStatus}
             >
               {CARE_SOURCE_STATUS_OPTIONS.map((o) => (
@@ -174,7 +184,9 @@ export function DocumentUploadDialog({
             label="Answer policy"
           >
             <Select
-              onChange={(e) => set("answerPolicy", e.target.value as CareAnswerPolicy)}
+              onChange={(e) =>
+                set("answerPolicy", e.target.value as CareAnswerPolicy)
+              }
               value={form.answerPolicy}
             >
               {ANSWER_POLICY_OPTIONS.map((o) => (

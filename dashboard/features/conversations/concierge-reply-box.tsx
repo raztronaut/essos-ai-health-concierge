@@ -5,9 +5,9 @@ import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TextMorph } from "torph/react";
-import { Button } from "@/components/ui";
 import { DocIcon } from "@/components/icons";
 import { BorderBeam } from "@/components/motion/border-beam";
+import { Button } from "@/components/ui";
 import { useConciergeSignature } from "./use-concierge-signature";
 
 /**
@@ -66,9 +66,7 @@ export function ConciergeReplyBox({
       toast.success("Reply delivered to patient");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Reply didn’t send — try again",
+        error instanceof Error ? error.message : "Reply didn’t send — try again"
       );
     } finally {
       setSending(false);

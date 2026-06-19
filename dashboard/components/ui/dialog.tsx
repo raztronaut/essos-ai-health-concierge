@@ -1,13 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useId, type ReactNode } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 
 /**
  * Centered modal dialog. Closes on Escape or backdrop click and locks body
  * scroll while open. Entrance/exit motion is decorative and disabled under
  * `prefers-reduced-motion`.
- * 
+ *
  * S-Tier Accessibility:
  * - Implements a native, lightweight focus trap.
  * - Manages initial focus and returns focus on close.
@@ -30,7 +30,7 @@ export function Dialog({
 }) {
   const reduceMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const titleId = `dialog-title-${useId()}`;
   const descId = `dialog-desc-${useId()}`;
 
@@ -71,7 +71,9 @@ export function Dialog({
           container.querySelectorAll<HTMLElement>(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
           )
-        ).filter((el) => !el.hasAttribute("disabled") && el.style.display !== "none");
+        ).filter(
+          (el) => !el.hasAttribute("disabled") && el.style.display !== "none"
+        );
 
         if (focusable.length === 0) {
           return;
@@ -85,11 +87,9 @@ export function Dialog({
             last.focus();
             e.preventDefault();
           }
-        } else {
-          if (document.activeElement === last) {
-            first.focus();
-            e.preventDefault();
-          }
+        } else if (document.activeElement === last) {
+          first.focus();
+          e.preventDefault();
         }
       }
     };
@@ -120,7 +120,6 @@ export function Dialog({
           transition={{ duration: 0.16 }}
         >
           <motion.div
-            ref={containerRef}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             aria-describedby={description ? descId : undefined}
             aria-labelledby={titleId}
@@ -130,14 +129,19 @@ export function Dialog({
             initial={
               reduceMotion ? { opacity: 1 } : { opacity: 0, y: 12, scale: 0.98 }
             }
+            ref={containerRef}
             role="dialog"
             tabIndex={-1}
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
           >
             <div className="mb-4">
-              <h2 className="serif text-balance text-2xl" id={titleId}>{title}</h2>
+              <h2 className="serif text-balance text-2xl" id={titleId}>
+                {title}
+              </h2>
               {description ? (
-                <p className="mt-1 text-pretty text-muted text-sm" id={descId}>{description}</p>
+                <p className="mt-1 text-pretty text-muted text-sm" id={descId}>
+                  {description}
+                </p>
               ) : null}
             </div>
             {children}

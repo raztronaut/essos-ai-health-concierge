@@ -63,6 +63,10 @@
   /* Radii -------------------------------------------------------------- */
   --radius-card: 12px;
   --radius-control: 8px;
+  /* Overlay surface (command palette, popovers) whose inner rows sit in 8px
+   * padding — sized concentrically (8px row radius + 8px padding) so the
+   * rounded rows nest cleanly inside the rounded container. */
+  --radius-modal: 16px;
   --radius-pill: 9999px;
 
   /* Elevation — layered low-alpha shadows for real, soft depth ---------- */

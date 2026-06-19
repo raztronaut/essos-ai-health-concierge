@@ -17,11 +17,11 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 border-b border-border/40 pb-2",
+        "flex items-center justify-between gap-4 border-border/40 border-b pb-2",
         className
       )}
     >
-      <h2 className="text-balance font-semibold text-lg text-ink">{title}</h2>
+      <h2 className="text-balance font-semibold text-ink text-lg">{title}</h2>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );

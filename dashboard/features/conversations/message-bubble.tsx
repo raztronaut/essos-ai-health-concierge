@@ -1,8 +1,8 @@
 import type { Message, MessageRole } from "@essos/shared";
-import { formatDateTime, humanize } from "@/lib/format";
-import { ROLE_LABEL } from "@/lib/labels";
 import { SparkleIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
+import { formatDateTime, humanize } from "@/lib/format";
+import { ROLE_LABEL } from "@/lib/labels";
 
 type Side = "left" | "right" | "center";
 
@@ -71,19 +71,20 @@ export function MessageBubble({
   // S-Tier Component-Level CSS Custom Properties.
   // Completely decouples dynamic role-based theme mapping from complex JSX class strings.
   const bubbleStyle = {
-    "--bubble-bg": message.role === "concierge"
-      ? "var(--color-stone-90)"
-      : message.role === "agent"
-      ? "color-mix(in srgb, var(--color-stone-10) 45%, transparent)"
-      : "var(--color-card)",
-    "--bubble-border": message.role === "concierge"
-      ? "transparent"
-      : message.role === "agent"
-      ? "color-mix(in srgb, var(--color-stone-20) 60%, transparent)"
-      : "color-mix(in srgb, var(--color-border) 70%, transparent)",
-    "--bubble-text": message.role === "concierge"
-      ? "var(--color-pearl)"
-      : "var(--color-ink)",
+    "--bubble-bg":
+      message.role === "concierge"
+        ? "var(--color-stone-90)"
+        : message.role === "agent"
+          ? "color-mix(in srgb, var(--color-stone-10) 45%, transparent)"
+          : "var(--color-card)",
+    "--bubble-border":
+      message.role === "concierge"
+        ? "transparent"
+        : message.role === "agent"
+          ? "color-mix(in srgb, var(--color-stone-20) 60%, transparent)"
+          : "color-mix(in srgb, var(--color-border) 70%, transparent)",
+    "--bubble-text":
+      message.role === "concierge" ? "var(--color-pearl)" : "var(--color-ink)",
   } as React.CSSProperties;
 
   return (
@@ -105,9 +106,7 @@ export function MessageBubble({
             {isEve ? <SparkleIcon className="size-3 text-stone-50" /> : null}
             {ROLE_LABEL[message.role]}
             {message.author_handle ? (
-              <span className="text-meta">
-                {message.author_handle}
-              </span>
+              <span className="text-meta">{message.author_handle}</span>
             ) : null}
           </span>
           <span className="text-meta tabular-nums">
@@ -118,7 +117,7 @@ export function MessageBubble({
 
       <div
         className={cn(
-          "enter-fade max-w-[82%] px-3.5 py-2.5 border shadow-sm bg-[var(--bubble-bg)] border-[var(--bubble-border)] text-[var(--bubble-text)]",
+          "enter-fade max-w-[82%] border border-[var(--bubble-border)] bg-[var(--bubble-bg)] px-3.5 py-2.5 text-[var(--bubble-text)] shadow-sm",
           bubbleRadius(side, groupedWithPrev, groupedWithNext)
         )}
         style={bubbleStyle}

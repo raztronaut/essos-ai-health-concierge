@@ -22,20 +22,23 @@ export function FoldTrigger({
 }) {
   const label = count === 1 ? labelSingular : labelPlural;
   return (
-    <div className={cn("mt-4 flex justify-center border-t border-border/40 pt-3.5", className)}>
+    <div
+      className={cn(
+        "mt-4 flex justify-center border-border/40 border-t pt-3.5",
+        className
+      )}
+    >
       <Button
+        className="flex items-center gap-1.5 rounded-control px-3 py-1.5 font-semibold text-muted text-xs hover:text-ink"
         onClick={onToggle}
-        variant="ghost"
         size="sm"
-          className="text-muted hover:text-ink font-semibold flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-control"
+        variant="ghost"
       >
-        <span>
-          {expanded ? "Show less" : `Show ${count} more ${label}`}
-        </span>
+        <span>{expanded ? "Show less" : `Show ${count} more ${label}`}</span>
         <svg
           aria-hidden="true"
           className={cn(
-            "size-3.5 shrink-0 transition-transform duration-base ease-out text-muted/80",
+            "size-3.5 shrink-0 text-muted/80 transition-transform duration-base ease-out",
             expanded ? "rotate-180" : ""
           )}
           fill="none"

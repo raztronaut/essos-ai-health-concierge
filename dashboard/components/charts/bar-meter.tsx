@@ -15,7 +15,8 @@ export function BarMeter({
   label: string;
   className?: string;
 }) {
-  const percentage = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  const percentage =
+    max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
 
   return (
     <div
@@ -49,12 +50,16 @@ export function BarColumn({
   title?: string;
   className?: string;
 }) {
-  const percentage = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  const percentage =
+    max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
 
   return (
     <div
       aria-label={`${label}: ${value} of ${max}`}
-      className={cn("h-full w-full max-w-8 rounded-t bg-primary/80 transition-[height] duration-slow ease-out", className)}
+      className={cn(
+        "h-full w-full max-w-8 rounded-t bg-primary/80 transition-[height] duration-slow ease-out",
+        className
+      )}
       role="img"
       style={{ height: `${percentage}%` }}
       title={title}

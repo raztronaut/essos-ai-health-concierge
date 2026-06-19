@@ -1,5 +1,5 @@
-import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
+import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { Badge, Card } from "@/components/ui";
 import { formatRelativeTime, humanize } from "@/lib/format";

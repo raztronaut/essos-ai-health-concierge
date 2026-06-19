@@ -1,12 +1,15 @@
-import { useMemo } from "react";
-import type { Message, Escalation } from "@essos/shared";
+import type { Escalation, Message } from "@essos/shared";
 import { parseSuggestedReplySources } from "@essos/shared";
+import { useMemo } from "react";
 
 /**
  * S-Tier custom hook to derive conversation thread metadata.
  * Calculates unanswered message counts, active escalations, and draft sources.
  */
-export function useConversationThread(messages: Message[], escalations: Escalation[]) {
+export function useConversationThread(
+  messages: Message[],
+  escalations: Escalation[]
+) {
   return useMemo(() => {
     const lastRepliedIndex = messages.findLastIndex(
       (m) => m.role === "agent" || m.role === "concierge"

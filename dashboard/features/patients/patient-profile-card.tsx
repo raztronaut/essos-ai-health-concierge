@@ -1,5 +1,5 @@
 import type { Patient } from "@essos/shared";
-import { Card, DefinitionRow, DefinitionList } from "@/components/ui";
+import { Card, DefinitionList, DefinitionRow } from "@/components/ui";
 import { humanize } from "@/lib/format";
 
 /** At-a-glance patient facts shown above the itinerary on the detail page. */
@@ -26,8 +26,8 @@ export function PatientProfileCard({ patient }: { patient: Patient }) {
           <DefinitionRow
             key={row.label}
             label={row.label}
-            value={row.value}
             layout="vertical"
+            value={row.value}
           />
         ))}
       </DefinitionList>

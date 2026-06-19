@@ -15,11 +15,13 @@ export function EmptyState({
   return (
     <Card
       className={cn(
-        "flex flex-col items-center justify-center py-10 text-center border-dashed bg-surface/30",
+        "flex flex-col items-center justify-center border-dashed bg-surface/30 py-10 text-center",
         className
       )}
     >
-      <p className="text-pretty text-muted text-sm leading-relaxed">{message}</p>
+      <p className="text-pretty text-muted text-sm leading-relaxed">
+        {message}
+      </p>
     </Card>
   );
 }

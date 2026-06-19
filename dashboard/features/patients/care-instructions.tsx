@@ -26,7 +26,9 @@ export function CareInstructions({
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<CareInstruction | null>(null);
   const [deleting, setDeleting] = useState<CareInstruction | null>(null);
-  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const activePhases = PHASES.filter((phase) =>
     care.some((c) => c.phase === phase)
@@ -49,7 +51,7 @@ export function CareInstructions({
         <div className="grid gap-4 lg:grid-cols-2">
           {activePhases.map((phase) => {
             const docs = care.filter((c) => c.phase === phase);
-            const isExpanded = expandedPhases[phase] || false;
+            const isExpanded = expandedPhases[phase];
             const visibleDocs = isExpanded ? docs : docs.slice(0, 3);
             const hasMore = docs.length > 3;
 
@@ -74,16 +76,16 @@ export function CareInstructions({
 
                 {hasMore ? (
                   <FoldTrigger
+                    count={docs.length - 3}
                     expanded={isExpanded}
+                    labelPlural="instructions"
+                    labelSingular="instruction"
                     onToggle={() =>
                       setExpandedPhases((prev) => ({
                         ...prev,
                         [phase]: !isExpanded,
                       }))
                     }
-                    count={docs.length - 3}
-                    labelSingular="instruction"
-                    labelPlural="instructions"
                   />
                 ) : null}
               </Card>

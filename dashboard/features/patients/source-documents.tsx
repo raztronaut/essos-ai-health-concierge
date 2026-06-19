@@ -47,11 +47,9 @@ export function SourceDocuments({
                 </TextLink>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-meta">
-                  {humanize(doc.source_status)}
-                </span>
+                <span className="text-meta">{humanize(doc.source_status)}</span>
                 {doc.patient_id ? (
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+                  <div className="opacity-0 transition-opacity duration-fast group-hover:opacity-100">
                     <Button
                       onClick={() => setDeleting(doc)}
                       size="sm"

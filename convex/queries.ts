@@ -159,6 +159,17 @@ export const getConversation = conciergeQuery({
   },
 });
 
+/** Find the conversation for a patient (most recent), for cross-linking from the patient profile. */
+export const getConversationForPatient = conciergeQuery({
+  args: { patientId: v.string(), ...viewAsArg },
+  returns: v.union(conversationDoc, v.null()),
+  handler: async (ctx, { patientId, viewAs }) => {
+    const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
+    await assertPatientAccess(ctx, patientId, scope);
+    return Conversations.getByPatient(ctx, patientId);
+  },
+});
+
 export const listMessages = conciergeQuery({
   args: { conversationId: v.string(), ...viewAsArg },
   returns: v.array(messageDoc),

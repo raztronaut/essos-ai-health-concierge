@@ -192,7 +192,14 @@ export const messageDoc = v.object({
   category: v.union(v.string(), v.null()),
   created_at: v.string(),
   meta_kind: v.union(v.string(), v.null()),
-  outbound: v.union(v.literal("pending"), v.literal("sent"), v.null()),
+  outbound: v.union(
+    v.literal("pending"),
+    v.literal("sent"),
+    v.literal("failed"),
+    v.null()
+  ),
+  outbound_attempts: v.optional(v.number()),
+  outbound_error: v.optional(v.union(v.string(), v.null())),
   meta_json: v.union(v.string(), v.null()),
 });
 

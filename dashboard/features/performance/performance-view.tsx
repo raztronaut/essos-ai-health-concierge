@@ -3,8 +3,14 @@
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-import { Card, PageHeader, Stat, LoadingState, EmptyState } from "@/components/ui";
-import { BarMeter, BarColumn } from "@/components/charts/bar-meter";
+import { BarColumn, BarMeter } from "@/components/charts/bar-meter";
+import {
+  Card,
+  EmptyState,
+  LoadingState,
+  PageHeader,
+  Stat,
+} from "@/components/ui";
 import { humanize } from "@/lib/format";
 
 function fmtMs(ms: number): string {

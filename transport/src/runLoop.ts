@@ -21,6 +21,8 @@ export interface ResolvedAuthor {
 export interface MessageLoopOptions {
   app: { messages: AsyncIterable<[Space, Message]> };
   channel: Channel;
+  /** Called for every delivered stream event — a positive liveness signal. */
+  onActivity?: () => void;
   onResult: (
     space: Space,
     message: Message,
@@ -46,6 +48,8 @@ export interface MessageLoopOptions {
  */
 export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
   for await (const [space, message] of opts.app.messages) {
+    // Any delivered event proves the stream is live; feed the health watchdog.
+    opts.onActivity?.();
     if (message.direction === "outbound") {
       continue;
     }

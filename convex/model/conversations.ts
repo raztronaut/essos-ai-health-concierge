@@ -24,6 +24,17 @@ export async function getBySpace(
     .unique();
 }
 
+export async function getByPatient(
+  ctx: QueryCtx | MutationCtx,
+  patientId: string
+): Promise<Conversation | null> {
+  return await ctx.db
+    .query("conversations")
+    .withIndex("by_patient", (q) => q.eq("patient_id", patientId))
+    .order("desc")
+    .first();
+}
+
 export async function list(
   ctx: QueryCtx | MutationCtx
 ): Promise<Conversation[]> {

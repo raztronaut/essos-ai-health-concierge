@@ -17,10 +17,10 @@ export function CareRow({
     <li className="group border-border border-t pt-3 first:border-t-0 first:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-medium text-sm text-ink">{doc.title}</span>
+          <span className="font-medium text-ink text-sm">{doc.title}</span>
           <PolicyBadge policy={doc.answer_policy} />
         </div>
-        <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+        <div className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-fast group-hover:opacity-100">
           <Button onClick={onEdit} size="sm" variant="ghost">
             Edit
           </Button>
@@ -29,10 +29,10 @@ export function CareRow({
           </Button>
         </div>
       </div>
-      <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">{doc.body}</p>
-      <div className="mt-1 text-meta">
-        {humanize(doc.source_status)}
-      </div>
+      <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">
+        {doc.body}
+      </p>
+      <div className="mt-1 text-meta">{humanize(doc.source_status)}</div>
     </li>
   );
 }

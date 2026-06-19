@@ -330,6 +330,20 @@ export const markOutboundDelivered = internalMutation({
     Messages.markOutboundDelivered(ctx, messageId),
 });
 
+export const recordOutboundFailure = internalMutation({
+  args: {
+    messageId: v.string(),
+    error: v.string(),
+    permanent: v.boolean(),
+    maxAttempts: v.optional(v.number()),
+  },
+  returns: v.object({
+    outbound: v.union(v.literal("pending"), v.literal("failed")),
+    attempts: v.number(),
+  }),
+  handler: async (ctx, args) => Messages.recordOutboundFailure(ctx, args),
+});
+
 /** Assign a patient to a concierge (Clerk user id). Used by the team seeder. */
 export const assignPatient = internalMutation({
   args: {

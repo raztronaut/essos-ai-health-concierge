@@ -14,7 +14,7 @@ export function TextLink({
   return (
     <Link
       className={cn(
-        "font-medium text-primary text-sm hover:underline transition-colors duration-fast ease-out",
+        "font-medium text-primary text-sm transition-colors duration-fast ease-out hover:underline",
         className
       )}
       {...props}

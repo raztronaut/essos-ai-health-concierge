@@ -172,5 +172,43 @@ export async function markOutboundDelivered(
   if (!msg) {
     return;
   }
-  await ctx.db.patch(msg._id, { outbound: "sent" });
+  await ctx.db.patch(msg._id, { outbound: "sent", outbound_error: null });
+}
+
+/** Default number of delivery attempts before an outbound row is dead-lettered. */
+export const MAX_OUTBOUND_ATTEMPTS = 5;
+
+/**
+ * Record a failed delivery attempt for an outbound concierge reply. Bumps the
+ * attempt counter and stores the last error. A `permanent` failure (e.g. an
+ * invalid address) or hitting `maxAttempts` moves the row to the terminal
+ * `failed` state so the loop stops retrying and a human can see it didn't send;
+ * otherwise it stays `pending` for the next tick. Returns the resulting state.
+ */
+export async function recordOutboundFailure(
+  ctx: MutationCtx,
+  args: {
+    messageId: string;
+    error: string;
+    permanent: boolean;
+    maxAttempts?: number;
+  }
+): Promise<{ outbound: "pending" | "failed"; attempts: number }> {
+  const msg = await ctx.db
+    .query("messages")
+    .withIndex("by_external_id", (q) => q.eq("id", args.messageId))
+    .unique();
+  if (!msg) {
+    return { outbound: "failed", attempts: 0 };
+  }
+  const attempts = (msg.outbound_attempts ?? 0) + 1;
+  const maxAttempts = args.maxAttempts ?? MAX_OUTBOUND_ATTEMPTS;
+  const dead = args.permanent || attempts >= maxAttempts;
+  const outbound = dead ? "failed" : "pending";
+  await ctx.db.patch(msg._id, {
+    outbound,
+    outbound_attempts: attempts,
+    outbound_error: args.error,
+  });
+  return { outbound, attempts };
 }

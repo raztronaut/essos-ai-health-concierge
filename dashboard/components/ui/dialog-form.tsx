@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Button } from "./button";
 
 /**
@@ -52,20 +52,16 @@ export function DialogForm({
   pendingLabel?: string;
 }) {
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-4">
-        {children}
-      </div>
-      
-      {error ? (
-        <p className="text-high text-xs mt-3">{error}</p>
-      ) : null}
-      
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <div className="space-y-4">{children}</div>
+
+      {error ? <p className="mt-3 text-high text-xs">{error}</p> : null}
+
       <div className="mt-6 flex justify-end gap-2">
-        <Button onClick={onClose} variant="ghost" disabled={pending}>
+        <Button disabled={pending} onClick={onClose} variant="ghost">
           Cancel
         </Button>
-        <Button variant="primary" type="submit" disabled={pending}>
+        <Button disabled={pending} type="submit" variant="primary">
           {pending ? pendingLabel : submitLabel}
         </Button>
       </div>

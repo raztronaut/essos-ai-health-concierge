@@ -13,7 +13,13 @@ body {
 
 body {
   font-family: var(--font-sans);
-  font-feature-settings: "cv03" 1, "cv04" 1, "cv09" 1, "cv11" 1, "kern" 1, "liga" 1;
+  font-feature-settings:
+    "cv03" 1,
+    "cv04" 1,
+    "cv09" 1,
+    "cv11" 1,
+    "kern" 1,
+    "liga" 1;
   -webkit-font-smoothing: antialiased;
   /*
    * System-wide defense against unbreakable tokens (user IDs, URLs, emails,
@@ -93,17 +99,17 @@ body {
  */
 @utility text-eyebrow {
   font-size: var(--text-eyebrow);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   font-weight: 500;
   color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 @utility text-meta {
   font-family: var(--font-mono);
   font-size: var(--text-meta);
-  letter-spacing: 0.025em;
   color: var(--color-muted);
+  letter-spacing: 0.025em;
 }
 
 /*
@@ -153,19 +159,18 @@ body {
 .border-beam-mask {
   position: absolute;
   inset: 0;
-  border-style: solid;
-  border-color: transparent;
-  border-radius: inherit;
   pointer-events: none;
-
-  /* Standard mask (Chrome/Firefox/Edge) */
-  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-  mask-clip: padding-box, border-box;
-  mask-composite: exclude;
+  border-color: transparent;
+  border-style: solid;
+  border-radius: inherit;
 
   /* WebKit mask (Safari & WebKit-based iOS/macOS browsers) */
   -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-  -webkit-mask-clip: padding-box, border-box;
-  -webkit-mask-composite: xor;
-}
 
+  /* Standard mask (Chrome/Firefox/Edge) */
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-clip: padding-box, border-box;
+  mask-clip: padding-box, border-box;
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}

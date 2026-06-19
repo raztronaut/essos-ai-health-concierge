@@ -13,11 +13,11 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import {
   Dialog,
+  DialogForm,
   Field,
   Input,
   Select,
   Textarea,
-  DialogForm,
   useDialogForm,
 } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
@@ -30,13 +30,13 @@ import {
 } from "./options";
 
 interface CareFormState {
+  answerPolicy: CareAnswerPolicy;
+  body: string;
   phase: CarePhase;
   procedure: Procedure;
-  title: string;
-  body: string;
-  sourceType: CareSourceType;
   sourceStatus: CareSourceStatus;
-  answerPolicy: CareAnswerPolicy;
+  sourceType: CareSourceType;
+  title: string;
 }
 
 export function CareInstructionDialog({
@@ -65,8 +65,10 @@ export function CareInstructionDialog({
     answerPolicy: care?.answer_policy ?? "answer_reference",
   });
 
-  const set = <K extends keyof CareFormState>(key: K, value: CareFormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
+  const set = <K extends keyof CareFormState>(
+    key: K,
+    value: CareFormState[K]
+  ) => setForm((f) => ({ ...f, [key]: value }));
 
   const { pending, error, handleSubmit } = useDialogForm(
     async (formData: CareFormState) => {
@@ -151,7 +153,9 @@ export function CareInstructionDialog({
           </div>
           <Field label="Source type">
             <Select
-              onChange={(e) => set("sourceType", e.target.value as CareSourceType)}
+              onChange={(e) =>
+                set("sourceType", e.target.value as CareSourceType)
+              }
               value={form.sourceType}
             >
               {CARE_SOURCE_TYPE_OPTIONS.map((o) => (
@@ -163,7 +167,9 @@ export function CareInstructionDialog({
           </Field>
           <Field label="Source status">
             <Select
-              onChange={(e) => set("sourceStatus", e.target.value as CareSourceStatus)}
+              onChange={(e) =>
+                set("sourceStatus", e.target.value as CareSourceStatus)
+              }
               value={form.sourceStatus}
             >
               {CARE_SOURCE_STATUS_OPTIONS.map((o) => (
@@ -179,7 +185,9 @@ export function CareInstructionDialog({
               label="Answer policy"
             >
               <Select
-                onChange={(e) => set("answerPolicy", e.target.value as CareAnswerPolicy)}
+                onChange={(e) =>
+                  set("answerPolicy", e.target.value as CareAnswerPolicy)
+                }
                 value={form.answerPolicy}
               >
                 {ANSWER_POLICY_OPTIONS.map((o) => (

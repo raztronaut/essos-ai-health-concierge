@@ -3,6 +3,7 @@ import {
   getPatientById,
   listPendingOutbound,
   markOutboundDelivered,
+  recordOutboundFailure,
 } from "@essos/shared";
 import type { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
@@ -13,6 +14,35 @@ export type SpectrumApp = Awaited<ReturnType<typeof Spectrum>>;
 
 /** How often the transport drains concierge replies queued by the dashboard. */
 const POLL_INTERVAL_MS = 3000;
+
+/**
+ * Whether a send error is permanent (a bad/malformed address) rather than a
+ * transient outage. Permanent failures dead-letter immediately instead of
+ * retrying forever — e.g. a Spectrum `ValidationError` on the chat GUID, which
+ * no amount of retrying will fix.
+ */
+function isPermanentSendError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /ValidationError|must start with "any;|invalid (chat|address)/i.test(
+    message
+  );
+}
+
+/** Dead-letter (or retry) one outbound row, logging the resulting state. */
+async function failOutbound(
+  messageId: string,
+  error: string,
+  permanent: boolean
+): Promise<void> {
+  const result = await recordOutboundFailure({ messageId, error, permanent });
+  debug(
+    "outbound",
+    result.outbound === "failed" ? "dead-lettered" : "will retry",
+    messageId,
+    `(attempt ${result.attempts})`,
+    error
+  );
+}
 
 /**
  * Delivers concierge replies (queued in SQLite by the dashboard) to the
@@ -28,14 +58,22 @@ async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
 
   for (const message of pending) {
     const conversation = await getConversationById(message.conversation_id);
-    const patient = conversation
-      ? await getPatientById(conversation.patient_id)
-      : null;
     if (!conversation) {
-      debug("outbound", "no conversation for", message.id, "- dropping");
-      await markOutboundDelivered(message.id);
+      await failOutbound(message.id, "no conversation for message", true);
       continue;
     }
+    // Only iMessage spaces are deliverable here. Seed/demo conversations carry
+    // placeholder space ids (e.g. "demo-space-…") that can never resolve to a
+    // real chat — dead-letter them fast instead of hammering Spectrum forever.
+    if (!conversation.space_id.startsWith("imessage:")) {
+      await failOutbound(
+        message.id,
+        `undeliverable space_id "${conversation.space_id}"`,
+        true
+      );
+      continue;
+    }
+    const patient = await getPatientById(conversation.patient_id);
     try {
       const space = await resolveSpace(
         app,
@@ -43,21 +81,15 @@ async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
         patient?.handle ?? null
       );
       if (!space) {
-        debug(
-          "outbound",
-          "could not resolve space for",
-          message.id,
-          "- dropping"
-        );
-        await markOutboundDelivered(message.id);
+        await failOutbound(message.id, "could not resolve iMessage space", true);
         continue;
       }
       await space.send(toImessageText(message.text).text);
       await markOutboundDelivered(message.id);
       debug("outbound", "delivered", message.id);
     } catch (err) {
-      // Leave it pending for the next tick (at-least-once delivery).
-      debug("outbound", "send failed for", message.id, String(err));
+      const error = err instanceof Error ? err.message : String(err);
+      await failOutbound(message.id, error, isPermanentSendError(err));
     }
   }
 }

@@ -6,11 +6,11 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import {
   Dialog,
+  DialogForm,
   Field,
   Input,
   Select,
   Textarea,
-  DialogForm,
   useDialogForm,
 } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
@@ -25,16 +25,16 @@ function toLocalInput(value: string | null | undefined): string {
 }
 
 interface ItineraryFormState {
-  kind: ItineraryKind;
-  title: string;
-  detail: string;
-  location: string;
-  startsAt: string;
-  endsAt: string;
   confirmation: string;
+  detail: string;
   driverName: string;
   driverPhone: string;
+  endsAt: string;
+  kind: ItineraryKind;
+  location: string;
   sortOrder: string;
+  startsAt: string;
+  title: string;
 }
 
 export function ItineraryEventDialog({
@@ -64,8 +64,10 @@ export function ItineraryEventDialog({
     sortOrder: String(event?.sort_order ?? 0),
   });
 
-  const set = <K extends keyof ItineraryFormState>(key: K, value: ItineraryFormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
+  const set = <K extends keyof ItineraryFormState>(
+    key: K,
+    value: ItineraryFormState[K]
+  ) => setForm((f) => ({ ...f, [key]: value }));
 
   const { pending, error, handleSubmit } = useDialogForm(
     async (formData: ItineraryFormState) => {
