@@ -8,6 +8,19 @@ Beachhead: rhinoplasty and hair-transplant patients in Turkey and Mexico.
 
 > Work-trial MVP. All patient data is fictional/notional. PII/PHI hardening is an explicit later focus; this build optimizes for correct agent behavior, transport, dashboard visibility, and a working demo. See [Assumptions](#assumptions).
 
+## Tech stack / Built with
+
+| Layer | Tech | Role |
+| --- | --- | --- |
+| Agent | [Eve](eve-concierge/README.md) · Anthropic Claude (direct, ZDR) | The concierge brain — 7 tools, 4 skills; routes direct to Anthropic to keep PHI off a gateway ([ADR 006](.docs/decisions/006-model-routing-direct-anthropic.md)) |
+| Transport | [Spectrum Cloud](transport/README.md) (iMessage) · terminal | Patient-facing channel; swappable behind Eve's HTTP session API ([ADR 004](.docs/decisions/004-spectrum-imessage-transport.md)) |
+| Backend / data | [Convex](.docs/decisions/013-convex-backend.md) | Reactive store + functions; single source of truth for conversations, patients, escalations, telemetry |
+| Dashboard | Next.js · React · Tailwind | Admin single pane of glass; live via Convex `useQuery` ([ADR 007](.docs/decisions/007-admin-dashboard-architecture.md)) |
+| Auth / identity | [Clerk](.docs/decisions/014-clerk-auth-and-identity.md) (Organizations) | Concierge identity + org roles for RBAC ([ADR 016](.docs/decisions/016-concierge-ownership-and-rbac.md)) |
+| Team bridge | [Slack](slack/README.md) (Socket Mode) | Optional — escalations + handoff actions where the team already works ([ADR 019](.docs/decisions/019-slack-concierge-bridge.md)) |
+| Language / tooling | TypeScript · pnpm workspaces | Monorepo (`shared`/`transport`/`dashboard`/`slack` + root `convex/`; `eve-concierge` isolated) ([ADR 005](.docs/decisions/005-eve-agent-project-structure.md)) |
+| Hosting | Vercel (dashboard) · Railway (Eve + transport + Slack) · Convex Cloud (data) | Deploy topology + CI/CD ([ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md), [ADR 018](.docs/decisions/018-deploy-pipeline-cicd.md)) — see [Deploy (live)](#deploy-live) |
+
 ## Architecture
 
 ```mermaid
