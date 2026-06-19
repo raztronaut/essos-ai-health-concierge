@@ -11,6 +11,7 @@
 import type * as http from "../http.js";
 import type * as lib_functions from "../lib/functions.js";
 import type * as lib_util from "../lib/util.js";
+import type * as lib_validators from "../lib/validators.js";
 import type * as machine from "../machine.js";
 import type * as model_activity from "../model/activity.js";
 import type * as model_conversations from "../model/conversations.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/functions": typeof lib_functions;
   "lib/util": typeof lib_util;
+  "lib/validators": typeof lib_validators;
   machine: typeof machine;
   "model/activity": typeof model_activity;
   "model/conversations": typeof model_conversations;

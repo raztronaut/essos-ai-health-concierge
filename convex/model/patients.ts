@@ -15,6 +15,44 @@ export async function list(ctx: QueryCtx | MutationCtx): Promise<Patient[]> {
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
+/**
+ * Patients visible to a concierge: leads see everyone; members see their own
+ * assigned patients plus the unassigned queue. Index-backed via `by_assignee`.
+ */
+export async function listForConcierge(
+  ctx: QueryCtx | MutationCtx,
+  opts: { clerkId: string | null; isLead: boolean }
+): Promise<Patient[]> {
+  if (opts.isLead || !opts.clerkId) {
+    return await list(ctx);
+  }
+  const [mine, unassigned] = await Promise.all([
+    ctx.db
+      .query("patients")
+      .withIndex("by_assignee", (q) => q.eq("assignee_user_id", opts.clerkId))
+      .collect(),
+    ctx.db
+      .query("patients")
+      .withIndex("by_assignee", (q) => q.eq("assignee_user_id", null))
+      .collect(),
+  ]);
+  return [...mine, ...unassigned].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
+}
+
+/** True when a concierge may view/act on a patient (lead, owner, or unassigned). */
+export function canAccess(
+  patient: { assignee_user_id?: string | null },
+  opts: { clerkId: string | null; isLead: boolean }
+): boolean {
+  if (opts.isLead) {
+    return true;
+  }
+  const owner = patient.assignee_user_id ?? null;
+  return owner === null || owner === opts.clerkId;
+}
+
 export async function getByExternalId(
   ctx: QueryCtx | MutationCtx,
   id: string
@@ -37,8 +75,12 @@ export async function getByHandle(
 
 export async function upsert(
   ctx: MutationCtx,
-  patient: Omit<Patient, "_id" | "_creationTime" | "created_at"> & {
+  patient: Omit<
+    Patient,
+    "_id" | "_creationTime" | "created_at" | "assignee_user_id"
+  > & {
     created_at?: string;
+    assignee_user_id?: string | null;
   }
 ): Promise<void> {
   const existing = await getByExternalId(ctx, patient.id);
@@ -53,6 +95,8 @@ export async function upsert(
     hotel_name: patient.hotel_name,
     companion_name: patient.companion_name,
     dietary_notes: patient.dietary_notes,
+    assignee_user_id:
+      patient.assignee_user_id ?? existing?.assignee_user_id ?? null,
     created_at: patient.created_at ?? nowIso(),
   };
   if (existing) {
@@ -60,6 +104,128 @@ export async function upsert(
     return;
   }
   await ctx.db.insert("patients", fields);
+}
+
+function guestNameFor(handle: string): string {
+  if (handle.includes("@")) {
+    return `Guest (${handle.split("@")[0]})`;
+  }
+  const tail = handle.replace(/\D/g, "").slice(-4);
+  return tail ? `Guest (·${tail})` : "Guest";
+}
+
+/**
+ * Find or create a guest patient bound to an iMessage handle, cloned from a
+ * template patient so Eve has real itinerary + care data to ground answers in.
+ * Idempotent: a returning handle reuses the same guest patient. Powers the
+ * "text the number and start chatting" demo (see ADR 017).
+ */
+export async function ensureGuest(
+  ctx: MutationCtx,
+  args: { handle: string; name?: string | null; templateId?: string }
+): Promise<Patient> {
+  const existing = await getByHandle(ctx, args.handle);
+  if (existing) {
+    return existing;
+  }
+  const templateId = args.templateId ?? "pat_maya";
+  const template = await getByExternalId(ctx, templateId);
+  if (!template) {
+    throw new Error(`Guest template patient "${templateId}" not found`);
+  }
+
+  const id = newId("pat_guest");
+  await ctx.db.insert("patients", {
+    id,
+    name: args.name?.trim() || guestNameFor(args.handle),
+    handle: args.handle,
+    procedure: template.procedure,
+    destination_city: template.destination_city,
+    destination_country: template.destination_country,
+    clinic_name: template.clinic_name,
+    hotel_name: template.hotel_name,
+    companion_name: template.companion_name,
+    dietary_notes: template.dietary_notes,
+    assignee_user_id: null,
+    created_at: nowIso(),
+  });
+
+  // Clone the template's itinerary, care, and patient-specific source docs onto
+  // the new guest (fresh ids; shared global docs stay shared).
+  for (const event of await listItinerary(ctx, template.id)) {
+    await insertItineraryEvent(ctx, {
+      patient_id: id,
+      source_document_id: event.source_document_id,
+      kind: event.kind,
+      title: event.title,
+      detail: event.detail,
+      location: event.location,
+      starts_at: event.starts_at,
+      ends_at: event.ends_at,
+      confirmation_number: event.confirmation_number,
+      driver_name: event.driver_name,
+      driver_phone: event.driver_phone,
+      sort_order: event.sort_order,
+    });
+  }
+  for (const care of await listCareInstructions(ctx, template.id)) {
+    await insertCareInstruction(ctx, {
+      patient_id: id,
+      source_document_id: care.source_document_id,
+      phase: care.phase,
+      procedure: care.procedure,
+      title: care.title,
+      body: care.body,
+      source_type: care.source_type,
+      source_status: care.source_status,
+      answer_policy: care.answer_policy,
+      effective_from: care.effective_from,
+      effective_until: care.effective_until,
+    });
+  }
+  const templateDocs = (
+    await listSourceDocumentsForPatient(ctx, template.id)
+  ).filter((d) => d.patient_id === template.id);
+  for (const doc of templateDocs) {
+    await insertSourceDocument(ctx, {
+      id: newId("doc_guest"),
+      patient_id: id,
+      kind: doc.kind,
+      title: doc.title,
+      source_type: doc.source_type,
+      source_status: doc.source_status,
+      answer_policy: doc.answer_policy,
+      markdown_path: doc.markdown_path,
+      pdf_path: doc.pdf_path,
+      sha256: doc.sha256,
+    });
+  }
+
+  const created = await getByExternalId(ctx, id);
+  if (!created) {
+    throw new Error("Failed to create guest patient");
+  }
+  return created;
+}
+
+/** Assign (or unassign) a patient's owning concierge; mirrors onto conversations. */
+export async function assign(
+  ctx: MutationCtx,
+  patientId: string,
+  assigneeUserId: string | null
+): Promise<void> {
+  const patient = await getByExternalId(ctx, patientId);
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+  await ctx.db.patch(patient._id, { assignee_user_id: assigneeUserId });
+  const conversations = await ctx.db
+    .query("conversations")
+    .withIndex("by_patient", (q) => q.eq("patient_id", patientId))
+    .collect();
+  for (const conv of conversations) {
+    await ctx.db.patch(conv._id, { assignee_user_id: assigneeUserId });
+  }
 }
 
 // --- Source documents ---
@@ -115,6 +281,21 @@ export async function insertSourceDocument(
   await ctx.db.insert("source_documents", fields);
 }
 
+/** Delete a source document and its uploaded blob (if Convex-storage backed). */
+export async function deleteSourceDocument(
+  ctx: MutationCtx,
+  id: string
+): Promise<void> {
+  const existing = await getSourceDocument(ctx, id);
+  if (!existing) {
+    return;
+  }
+  if (existing.storage_id) {
+    await ctx.storage.delete(existing.storage_id);
+  }
+  await ctx.db.delete(existing._id);
+}
+
 // --- Itinerary ---
 
 export async function listItinerary(
@@ -125,6 +306,39 @@ export async function listItinerary(
     .query("itinerary_events")
     .withIndex("by_patient", (q) => q.eq("patient_id", patientId))
     .collect();
+}
+
+export async function getItineraryEventByExternalId(
+  ctx: QueryCtx | MutationCtx,
+  id: string
+): Promise<ItineraryEvent | null> {
+  return await ctx.db
+    .query("itinerary_events")
+    .withIndex("by_external_id", (q) => q.eq("id", id))
+    .unique();
+}
+
+/** Patch an existing itinerary event by its legacy string id. */
+export async function updateItineraryEvent(
+  ctx: MutationCtx,
+  id: string,
+  patch: Partial<Omit<ItineraryEvent, "_id" | "_creationTime" | "id">>
+): Promise<void> {
+  const existing = await getItineraryEventByExternalId(ctx, id);
+  if (!existing) {
+    throw new Error("Itinerary event not found");
+  }
+  await ctx.db.patch(existing._id, patch);
+}
+
+export async function deleteItineraryEvent(
+  ctx: MutationCtx,
+  id: string
+): Promise<void> {
+  const existing = await getItineraryEventByExternalId(ctx, id);
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
 }
 
 export async function insertItineraryEvent(
@@ -214,4 +428,94 @@ export async function insertCareInstruction(
     created_at: ts,
     updated_at: ts,
   });
+}
+
+export async function getCareInstructionByExternalId(
+  ctx: QueryCtx | MutationCtx,
+  id: string
+): Promise<CareInstruction | null> {
+  return await ctx.db
+    .query("care_instructions")
+    .withIndex("by_external_id", (q) => q.eq("id", id))
+    .unique();
+}
+
+/** Patch a care instruction by its legacy string id (stamps `updated_at`). */
+export async function updateCareInstruction(
+  ctx: MutationCtx,
+  id: string,
+  patch: Partial<
+    Omit<
+      CareInstruction,
+      "_id" | "_creationTime" | "id" | "created_at" | "updated_at"
+    >
+  >
+): Promise<void> {
+  const existing = await getCareInstructionByExternalId(ctx, id);
+  if (!existing) {
+    throw new Error("Care instruction not found");
+  }
+  await ctx.db.patch(existing._id, { ...patch, updated_at: nowIso() });
+}
+
+export async function deleteCareInstruction(
+  ctx: MutationCtx,
+  id: string
+): Promise<void> {
+  const existing = await getCareInstructionByExternalId(ctx, id);
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
+}
+
+// --- Patient deletion (cascade) ---
+
+/**
+ * Delete a patient and all of its child records (itinerary, care instructions,
+ * and patient-scoped source documents + their uploaded blobs). Refuses to delete
+ * a patient that still has conversations so message/escalation history is never
+ * orphaned — unassign or archive those first.
+ */
+export async function deletePatient(
+  ctx: MutationCtx,
+  id: string
+): Promise<void> {
+  const patient = await getByExternalId(ctx, id);
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+  const conversations = await ctx.db
+    .query("conversations")
+    .withIndex("by_patient", (q) => q.eq("patient_id", id))
+    .collect();
+  if (conversations.length > 0) {
+    throw new Error(
+      "Cannot delete a patient with conversations. Resolve or reassign them first."
+    );
+  }
+  const itinerary = await ctx.db
+    .query("itinerary_events")
+    .withIndex("by_patient", (q) => q.eq("patient_id", id))
+    .collect();
+  for (const row of itinerary) {
+    await ctx.db.delete(row._id);
+  }
+  const care = await ctx.db
+    .query("care_instructions")
+    .withIndex("by_patient", (q) => q.eq("patient_id", id))
+    .collect();
+  for (const row of care) {
+    await ctx.db.delete(row._id);
+  }
+  const docs = await ctx.db
+    .query("source_documents")
+    .withIndex("by_patient", (q) => q.eq("patient_id", id))
+    .collect();
+  for (const row of docs) {
+    if (row.storage_id) {
+      await ctx.storage.delete(row.storage_id);
+    }
+    await ctx.db.delete(row._id);
+  }
+  await ctx.db.delete(patient._id);
 }

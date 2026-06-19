@@ -111,10 +111,13 @@ export default defineSchema({
     hotel_name: v.string(),
     companion_name: v.union(v.string(), v.null()),
     dietary_notes: v.union(v.string(), v.null()),
+    /** Owning concierge (Clerk user id), or null for the unassigned queue. */
+    assignee_user_id: v.optional(v.union(v.string(), v.null())),
     created_at: v.string(),
   })
     .index("by_external_id", ["id"])
-    .index("by_handle", ["handle"]),
+    .index("by_handle", ["handle"])
+    .index("by_assignee", ["assignee_user_id"]),
 
   source_documents: defineTable({
     id: v.string(),
@@ -124,9 +127,14 @@ export default defineSchema({
     source_type: careSourceType,
     source_status: careSourceStatus,
     answer_policy: careAnswerPolicy,
-    markdown_path: v.string(),
-    pdf_path: v.string(),
-    sha256: v.string(),
+    // Seeded docs reference on-disk assets; uploaded docs leave these null.
+    markdown_path: v.optional(v.union(v.string(), v.null())),
+    pdf_path: v.optional(v.union(v.string(), v.null())),
+    sha256: v.optional(v.union(v.string(), v.null())),
+    // Uploaded docs live in Convex file storage instead of on disk.
+    storage_id: v.optional(v.union(v.id("_storage"), v.null())),
+    file_name: v.optional(v.union(v.string(), v.null())),
+    content_type: v.optional(v.union(v.string(), v.null())),
     created_at: v.string(),
   })
     .index("by_external_id", ["id"])
@@ -177,13 +185,16 @@ export default defineSchema({
     automation_state: automationState,
     /** Persisted Eve session { sessionId, continuationToken, turns } as JSON. */
     eve_session: v.union(v.string(), v.null()),
+    /** Owning concierge (Clerk user id); mirrors the patient's assignment. */
+    assignee_user_id: v.optional(v.union(v.string(), v.null())),
     created_at: v.string(),
     updated_at: v.string(),
   })
     .index("by_external_id", ["id"])
     .index("by_space", ["space_id"])
     .index("by_patient", ["patient_id"])
-    .index("by_updated", ["updated_at"]),
+    .index("by_updated", ["updated_at"])
+    .index("by_assignee", ["assignee_user_id"]),
 
   messages: defineTable({
     id: v.string(),
@@ -215,7 +226,10 @@ export default defineSchema({
     summary: v.string(),
     source_message_id: v.union(v.string(), v.null()),
     status: escalationStatus,
+    /** Human-readable assignee label (name/email) for display. */
     assignee: v.union(v.string(), v.null()),
+    /** Stable owning concierge (Clerk user id) for identity-keyed metrics. */
+    assignee_user_id: v.optional(v.union(v.string(), v.null())),
     created_at: v.string(),
     resolved_at: v.union(v.string(), v.null()),
     /** AI-assist draft for the concierge to review/edit/send (never auto-sent). */
@@ -225,7 +239,8 @@ export default defineSchema({
   })
     .index("by_external_id", ["id"])
     .index("by_conversation", ["conversation_id", "created_at"])
-    .index("by_status", ["status", "created_at"]),
+    .index("by_status", ["status", "created_at"])
+    .index("by_assignee", ["assignee_user_id"]),
 
   activity_log: defineTable({
     id: v.string(),

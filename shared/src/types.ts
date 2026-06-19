@@ -58,6 +58,8 @@ export type ActivityEvent =
   | "reminder";
 
 export interface Patient {
+  /** Owning concierge (Clerk user id), or null for the unassigned queue. */
+  assignee_user_id?: string | null;
   clinic_name: string;
   companion_name: string | null;
   created_at: string;
@@ -107,19 +109,29 @@ export interface CareInstruction {
 
 export interface SourceDocument {
   answer_policy: CareAnswerPolicy;
+  /** MIME type for uploaded docs (Convex storage); null for seeded on-disk docs. */
+  content_type?: string | null;
   created_at: string;
+  /** Original filename for uploaded docs; null for seeded on-disk docs. */
+  file_name?: string | null;
   id: string;
   kind: SourceDocumentKind;
-  markdown_path: string;
+  /** On-disk markdown path for seeded docs; null for uploaded docs. */
+  markdown_path?: string | null;
   patient_id: string | null;
-  pdf_path: string;
-  sha256: string;
+  /** On-disk PDF path for seeded docs; null for uploaded docs. */
+  pdf_path?: string | null;
+  sha256?: string | null;
   source_status: CareSourceStatus;
   source_type: CareSourceType;
+  /** Convex file-storage id for uploaded docs; null for seeded on-disk docs. */
+  storage_id?: string | null;
   title: string;
 }
 
 export interface Conversation {
+  /** Owning concierge (Clerk user id); mirrors the patient's assignment. */
+  assignee_user_id?: string | null;
   automation_state: AutomationState;
   channel: Channel;
   created_at: string;
@@ -144,6 +156,8 @@ export interface Message {
 
 export interface Escalation {
   assignee: string | null;
+  /** Stable owning concierge (Clerk user id) for identity-keyed metrics. */
+  assignee_user_id?: string | null;
   conversation_id: string;
   created_at: string;
   id: string;
@@ -175,6 +189,8 @@ export interface ActivityLogEntry {
 
 /** Denormalized conversation row for the dashboard list (patient + last message + open flags). */
 export interface ConversationSummary {
+  /** Owning concierge (Clerk user id), or null when unassigned. */
+  assignee_user_id?: string | null;
   automation_state: AutomationState;
   id: string;
   last_role: MessageRole | null;

@@ -17,7 +17,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 font-medium text-xs ${className ?? ""}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-0.5 font-medium text-xs ${className ?? ""}`}
     >
       {dot ? (
         <span

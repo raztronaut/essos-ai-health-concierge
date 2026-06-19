@@ -3,14 +3,17 @@
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { PageHeader } from "@/components/ui";
+import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { EscalationQueue } from "./escalation-queue";
+import { PatientsPanel } from "./patients-panel";
 import { TelemetryStats } from "./telemetry-stats";
 
 /** Live overview: telemetry tiles + the open-escalation queue (reactive). */
 export function OverviewView() {
+  const { viewAs } = useDemoIdentity();
   const stats = useQuery(api.queries.overviewStats);
   const openEscalations = useQuery(api.queries.listOpenEscalations);
-  const patients = useQuery(api.queries.listPatients);
+  const patients = useQuery(api.queries.listPatients, { viewAs });
 
   return (
     <div className="space-y-8">
@@ -19,10 +22,13 @@ export function OverviewView() {
         title="Overview"
       />
       <TelemetryStats stats={stats} />
-      <EscalationQueue
-        escalations={openEscalations ?? []}
-        patients={patients ?? []}
-      />
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <EscalationQueue
+          escalations={openEscalations ?? []}
+          patients={patients ?? []}
+        />
+        <PatientsPanel />
+      </div>
     </div>
   );
 }

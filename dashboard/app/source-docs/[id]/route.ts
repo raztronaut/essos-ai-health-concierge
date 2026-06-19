@@ -33,27 +33,42 @@ export async function GET(
     return new Response("Document not found", { status: 404 });
   }
 
-  try {
-    const buffer = await readFile(resolve(REPO_ROOT, doc.pdf_path));
-    return new Response(new Uint8Array(buffer), {
-      headers: {
-        "content-type": "application/pdf",
-        "content-disposition": `inline; filename="${doc.id}.pdf"`,
-      },
-    });
-  } catch {
-    // PDF missing — fall back to the Markdown source.
-  }
-
-  try {
-    const markdown = await readFile(
-      resolve(REPO_ROOT, doc.markdown_path),
-      "utf8"
-    );
-    return new Response(markdown, {
-      headers: { "content-type": "text/plain; charset=utf-8" },
-    });
-  } catch {
+  // Uploaded docs live in Convex file storage — redirect to a signed URL.
+  if (doc.storage_id) {
+    const url = await client.query(api.queries.getSourceDocumentUrl, { id });
+    if (url) {
+      return Response.redirect(url, 302);
+    }
     return new Response("Document source is unavailable", { status: 404 });
   }
+
+  if (doc.pdf_path) {
+    try {
+      const buffer = await readFile(resolve(REPO_ROOT, doc.pdf_path));
+      return new Response(new Uint8Array(buffer), {
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `inline; filename="${doc.id}.pdf"`,
+        },
+      });
+    } catch {
+      // PDF missing — fall back to the Markdown source.
+    }
+  }
+
+  if (doc.markdown_path) {
+    try {
+      const markdown = await readFile(
+        resolve(REPO_ROOT, doc.markdown_path),
+        "utf8"
+      );
+      return new Response(markdown, {
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    } catch {
+      // Fall through to the unavailable response.
+    }
+  }
+
+  return new Response("Document source is unavailable", { status: 404 });
 }

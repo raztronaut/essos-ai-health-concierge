@@ -2,6 +2,16 @@ import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Concierge, Scope } from "./lib/functions.js";
 import { conciergeMutation, effectiveScope } from "./lib/functions.js";
+import { newId } from "./lib/util.js";
+import {
+  careAnswerPolicy,
+  carePhase,
+  careSourceStatus,
+  careSourceType,
+  itineraryKind,
+  procedure,
+  sourceDocumentKind,
+} from "./lib/validators.js";
 import * as Conversations from "./model/conversations.js";
 import * as Escalations from "./model/escalations.js";
 import * as Messages from "./model/messages.js";
@@ -162,6 +172,226 @@ export const storeUser = conciergeMutation({
   returns: v.null(),
   handler: async () => {
     // The conciergeMutation custom ctx already upserts the user; nothing else.
+    return null;
+  },
+});
+
+// --- Patient record editing ---
+//
+// Any signed-in concierge can create/edit/remove patient records and their
+// itinerary, care plans, and documents. eve reads these same tables live via
+// the `/machine` path, so edits are reflected on its next tool call.
+
+const nullableString = v.union(v.string(), v.null());
+
+/** Create a new patient (no `id`) or edit an existing one (`id` provided). */
+export const upsertPatient = conciergeMutation({
+  args: {
+    id: v.optional(v.string()),
+    name: v.string(),
+    handle: v.string(),
+    procedure,
+    destination_city: v.string(),
+    destination_country: v.string(),
+    clinic_name: v.string(),
+    hotel_name: v.string(),
+    companion_name: nullableString,
+    dietary_notes: nullableString,
+    assignee_user_id: v.optional(nullableString),
+    ...viewAsArg,
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const id = args.id ?? newId("pat");
+    await Patients.upsert(ctx, {
+      id,
+      name: args.name,
+      handle: args.handle,
+      procedure: args.procedure,
+      destination_city: args.destination_city,
+      destination_country: args.destination_country,
+      clinic_name: args.clinic_name,
+      hotel_name: args.hotel_name,
+      companion_name: args.companion_name,
+      dietary_notes: args.dietary_notes,
+      assignee_user_id: args.assignee_user_id,
+    });
+    return id;
+  },
+});
+
+export const deletePatient = conciergeMutation({
+  args: { patientId: v.string(), ...viewAsArg },
+  returns: v.null(),
+  handler: async (ctx, { patientId }) => {
+    await Patients.deletePatient(ctx, patientId);
+    return null;
+  },
+});
+
+/** Add (no `id`) or edit (`id` provided) an itinerary event for a patient. */
+export const upsertItineraryEvent = conciergeMutation({
+  args: {
+    id: v.optional(v.string()),
+    patientId: v.string(),
+    kind: itineraryKind,
+    title: v.string(),
+    detail: v.optional(nullableString),
+    location: v.optional(nullableString),
+    starts_at: v.optional(nullableString),
+    ends_at: v.optional(nullableString),
+    confirmation_number: v.optional(nullableString),
+    driver_name: v.optional(nullableString),
+    driver_phone: v.optional(nullableString),
+    sort_order: v.optional(v.number()),
+    ...viewAsArg,
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const fields = {
+      kind: args.kind,
+      title: args.title,
+      detail: args.detail ?? null,
+      location: args.location ?? null,
+      starts_at: args.starts_at ?? null,
+      ends_at: args.ends_at ?? null,
+      confirmation_number: args.confirmation_number ?? null,
+      driver_name: args.driver_name ?? null,
+      driver_phone: args.driver_phone ?? null,
+      sort_order: args.sort_order ?? 0,
+    };
+    if (args.id) {
+      await Patients.updateItineraryEvent(ctx, args.id, fields);
+      return args.id;
+    }
+    const id = newId("itin");
+    await Patients.insertItineraryEvent(ctx, {
+      id,
+      patient_id: args.patientId,
+      ...fields,
+    });
+    return id;
+  },
+});
+
+export const deleteItineraryEvent = conciergeMutation({
+  args: { id: v.string(), ...viewAsArg },
+  returns: v.null(),
+  handler: async (ctx, { id }) => {
+    await Patients.deleteItineraryEvent(ctx, id);
+    return null;
+  },
+});
+
+/** Add (no `id`) or edit (`id` provided) a care instruction for a patient. */
+export const upsertCareInstruction = conciergeMutation({
+  args: {
+    id: v.optional(v.string()),
+    patientId: v.string(),
+    phase: carePhase,
+    procedure,
+    title: v.string(),
+    body: v.string(),
+    source_type: careSourceType,
+    source_status: careSourceStatus,
+    answer_policy: careAnswerPolicy,
+    effective_from: v.optional(nullableString),
+    effective_until: v.optional(nullableString),
+    ...viewAsArg,
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    if (args.id) {
+      await Patients.updateCareInstruction(ctx, args.id, {
+        phase: args.phase,
+        procedure: args.procedure,
+        title: args.title,
+        body: args.body,
+        source_type: args.source_type,
+        source_status: args.source_status,
+        answer_policy: args.answer_policy,
+        effective_from: args.effective_from ?? null,
+        effective_until: args.effective_until ?? null,
+      });
+      return args.id;
+    }
+    const id = newId("care");
+    await Patients.insertCareInstruction(ctx, {
+      id,
+      patient_id: args.patientId,
+      phase: args.phase,
+      procedure: args.procedure,
+      title: args.title,
+      body: args.body,
+      source_type: args.source_type,
+      source_status: args.source_status,
+      answer_policy: args.answer_policy,
+      effective_from: args.effective_from ?? null,
+      effective_until: args.effective_until ?? null,
+    });
+    return id;
+  },
+});
+
+export const deleteCareInstruction = conciergeMutation({
+  args: { id: v.string(), ...viewAsArg },
+  returns: v.null(),
+  handler: async (ctx, { id }) => {
+    await Patients.deleteCareInstruction(ctx, id);
+    return null;
+  },
+});
+
+// --- Document uploads (Convex file storage) ---
+
+/** Short-lived upload URL the dashboard POSTs a file to before recording it. */
+export const generateUploadUrl = conciergeMutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => await ctx.storage.generateUploadUrl(),
+});
+
+/** Record an uploaded file as a patient (or global) source document. */
+export const createSourceDocument = conciergeMutation({
+  args: {
+    patientId: nullableString,
+    kind: sourceDocumentKind,
+    title: v.string(),
+    source_type: careSourceType,
+    source_status: careSourceStatus,
+    answer_policy: careAnswerPolicy,
+    storageId: v.id("_storage"),
+    fileName: v.optional(nullableString),
+    contentType: v.optional(nullableString),
+    ...viewAsArg,
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const id = newId("doc");
+    await Patients.insertSourceDocument(ctx, {
+      id,
+      patient_id: args.patientId,
+      kind: args.kind,
+      title: args.title,
+      source_type: args.source_type,
+      source_status: args.source_status,
+      answer_policy: args.answer_policy,
+      markdown_path: null,
+      pdf_path: null,
+      sha256: null,
+      storage_id: args.storageId,
+      file_name: args.fileName ?? null,
+      content_type: args.contentType ?? null,
+    });
+    return id;
+  },
+});
+
+export const deleteSourceDocument = conciergeMutation({
+  args: { id: v.string(), ...viewAsArg },
+  returns: v.null(),
+  handler: async (ctx, { id }) => {
+    await Patients.deleteSourceDocument(ctx, id);
     return null;
   },
 });

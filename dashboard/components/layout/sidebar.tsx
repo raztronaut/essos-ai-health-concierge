@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { DemoRoleSwitcher } from "@/features/demo/demo-role-switcher";
 import { ConciergeIdentity } from "./concierge-identity";
 import { NavLink } from "./nav-link";
 
 const NAV = [
   { href: "/", label: "Overview" },
   { href: "/conversations", label: "Conversations" },
+  { href: "/patients", label: "Patients" },
   { href: "/performance", label: "AI performance" },
   { href: "/team", label: "Team" },
 ];
@@ -22,6 +24,7 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="mt-auto space-y-3">
+        <DemoRoleSwitcher />
         <ConciergeIdentity />
         <p className="text-[11px] text-muted leading-relaxed">
           Live data via Convex. Notional demo patient records.
