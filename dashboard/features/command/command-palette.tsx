@@ -125,7 +125,7 @@ function CommandPaletteDialog({
         !reduceMotion && "transition-[opacity,transform] duration-150"
       )}
       contentClassName={cn(
-        "command-palette pointer-events-none fixed inset-0 z-[60] flex items-start justify-center border-0 bg-transparent p-0 px-4 pt-[min(20vh,8rem)] shadow-none outline-none focus:outline-none",
+        "command-palette pointer-events-none! fixed inset-0 z-[60] flex items-start justify-center border-0 bg-transparent p-0 px-4 pt-[min(20vh,8rem)] shadow-none outline-none focus:outline-none",
         !reduceMotion && "transition-opacity duration-150"
       )}
       label="Global command menu"
