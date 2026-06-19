@@ -7,6 +7,7 @@ import {
   markOutboundDelivered,
 } from "@essos/shared";
 import { debug } from "./debug.js";
+import { toImessageText } from "./imessageText.js";
 
 export type SpectrumApp = Awaited<ReturnType<typeof Spectrum>>;
 
@@ -38,7 +39,7 @@ async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
         markOutboundDelivered(message.id);
         continue;
       }
-      await space.send(message.text);
+      await space.send(toImessageText(message.text).text);
       markOutboundDelivered(message.id);
       debug("outbound", "delivered", message.id);
     } catch (err) {
@@ -81,7 +82,7 @@ export async function sendToPatientSpace(
 ): Promise<boolean> {
   const space = await resolveSpace(app, spaceId, handle);
   if (!space) return false;
-  await space.send(text);
+  await space.send(toImessageText(text).text);
   return true;
 }
 

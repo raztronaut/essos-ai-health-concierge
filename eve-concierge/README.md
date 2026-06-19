@@ -48,6 +48,8 @@ Eve ships generic `bash`/`read_file`/`write_file`/`glob`/`grep`/`web_fetch`/`web
 
 `agent/instructions.md` defines the persona, the trusted `<<ESSOS_CONTEXT>>` block contract, the source-of-truth hierarchy, and the must-escalate policy (medication decisions, post-op symptoms, clinical judgment, staff safety, out-of-package, unsure). See [ADR 001](../.docs/decisions/001-escalation-taxonomy.md) and [ADR 002](../.docs/decisions/002-care-instructions-source-of-truth.md).
 
+It also sets the **formatting and texting voice**: plaintext only (no Markdown — iMessage shows it literally), match the patient's length, no robotic filler, mirror emoji, and an opt-in `[[react: ...]]` tapback for light acknowledgements (never on a medical or escalation turn). The transport enforces the plaintext rule regardless via a Markdown→plaintext normalizer. See [ADR 012](../.docs/decisions/012-imessage-plaintext-and-voice.md).
+
 ## Run
 
 ```bash

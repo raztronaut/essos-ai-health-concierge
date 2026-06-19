@@ -102,6 +102,8 @@ When Eve escalates, the patient is never left in silence: Eve acknowledges in-th
 
 On top of that handoff, the concierge gets an **AI-assist**: every escalation arrives with a source-grounded draft reply Eve prepared (from the itinerary and verified packets, never medical advice), prefilled into the reply box so a human can review, edit, and send in one tap. Eve also introduces itself as an AI on its first message (with the human team on the thread), asks a clarifying question for ambiguous logistics instead of guessing, and sends proactive pre-op reminders before a procedure (`pnpm transport:remind` to fire one on demand). See [ADR 011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md).
 
+Eve is tuned to read like a person texting, not a bot. iMessage has no rich text, so the transport runs every outbound message through a Markdown→plaintext normalizer (no stray `**bold**` or `# headers` ever reach a patient), and the agent instructions add a poke-inspired texting voice: match the patient's length, drop robotic filler, mirror emoji, and use native tapbacks for light acknowledgements. See [ADR 012](.docs/decisions/012-imessage-plaintext-and-voice.md).
+
 ## Live iMessage runbook
 
 1. Provision a Spectrum Cloud iMessage line (app.photon.codes); set `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET` in `.env`.
@@ -140,6 +142,7 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [009](.docs/decisions/009-agent-hardening-and-transport-auth.md) | Agent hardening and transport auth |
 | [010](.docs/decisions/010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge |
 | [011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md) | Concierge AI-assist + proactive care |
+| [012](.docs/decisions/012-imessage-plaintext-and-voice.md) | iMessage plaintext formatting + texting voice |
 
 ## Package docs
 

@@ -6,6 +6,21 @@ import { normalizeHandle } from "./handles.js";
 import { runMessageLoop } from "./runLoop.js";
 import { startOutboundLoop } from "./outbound.js";
 import { startReminderLoop } from "./reminders.js";
+import { toImessageText, type TapbackName } from "./imessageText.js";
+
+/**
+ * iMessage tapbacks via the emoji `message.react(...)` accepts. Eve requests
+ * one with a `[[react: ...]]` control token (see `imessageText`); iMessage maps
+ * these emoji onto its native tapbacks.
+ */
+const TAPBACK_EMOJI: Record<TapbackName, string> = {
+  like: "👍",
+  love: "❤️",
+  laugh: "😂",
+  emphasize: "‼️",
+  question: "❓",
+  dislike: "👎",
+};
 
 /**
  * Live iMessage transport via Spectrum Cloud. Maps each iMessage space (group
@@ -59,7 +74,11 @@ async function main(): Promise<void> {
       };
     },
     onResult: async (_space, message, result) => {
-      if (result.reply) await message.reply(result.reply);
+      if (!result.reply) return;
+      const { text, react } = toImessageText(result.reply);
+      if (react) await message.react(TAPBACK_EMOJI[react]);
+      // A react-only turn (e.g. a light acknowledgement) sends no bubble.
+      if (text) await message.reply(text);
     },
   });
 }

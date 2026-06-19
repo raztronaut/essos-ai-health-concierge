@@ -17,10 +17,11 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 | [009](009-agent-hardening-and-transport-auth.md) | Agent hardening and transport auth | Disabling dangerous built-in tools, replacing `placeholderAuth()` with a transport shared-secret, PII-minimized tool output, the constrained escalation enum, and the eval suite. |
 | [010](010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge | Keeping the patient informed during escalation (acknowledgment + one-time holding notice) and letting the concierge reply to the patient from the dashboard; the multi-turn stream-replay fix. |
 | [011](011-concierge-ai-assist-and-proactive-care.md) | Concierge AI-assist + proactive care | Eve drafts a source-grounded suggested reply the concierge approves/sends, a one-time AI disclosure, clarifying questions, proactive pre-op reminders, and durable holding-notice + Eve-session state. |
+| [012](012-imessage-plaintext-and-voice.md) | iMessage plaintext formatting + texting voice | A transport-side Markdown→plaintext normalizer on every outbound send (so `**bold**` never reaches a patient), a poke-inspired texting voice in the instructions, and an opt-in `[[react: ...]]` tapback path. |
 
 ## Grouping
 
 - **Product / safety policy:** 001, 002, 003, 010, 011
-- **Transport:** 004, 008, 010, 011
-- **Agent + model:** 005, 006, 009, 011
+- **Transport:** 004, 008, 010, 011, 012
+- **Agent + model:** 005, 006, 009, 011, 012
 - **Dashboard:** 007, 010, 011

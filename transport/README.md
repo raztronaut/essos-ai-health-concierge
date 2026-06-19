@@ -13,7 +13,8 @@ The Spectrum transport bridge. It connects an iMessage (or terminal) group chat 
 | `src/handles.ts` | `normalizeHandle` — canonicalize phone/email handles for patient + concierge matching. |
 | `src/terminal.ts` | Terminal provider entrypoint (play the patient locally). |
 | `src/imessage.ts` | Spectrum Cloud iMessage provider entrypoint. |
-| `src/contentText.ts` | Normalizes Spectrum message content to text. |
+| `src/contentText.ts` | Normalizes inbound Spectrum message content to text. |
+| `src/imessageText.ts` | `toImessageText` — strips Markdown to iMessage-safe plaintext on every outbound send and extracts `[[react: ...]]` tapback tokens. Unit-tested. |
 | `src/debug.ts` | `ESSOS_DEBUG`-gated logging. |
 | `src/env.ts` | Loads the repo-root `.env`; exposes `EVE_BASE_URL`, `TRANSPORT_SECRET`, `DEMO_PATIENT`, `CONCIERGE_HANDLES`. |
 | `src/smoke.ts` | Deterministic end-to-end test of the core + DB + handoff rules (no live model); cleans up its rows. |
@@ -26,6 +27,10 @@ The Spectrum transport bridge. It connects an iMessage (or terminal) group chat 
 3. **Patient messages** are logged; if automation is `active`, the context block + message go to Eve, and the reply is recorded and returned. If `paused_for_review`/`taken_over`, Eve stays silent.
 
 See [ADR 003](../.docs/decisions/003-human-handoff-and-takeover.md) for the handoff states.
+
+## Outbound formatting
+
+iMessage has no rich text, so every outbound send (auto-reply in `imessage.ts`, dashboard concierge replies and reminders in `outbound.ts`) is passed through `toImessageText` ([src/imessageText.ts](src/imessageText.ts)), which strips Markdown (`**bold**`, headers, bullets, links, code) to clean plaintext. It also extracts a `[[react: ...]]` token Eve may emit and turns it into a native iMessage tapback (`like`/`love`/`laugh`/`emphasize`/`question`/`dislike`), sending a reaction instead of a bubble when the reply is react-only. The terminal provider is left raw. See [ADR 012](../.docs/decisions/012-imessage-plaintext-and-voice.md).
 
 ## Patient binding
 
