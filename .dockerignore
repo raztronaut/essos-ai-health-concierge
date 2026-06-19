@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.git
+.next
+**/.next
+dist
+**/dist
+.convex
+.eve
+**/.eve
+.output
+**/.output
+.turbo
+*.log
+.data
+tmp
+.DS_Store

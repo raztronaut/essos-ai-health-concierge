@@ -7,15 +7,31 @@
  * This file is the single source of truth for the design system.
  */
 @theme {
-  /* Brand + neutrals --------------------------------------------------- */
-  --color-surface: #f5f1e5;
-  --color-card: #fffdf8;
-  --color-ink: #171715;
-  --color-primary: #0000ee;
-  --color-secondary: #bcb6a7;
-  --color-muted: #8d897d;
+  /* Essos warm-neutral ramp -------------------------------------------- */
+  /* The brand palette: Pearl White stepped in 10% increments down to Black.
+   * Exposed as named tokens so any surface can pull a precise brand shade
+   * (e.g. `bg-stone-50`, `text-stone-70`). */
+  --color-pearl: #ebe4d1;
+  --color-stone-10: #d4cdbc;
+  --color-stone-20: #bcb6a7;
+  --color-stone-30: #a5a092;
+  --color-stone-40: #8d897d;
+  --color-stone-50: #767269;
+  --color-stone-60: #5e5b54;
+  --color-stone-70: #46443f;
+  --color-stone-80: #2f2e2a;
+  --color-stone-90: #171715;
+  --color-black: #000000;
+
+  /* Brand semantics (mapped onto the ramp above) ----------------------- */
+  --color-surface: #ebe4d1; /* Pearl White — page background */
+  --color-card: #f3eede; /* warm white lifted just above the pearl surface */
+  --color-ink: #171715; /* stone-90 — primary text on surface */
+  --color-primary: #171715; /* monochrome brand black for solid actions */
+  --color-secondary: #bcb6a7; /* stone-20 */
+  --color-muted: #767269; /* stone-50 — secondary/legible muted text */
   /* Hairline border — one consistent 1px line color across the system. */
-  --color-border: #ddd6c6;
+  --color-border: #d4cdbc; /* stone-10 */
 
   /* Semantic status (paired with a soft tint for badge backgrounds) ----- */
   --color-high: #b3261e;
@@ -26,12 +42,19 @@
   --color-ok-soft: #e3efe7;
 
   /* Typography --------------------------------------------------------- */
-  /* --font-sans is provided by next/font (see app/layout.tsx) via the
-   * --font-inter CSS variable, falling back to a system stack. */
+  /* Faces are provided by next/font/local (see app/layout.tsx) via CSS
+   * variables, each falling back to a robust system stack.
+   *  - ABC Repro (--font-repro)        → UI + body
+   *  - PS Times  (--font-ps-times)     → serif display / masthead
+   *  - ABC Repro Mono (--font-repro-mono) → code, IDs, tabular data */
   --font-sans:
-    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    var(--font-repro), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
-  --font-serif: Georgia, "Times New Roman", "PS Times", serif;
+  --font-serif:
+    var(--font-ps-times), Georgia, "Times New Roman", "PS Times", serif;
+  --font-mono:
+    var(--font-repro-mono), ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
 
   /* Radii -------------------------------------------------------------- */
   --radius-card: 12px;

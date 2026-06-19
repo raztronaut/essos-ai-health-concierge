@@ -4,6 +4,8 @@ A text-based AI concierge for health-tourism patients. **Eve** (the agent brain)
 
 Beachhead: rhinoplasty and hair-transplant patients in Turkey and Mexico.
 
+> **Live demo:** dashboard at **https://essos-dashboard.vercel.app** (loads in demo mode; sign in to test roles). To try the agent over iMessage, text the Spectrum line — guest mode provisions a demo patient on first contact. See [Demo guide](#demo-guide--accounts--roles) and [Deploy (live)](#deploy-live).
+
 > Work-trial MVP. All patient data is fictional/notional. PII/PHI hardening is an explicit later focus; this build optimizes for correct agent behavior, transport, dashboard visibility, and a working demo. See [Assumptions](#assumptions).
 
 ## Architecture
@@ -127,7 +129,7 @@ The dashboard ships in **demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1` for the UI
 
 **Seeded demo team** (created by `pnpm seed:team`): `lead+clerk_test@essos.dev` (lead), `ada+clerk_test@essos.dev` and `ben+clerk_test@essos.dev` (concierges); Maya → Ada, Diego → Ben, Sofia left unassigned so the queue is visible. When `CLERK_SECRET_KEY` is set the seeder also creates these as real Clerk accounts + an org; otherwise they exist in Convex for the switcher.
 
-> **`ESSOS_REQUIRE_AUTH`** is unrelated to the demo — it's the production "fail-closed" switch that makes the Convex backend *reject* any unauthenticated request. Leave it **off** for the demo (sign-in is still enforced by the dashboard middleware); only set it once you're hardening for production.
+> **`ESSOS_REQUIRE_AUTH`** is the production "fail-closed" switch that makes the Convex backend *reject* any unauthenticated request. The deployed dashboard middleware is a **passthrough** (signed-out reviewers see the demo and sign in optionally), so leave `ESSOS_REQUIRE_AUTH` **off** for the demo; set it once you're hardening for production.
 
 ## Live iMessage runbook
 
@@ -145,24 +147,44 @@ See [ADR 008](.docs/decisions/008-transport-eve-streaming-contract.md) for the t
 
 So anyone can test the live agent without you binding their phone number to a patient, the transport supports **guest onboarding**: set `ESSOS_GUEST_MODE=1` and the first time an unknown handle texts the Spectrum line, a demo patient is auto-created for them (cloned from a template patient — `ESSOS_GUEST_TEMPLATE`, default `pat_maya` — so Eve has a real itinerary + care plan to answer from). Each guest is an isolated conversation in the dashboard; disclosure, grounded answers, escalation, and handoff all work. Just share the number: "text +1XXX to try the Essos concierge." Clear guests later with `pnpm seed:reset` (dev) or by pruning `pat_guest_*` ids. See [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md).
 
-## Deploy (Convex Cloud + Vercel)
+## Deploy (live)
 
-Four pieces: **Convex** (data/functions), **Eve** and the **dashboard** on Vercel, and the **Spectrum transport** on a persistent host (it holds a live connection + delivery loops, so it can't be serverless). See [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md) for the topology.
+The trial is deployed across **Convex Cloud** (data), **Vercel** (dashboard), and **Railway** (Eve agent + Spectrum transport). Topology and rationale: [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md).
 
-1. **Convex Cloud.** `npx convex deploy` (creates/uses a prod deployment). Set its env:
+| Piece | Where | URL |
+| --- | --- | --- |
+| Dashboard | Vercel | https://essos-dashboard.vercel.app |
+| Eve agent | Railway (web) | https://eve-production-0971.up.railway.app |
+| Spectrum transport | Railway (worker) | — (connects out to Spectrum, Eve, Convex) |
+| Data / functions | Convex Cloud | `intent-hare-36` (`.convex.cloud` reactive, `.convex.site` machine) |
+
+Eve + the transport live on Railway because both are long-running Node services that share the repo and the `@essos/shared` build (the transport also holds a live Spectrum connection, so it can't be serverless). The dashboard is a natural Vercel fit.
+
+### Reproduce
+
+1. **Convex Cloud** — `CONVEX_DEPLOY_KEY="prod:<name>|..." npx convex deploy`. Set env (auth-config vars must exist *before* deploy):
    ```bash
    npx convex env set CLERK_JWT_ISSUER_DOMAIN https://<app>.clerk.accounts.dev
    npx convex env set CONVEX_SERVICE_SECRET <strong-random>   # machine-path guard
    npx convex env set ESSOS_DEMO_MODE 1                        # demo switcher + lead onboarding
    npx convex env set ESSOS_GUEST_MODE 1                       # allow guest provisioning
-   npx convex env set ESSOS_ALLOW_SEED 1 && pnpm seed:reset && pnpm seed:team && npx convex env set ESSOS_ALLOW_SEED ""   # seed once, then lock
+   # seed once, then lock:
+   npx convex env set ESSOS_ALLOW_SEED 1
+   CONVEX_URL=https://<name>.convex.cloud pnpm seed:reset
+   CONVEX_SITE_URL=https://<name>.convex.site CONVEX_SERVICE_SECRET=<same> pnpm seed:team
+   npx convex env remove ESSOS_ALLOW_SEED
    ```
-   Note the prod `CONVEX_URL` (`https://<name>.convex.cloud`) and `CONVEX_SITE_URL` (`https://<name>.convex.site`).
-2. **Eve on Vercel** (separate project, root `eve-concierge/`). Build with the eve Vercel target; set `ANTHROPIC_API_KEY`, `ESSOS_AGENT_MODEL`, and `ESSOS_TRANSPORT_SECRET`. Note its URL → `EVE_BASE_URL`.
-3. **Dashboard on Vercel** (root directory `dashboard/`). Because `@essos/shared` is a workspace package, the build must compile it first — set the Build Command to `pnpm --filter @essos/shared build && pnpm --filter @essos/dashboard build` (Install Command `pnpm install` at the repo root). Env: `NEXT_PUBLIC_CONVEX_URL` (prod `.convex.cloud`), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_ISSUER_DOMAIN`, `NEXT_PUBLIC_ESSOS_DEMO_MODE=1`, and (for the org webhook) `CONVEX_SITE_URL`, `CONVEX_SERVICE_SECRET`, `CLERK_WEBHOOK_SIGNING_SECRET`. Point the Clerk webhook at `https://<dashboard>/api/webhooks`.
-4. **Transport on a persistent host** (Railway / Render / Fly / a small VM): run `pnpm --filter @essos/transport run imessage`. Env: `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`, `ESSOS_GUEST_MODE=1`, and `ESSOS_CONCIERGE_HANDLES`.
+2. **Railway (Eve + transport)** — `railway init`, then two services. Because the build needs the whole monorepo (Eve links `@essos/shared`), each service is built from a Dockerfile selected with the `RAILWAY_DOCKERFILE_PATH` variable (`deploy/eve.Dockerfile`, `deploy/transport.Dockerfile`) rather than Railpack auto-detection.
+   - `eve` (web): `railway domain` for a public URL; vars `ANTHROPIC_API_KEY`, `ESSOS_AGENT_MODEL`, `ESSOS_TRANSPORT_SECRET`. Eve binds `$PORT`; the public URL is protected by the transport bearer.
+   - `transport` (worker, no domain): `CONVEX_SITE_URL` (prod `.convex.site`) + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` (the eve public URL) + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`, `ESSOS_GUEST_MODE=1`, `ESSOS_CONCIERGE_HANDLES`.
+3. **Dashboard (Vercel)** — link the project at the **repo root** with **Root Directory = `dashboard`** (so the whole monorepo uploads); [dashboard/vercel.json](dashboard/vercel.json) sets the build to compile `@essos/shared` first. Env: `NEXT_PUBLIC_CONVEX_URL` (prod `.convex.cloud`), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_ISSUER_DOMAIN`, `NEXT_PUBLIC_ESSOS_DEMO_MODE=1`, plus `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET` (and `CLERK_WEBHOOK_SIGNING_SECRET` if you wire the webhook). `vercel deploy --prod` from the repo root.
+4. **Clerk** — the `convex` JWT template carries `org_id`/`org_role`/`org_slug` claims (for role scoping). The org-sync webhook (`/api/webhooks`) is optional — concierge profiles are also synced on first dashboard action.
 
-Once live, harden with `npx convex env set ESSOS_REQUIRE_AUTH true` after confirming a real signed-in dashboard session.
+Notes / gotchas (learned in this deploy):
+- **Eve needs Node 24** and its default sandbox backend (`just-bash`) installed — both handled in [deploy/eve.Dockerfile](deploy/eve.Dockerfile).
+- The deployed dashboard middleware ([dashboard/proxy.ts](dashboard/proxy.ts)) is a **passthrough**: signed-out reviewers see the demo (Convex dev-fallback = lead) and sign in optionally. Harden by setting `ESSOS_REQUIRE_AUTH=true` on Convex to fail closed.
+- Clerk runs as a **development instance** on the `vercel.app` domain — fine for the trial; use a production instance on a custom domain for a long-lived public deployment.
+- Rotate the Convex deploy key, Railway token, and `CLERK_SECRET_KEY` after the trial.
 
 ## Assumptions
 

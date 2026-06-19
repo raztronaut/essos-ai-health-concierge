@@ -19,7 +19,8 @@ The admin dashboard — the single pane of glass over every conversation, escala
 
 - **Reads** are `useQuery(api.queries.*)` in client view components (e.g. `features/overview/overview-view.tsx`), so the UI is reactive. Server page files stay thin (metadata + render the client view).
 - **Writes** are `useMutation(api.mutations.*)` — `resolveEscalation`, `takeOverConversation`, `resumeAutomation`, `sendConciergeReply`. The signed-in concierge is resolved server-side by Convex and stamped as the actor (no more hardcoded `ASSIGNEE`).
-- **Auth**: `app/ConvexClientProvider.tsx` wires `ConvexProviderWithClerk` when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set, otherwise a plain `ConvexProvider` (dev "demo concierge"). `proxy.ts` (Next 16's middleware) protects routes except the webhook.
+- **Auth**: `app/ConvexClientProvider.tsx` wires `ConvexProviderWithClerk` when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set, otherwise a plain `ConvexProvider` (dev "demo concierge"). `proxy.ts` (Next 16's middleware) is a **passthrough** that attaches Clerk context without walling the app; server-side `ESSOS_REQUIRE_AUTH` on Convex is the fail-closed control. See [ADR 014](../.docs/decisions/014-clerk-auth-and-identity.md).
+- **Demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1`): adds the sidebar "view as" role switcher and treats org-less sign-ins as leads, so reviewers land on a populated dashboard. See [ADR 016](../.docs/decisions/016-concierge-ownership-and-rbac.md).
 
 ## Config notes
 
@@ -34,3 +35,7 @@ The admin dashboard — the single pane of glass over every conversation, escala
 pnpm dashboard:dev          # http://localhost:4000
 pnpm --filter @essos/dashboard run build
 ```
+
+## Deploy (Vercel)
+
+Live at **https://essos-dashboard.vercel.app**. Linked at the **repo root** with the Vercel project's Root Directory = `dashboard` so the whole pnpm monorepo uploads (the build needs `@essos/shared` and `../convex/_generated`). [`vercel.json`](./vercel.json) sets the build command to compile `@essos/shared` before `next build`. Full runbook + env list in the root [README](../README.md#deploy-live) and [ADR 017](../.docs/decisions/017-guest-onboarding-and-deployment.md).

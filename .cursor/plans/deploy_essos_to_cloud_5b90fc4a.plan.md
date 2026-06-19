@@ -4,28 +4,28 @@ overview: "Deploy the full Essos stack: Convex Cloud (data/functions), Vercel (d
 todos:
   - id: prereqs
     content: Upgrade Railway CLI, export RAILWAY_TOKEN, verify railway/vercel/convex auth (whoami)
-    status: pending
+    status: completed
   - id: convex-deploy
     content: Deploy Convex Cloud with the deploy key; capture prod .convex.cloud + .convex.site URLs
-    status: pending
+    status: completed
   - id: convex-env-seed
     content: Set Convex prod env (issuer, service secret, demo/guest flags); seed:reset + seed:team; lock seeding
-    status: pending
+    status: completed
   - id: railway-eve
     content: Create Railway project; deploy Eve service (build/start, Anthropic + transport secret, private networking)
-    status: pending
+    status: completed
   - id: railway-transport
     content: Deploy transport worker service (Convex site url + secret, EVE_BASE_URL, Spectrum creds, guest mode)
-    status: pending
+    status: completed
   - id: vercel-dashboard
     content: Deploy dashboard to Vercel (shared build first; Convex prod url + Clerk + demo flag + webhook env)
-    status: pending
+    status: completed
   - id: clerk-config
     content: Add Vercel domain to Clerk, ensure convex JWT org claims, create webhook + set signing secret, redeploy
-    status: pending
+    status: completed
   - id: verify
     content: "Verify: dashboard sign-in + view-as; text Spectrum line -> guest -> Eve reply -> escalation in dashboard; check logs"
-    status: pending
+    status: completed
 isProject: false
 ---
 

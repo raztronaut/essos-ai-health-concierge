@@ -12,7 +12,7 @@ export function Stat({
 }) {
   return (
     <Card>
-      <div className="font-semibold text-3xl">{value}</div>
+      <div className="font-semibold text-3xl tabular-nums">{value}</div>
       <div className="mt-1 font-medium text-ink/80 text-sm">{label}</div>
       {hint ? <div className="mt-0.5 text-muted text-xs">{hint}</div> : null}
     </Card>

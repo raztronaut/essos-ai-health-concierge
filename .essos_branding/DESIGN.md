@@ -1,11 +1,27 @@
 ---
 name: "Essos"
-description: "Design tokens extracted from https://www.essos.com/"
+description: "Canonical Essos brand design tokens (palette + typefaces supplied by Essos)."
+palette:
+  pearl-white: "#EBE4D1"
+  stone-10: "#D4CDBC"
+  stone-20: "#BCB6A7"
+  stone-30: "#A5A092"
+  stone-40: "#8D897D"
+  stone-50: "#767269"
+  stone-60: "#5E5B54"
+  stone-70: "#46443F"
+  stone-80: "#2F2E2A"
+  stone-90: "#171715"
+  black: "#000000"
 colors:
-  primary: "#0000EE"
+  primary: "#171715"
   secondary: "#BCB6A7"
-  surface: "#F5F1E5"
+  surface: "#EBE4D1"
   on-surface: "#171715"
+fonts:
+  serif: "PS Times (display / masthead)"
+  sans: "ABC Repro (UI + body)"
+  mono: "ABC Repro Mono (code / IDs / tabular)"
 typography:
   text-1:
     fontFamily: "header"
@@ -171,21 +187,50 @@ components:
 # Design System
 
 ## Overview
-Design tokens extracted from essos.com. The YAML front matter contains machine-readable values observed by Dembrandt when available; the sections below summarize the extracted evidence without redesigning or correcting the source site.
+Canonical Essos brand tokens. The warm-neutral ramp and typefaces below are the
+official brand assets supplied by Essos; the dashboard implements them in
+`dashboard/app/styles/tokens.css` (palette + semantic colors) and
+`dashboard/app/layout.tsx` (fonts via `next/font/local`). Logos live in
+`dashboard/public/brand/`.
 
-## Colors
-- **Primary** (#0000EE): Observed color token extracted from the site's palette, semantic CSS, or component styles.
-- **Secondary** (#BCB6A7): Observed color token extracted from the site's palette, semantic CSS, or component styles.
-- **Surface** (#F5F1E5): Observed color token extracted from the site's palette, semantic CSS, or component styles.
-- **On Surface** (#171715): Observed color token extracted from the site's palette, semantic CSS, or component styles.
+## Palette — Pearl White → Black
+The brand is monochrome warm-neutral, stepped in 10% increments. Each step is
+exposed as a token (`--color-pearl`, `--color-stone-10` … `--color-stone-90`,
+`--color-black`) and generates Tailwind utilities (`bg-stone-50`, `text-stone-70`, …).
+
+| Token | Hex | RGB |
+| --- | --- | --- |
+| Pearl White | `#EBE4D1` | 235, 228, 209 |
+| Stone 10 | `#D4CDBC` | 212, 205, 188 |
+| Stone 20 | `#BCB6A7` | 188, 182, 167 |
+| Stone 30 | `#A5A092` | 165, 160, 146 |
+| Stone 40 | `#8D897D` | 141, 137, 125 |
+| Stone 50 | `#767269` | 118, 114, 105 |
+| Stone 60 | `#5E5B54` | 94, 91, 84 |
+| Stone 70 | `#46443F` | 70, 68, 63 |
+| Stone 80 | `#2F2E2A` | 47, 46, 42 |
+| Stone 90 | `#171715` | 23, 23, 21 |
+| Black | `#000000` | 0, 0, 0 |
+
+### Semantic mapping
+- **Surface** (`#EBE4D1`, Pearl White): page background.
+- **Card** (`#F3EEDE`): warm white lifted just above the pearl surface.
+- **Ink / On-surface** (`#171715`, Stone 90): primary text.
+- **Primary** (`#171715`): monochrome brand black for solid actions and focus rings.
+- **Secondary** (`#BCB6A7`, Stone 20): accents, dividers, fills.
+- **Muted** (`#767269`, Stone 50): legible secondary text.
+- **Border** (`#D4CDBC`, Stone 10): hairline borders.
 
 ## Typography
-- **Text 1**: header, 72px, regular
-- **Text 2**: PS Times Regular, 72px, regular
-- **Text 3**: header, 48px, regular
-- **Text 4**: PS Times Regular, 48px, regular
-- **Text 5**: body, 30px, medium
-- **Text 6**: body, 28px, medium
+- **Serif / display** — **PS Times** (`--font-serif`): masthead, page titles, headings (`.serif`).
+- **Sans / UI + body** — **ABC Repro** (`--font-sans`): default body and interface text.
+- **Mono** — **ABC Repro Mono** (`--font-mono`): code, identifiers, and tabular data.
+
+Indicative scale (from the source site):
+- **Text 1**: serif (PS Times), 72px, regular
+- **Text 3**: serif (PS Times), 48px, regular
+- **Text 5**: sans (ABC Repro), 30px, medium
+- **Text 6**: sans (ABC Repro), 28px, medium
 
 ## Layout
 Observed spacing scale: 8px spacing scale.

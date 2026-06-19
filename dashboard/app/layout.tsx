@@ -1,16 +1,39 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { ConvexConnectionBanner } from "@/components/layout/convex-connection-banner";
 import { Sidebar } from "@/components/layout/sidebar";
 import { DemoIdentityProvider } from "@/features/demo/demo-identity";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import "./globals.css";
 
-/** UI sans typeface, exposed to the token system as --font-inter. */
-const inter = Inter({
-  subsets: ["latin"],
+/**
+ * ABC Repro — the Essos UI/body typeface. Loaded as a variable font so the
+ * full weight axis is available, exposed to the token system as --font-repro.
+ */
+const repro = localFont({
+  src: "../fonts/ABCReproVariableTrial.ttf",
   display: "swap",
-  variable: "--font-inter",
+  weight: "100 900",
+  variable: "--font-repro",
+  fallback: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+});
+
+/** ABC Repro Mono — for code, IDs, and tabular/technical strings. */
+const reproMono = localFont({
+  src: "../fonts/ABCReproMonoVariableTrial.ttf",
+  display: "swap",
+  weight: "100 900",
+  variable: "--font-repro-mono",
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+});
+
+/** PS Times — the Essos serif display face used for the masthead and headings. */
+const psTimes = localFont({
+  src: "../fonts/PSTimesTrial-Regular.woff2",
+  display: "swap",
+  weight: "400",
+  variable: "--font-ps-times",
+  fallback: ["Georgia", "Times New Roman", "serif"],
 });
 
 export const metadata: Metadata = {
@@ -25,7 +48,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html className={inter.variable} lang="en">
+    <html
+      className={`${repro.variable} ${reproMono.variable} ${psTimes.variable}`}
+      lang="en"
+    >
       <body>
         <ConvexClientProvider>
           <DemoIdentityProvider>

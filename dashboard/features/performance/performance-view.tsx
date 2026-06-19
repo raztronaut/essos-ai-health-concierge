@@ -90,7 +90,7 @@ export function PerformanceView() {
                 <div className="space-y-1" key={tool}>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-ink">{humanize(tool)}</span>
-                    <span className="text-muted">{n}</span>
+                    <span className="text-muted tabular-nums">{n}</span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-surface">
                     <div

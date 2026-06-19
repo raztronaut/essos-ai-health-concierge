@@ -64,6 +64,10 @@ pnpm exec eve info     # inspect discovered tools/skills/channels + app root
 
 The transport bridge calls this server at `EVE_BASE_URL` (default `http://127.0.0.1:3000`). See [ADR 008](../.docs/decisions/008-transport-eve-streaming-contract.md) for the session API and event stream.
 
+## Deploy
+
+Runs as a **Railway web service** built from [deploy/eve.Dockerfile](../deploy/eve.Dockerfile) (Node 24; the default `just-bash` sandbox backend is installed in the image). `eve start` serves the Nitro `node-server` build on `$PORT`; the public Railway domain is protected by the transport bearer. Full runbook in the root [README](../README.md#deploy-live) and [ADR 017](../.docs/decisions/017-guest-onboarding-and-deployment.md).
+
 ## Route auth
 
 `agent/channels/eve.ts` admits loopback callers via `localDev()` (so `eve dev`, the TUI, and a same-host transport need no config) plus a `transportSecret()` authenticator: a non-loopback/deployed transport must present `Authorization: Bearer $ESSOS_TRANSPORT_SECRET`. It fails closed — an unset/mismatched secret falls through to a 401. This replaces the `eve init` `placeholderAuth()` scaffold. See [ADR 009](../.docs/decisions/009-agent-hardening-and-transport-auth.md).

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EssosLogo } from "@/components/brand/essos-logo";
 import { DemoRoleSwitcher } from "@/features/demo/demo-role-switcher";
 import { ConciergeIdentity } from "./concierge-identity";
 import { NavLink } from "./nav-link";
@@ -14,10 +15,14 @@ const NAV = [
 export function Sidebar() {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-border border-r bg-card px-5 py-6 md:flex">
-      <Link className="focus-ring serif text-2xl tracking-tight" href="/">
-        Essos
+      <Link
+        aria-label="Essos — home"
+        className="focus-ring inline-flex rounded-control text-ink"
+        href="/"
+      >
+        <EssosLogo className="h-5 w-auto" />
       </Link>
-      <p className="mt-1 text-muted text-xs">Concierge operations</p>
+      <p className="mt-2 text-muted text-xs">Concierge operations</p>
       <nav className="mt-8 flex flex-col gap-1">
         {NAV.map((item) => (
           <NavLink href={item.href} key={item.href} label={item.label} />

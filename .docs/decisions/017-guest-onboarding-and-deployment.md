@@ -2,7 +2,7 @@
 
 ## Decision
 
-Let anyone test the live Eve experience by **texting the Spectrum iMessage line** — no per-reviewer setup. An unknown sender is auto-provisioned a **guest patient** cloned from a template patient, so Eve has real itinerary + care data to ground its answers. The whole system deploys as: **Convex Cloud** (data + functions), **Vercel** (dashboard + Eve agent), and a **persistent host** for the Spectrum transport.
+Let anyone test the live Eve experience by **texting the Spectrum iMessage line** — no per-reviewer setup. An unknown sender is auto-provisioned a **guest patient** cloned from a template patient, so Eve has real itinerary + care data to ground its answers. The whole system deploys as: **Convex Cloud** (data + functions), **Vercel** (dashboard), and **Railway** (Eve agent + Spectrum transport, both long-running Node services).
 
 ## Why
 
@@ -18,15 +18,18 @@ Over real iMessage a person's identity *is* their Apple handle — there's no so
 
 | Component | Host | Notes |
 |---|---|---|
-| Convex (data + functions + `/machine`) | Convex Cloud (`npx convex deploy`) | Set prod env (`CLERK_JWT_ISSUER_DOMAIN`, `CONVEX_SERVICE_SECRET`, `ESSOS_DEMO_MODE`, `ESSOS_GUEST_MODE`; `ESSOS_ALLOW_SEED` only while seeding). |
-| Dashboard (Next.js) | Vercel | Root directory `dashboard/`; build needs `@essos/shared` compiled first. Public env `NEXT_PUBLIC_CONVEX_URL`, Clerk keys, `NEXT_PUBLIC_ESSOS_DEMO_MODE`. |
-| Eve agent (eve/Nitro) | Vercel (separate project) | `eve build` has a Vercel target; exposes `EVE_BASE_URL`. Set `ANTHROPIC_API_KEY`, `ESSOS_TRANSPORT_SECRET`. |
-| Spectrum transport | **Persistent host** (Railway / Render / Fly / a small VM) | NOT Vercel: it holds a long-lived Spectrum connection (`app.messages` stream) plus the outbound + reminder loops. Serverless can't keep that alive. Needs `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_*`, `ESSOS_GUEST_MODE=1`, `ESSOS_CONCIERGE_HANDLES`. |
+| Convex (data + functions + `/machine`) | Convex Cloud (`npx convex deploy` with a `prod:` deploy key) | Prod env (`CLERK_JWT_ISSUER_DOMAIN`, `CONVEX_SERVICE_SECRET`, `ESSOS_DEMO_MODE`, `ESSOS_GUEST_MODE`; `ESSOS_ALLOW_SEED` only while seeding) must be set **before** `deploy` — `auth.config.ts` validates referenced vars at deploy time. |
+| Dashboard (Next.js) | Vercel | Linked at the **repo root** with Root Directory = `dashboard` so the whole monorepo uploads; [dashboard/vercel.json](../../dashboard/vercel.json) compiles `@essos/shared` before `next build`. Public env `NEXT_PUBLIC_CONVEX_URL`, Clerk keys, `NEXT_PUBLIC_ESSOS_DEMO_MODE`. |
+| Eve agent (eve/Nitro) | Railway (web service) | Built from [deploy/eve.Dockerfile](../../deploy/eve.Dockerfile) (Node 24; installs `just-bash` for eve's default sandbox). Gets a public Railway domain, protected by the transport bearer. Vars `ANTHROPIC_API_KEY`, `ESSOS_AGENT_MODEL`, `ESSOS_TRANSPORT_SECRET`. |
+| Spectrum transport | Railway (worker, no domain) | Built from [deploy/transport.Dockerfile](../../deploy/transport.Dockerfile). Holds the live Spectrum connection + outbound/reminder loops (can't be serverless). Vars `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_*`, `ESSOS_GUEST_MODE=1`, `ESSOS_CONCIERGE_HANDLES`. |
 
-The transport being the one non-serverless piece is inherent to a push-based chat bridge; a fuller build could move scheduling to `convex/crons.ts` and inbound to a Spectrum webhook, but the live socket + delivery loop still want a process.
+**Eve + transport on Railway, not Vercel:** the transport is inherently a persistent process, and Eve links `@essos/shared` and is happiest as a long-running Nitro `node-server`. Co-locating both on Railway (Docker builds over the full monorepo) avoids the workspace `link:` gymnastics of a serverless build and keeps the agent↔transport hop on one platform. Railway's per-service builder is selected with `RAILWAY_DOCKERFILE_PATH` so two services share one repo.
+
+**As deployed (trial):** dashboard `https://essos-dashboard.vercel.app`, Eve `https://eve-production-0971.up.railway.app`, Convex `intent-hare-36`. Clerk runs as a **development instance** on the `vercel.app` domain (fine for the trial; a production instance + custom domain is the path for a long-lived public deploy). The dashboard middleware ([dashboard/proxy.ts](../../dashboard/proxy.ts)) is a **passthrough** — signed-out reviewers see the demo (Convex dev-fallback = lead) and sign in optionally; `ESSOS_REQUIRE_AUTH` on Convex is the fail-closed hardening switch.
 
 ## Consequences
 
 - "Text this number to try Eve" works for any reviewer with an Apple device; each becomes an isolated guest conversation visible in the dashboard.
 - Guest patients accumulate in the data; clear them with `pnpm seed:reset` (dev) or prune by `id` prefix `pat_guest_` (prod).
-- Three deploy targets (Convex, Vercel x2) + one persistent host. Documented in the README deploy runbook.
+- Three platforms (Convex Cloud, Vercel, Railway); Eve + transport are two Railway services in one project. Full runbook in the README.
+- The Clerk org-sync webhook was left unconfigured (the available tooling exposes no webhook CRUD); concierge profiles still sync on first dashboard action, so it's an optional add.

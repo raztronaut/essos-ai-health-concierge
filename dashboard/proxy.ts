@@ -1,22 +1,18 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 /**
  * Clerk middleware (Next.js 16 uses `proxy.ts`; <=15 used `middleware.ts`).
  *
- * Protects every route except the Clerk webhook. When Clerk isn't configured
- * (no publishable key), it's a passthrough so the local demo runs without auth.
+ * Attaches Clerk auth context to every request but does NOT wall the app:
+ * signed-out visitors see the (demo-mode) dashboard and can sign in from the
+ * sidebar to test real roles. Backend access is still gated server-side by
+ * `ESSOS_REQUIRE_AUTH` on Convex when you want to fail closed. When Clerk isn't
+ * configured (no publishable key), it's a plain passthrough.
  */
 const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-const isPublicRoute = createRouteMatcher(["/api/webhooks(.*)"]);
 
-export default hasClerk
-  ? clerkMiddleware(async (auth, req) => {
-      if (!isPublicRoute(req)) {
-        await auth.protect();
-      }
-    })
-  : () => NextResponse.next();
+export default hasClerk ? clerkMiddleware() : () => NextResponse.next();
 
 export const config = {
   matcher: [
