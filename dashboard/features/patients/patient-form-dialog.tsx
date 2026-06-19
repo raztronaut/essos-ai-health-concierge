@@ -61,7 +61,7 @@ export function PatientFormDialog({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const { pending, error, handleSubmit, setError } = useDialogForm(
+  const { pending, error, handleSubmit } = useDialogForm(
     async (formData: FormState) => {
       if (!(formData.name.trim() && formData.handle.trim())) {
         throw new Error("Name and handle are required.");

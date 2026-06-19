@@ -17,10 +17,12 @@ export function EscalationActions({
   escalationId,
   conversationId,
   status,
+  size = "md",
 }: {
   escalationId: string;
   conversationId: string;
   status: EscalationStatus;
+  size?: "sm" | "md";
 }) {
   const { viewAs } = useDemoIdentity();
   const takeOver = useMutation(api.mutations.takeOverConversation);
@@ -36,6 +38,7 @@ export function EscalationActions({
               error: errorMessage("Couldn’t take over the thread"),
             })
           }
+          size={size}
           variant="ghost"
         >
           Take over
@@ -50,6 +53,7 @@ export function EscalationActions({
               error: errorMessage("Couldn’t resolve the escalation"),
             })
           }
+          size={size}
           variant="ok"
         >
           Resolve

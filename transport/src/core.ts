@@ -3,6 +3,7 @@ import {
   type Channel,
   ensureConversation,
   ensureGuestPatient,
+  escalateToHuman,
   getConversationById,
   getConversationBySpace,
   getEveSession,
@@ -86,6 +87,42 @@ export interface InboundArgs {
   text: string;
   /** Shown only on the auto-respond path, while Eve is actually composing. */
   typing?: TypingController;
+}
+
+/**
+ * When Eve can't produce a reply (it errored, or the turn was silent), route the
+ * patient to the human care team instead of leaving them in silence — the worst
+ * outcome in a health context. Reuses `escalateToHuman` (create + pause + log +
+ * Slack notify) and sends the same warm holding notice the paused path uses,
+ * latched on `handoff_holding` so follow-ups don't repeat it. See ADR 010/011.
+ */
+async function degradeToHuman(args: {
+  conversationId: string;
+  patientId: string;
+  sourceMessageId: string | null;
+  errorDetail: string;
+  reason: InboundResult["reason"];
+}): Promise<InboundResult> {
+  try {
+    await escalateToHuman({
+      conversationId: args.conversationId,
+      patientId: args.patientId,
+      level: "Med",
+      reason: "missing_source_or_unsure",
+      summary: `Automated fallback — the AI concierge could not produce a reply (${args.errorDetail}). Routed to the care team.`,
+      sourceMessageId: args.sourceMessageId,
+    });
+  } catch (err) {
+    // Even if escalation bookkeeping fails, still give the patient a reply.
+    debug("transport", "degrade escalate failed", String(err));
+  }
+  await appendMessage({
+    conversationId: args.conversationId,
+    role: "agent",
+    text: HOLDING_NOTICE_MED,
+    meta: { kind: "handoff_holding" },
+  }).catch(() => {});
+  return { reply: HOLDING_NOTICE_MED, reason: args.reason };
 }
 
 export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
@@ -217,7 +254,13 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
       ok: false,
       error: message,
     }).catch(() => {});
-    return { reply: null, reason: `eve_error: ${message}` };
+    return await degradeToHuman({
+      conversationId: conversation.id,
+      patientId: patient.id,
+      sourceMessageId: inbound.id,
+      errorDetail: message,
+      reason: `eve_error: ${message}`,
+    });
   } finally {
     await Promise.resolve(args.typing?.stop()).catch(() => {});
   }
@@ -237,7 +280,13 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
       escalated: false,
       ok: true,
     }).catch(() => {});
-    return { reply: null, reason: "empty" };
+    return await degradeToHuman({
+      conversationId: conversation.id,
+      patientId: patient.id,
+      sourceMessageId: inbound.id,
+      errorDetail: "empty reply",
+      reason: "empty",
+    });
   }
 
   // 6) On Eve's very first reply, prepend a one-time AI disclosure (durably

@@ -21,7 +21,7 @@ const POLL_INTERVAL_MS = 3000;
  * retrying forever — e.g. a Spectrum `ValidationError` on the chat GUID, which
  * no amount of retrying will fix.
  */
-function isPermanentSendError(err: unknown): boolean {
+export function isPermanentSendError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   return /ValidationError|must start with "any;|invalid (chat|address)/i.test(
     message
@@ -81,7 +81,11 @@ async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
         patient?.handle ?? null
       );
       if (!space) {
-        await failOutbound(message.id, "could not resolve iMessage space", true);
+        await failOutbound(
+          message.id,
+          "could not resolve iMessage space",
+          true
+        );
         continue;
       }
       await space.send(toImessageText(message.text).text);

@@ -13,12 +13,10 @@ import {
   PageHeader,
 } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
-import { AssignControl } from "./assign-control";
 import { CareInstructions } from "./care-instructions";
 import { ItineraryTimeline } from "./itinerary-timeline";
 import { PatientFormDialog } from "./patient-form-dialog";
 import { PatientProfileCard } from "./patient-profile-card";
-import { SourceDocuments } from "./source-documents";
 
 export function PatientDetailView({ id }: { id: string }) {
   const router = useRouter();
@@ -90,24 +88,23 @@ export function PatientDetailView({ id }: { id: string }) {
         title={patient.name}
       />
 
-      <PatientProfileCard patient={patient} />
+      <PatientProfileCard docs={docs ?? []} patient={patient} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <ItineraryTimeline itinerary={itinerary ?? []} patientId={patient.id} />
-        <aside className="space-y-6">
-          <AssignControl
-            assigneeUserId={patient.assignee_user_id ?? null}
+        <div className="min-w-0">
+          <ItineraryTimeline
+            itinerary={itinerary ?? []}
             patientId={patient.id}
           />
-          <SourceDocuments docs={docs ?? []} patientId={patient.id} />
+        </div>
+        <aside className="space-y-6">
+          <CareInstructions
+            care={care ?? []}
+            patientId={patient.id}
+            patientProcedure={patient.procedure}
+          />
         </aside>
       </div>
-
-      <CareInstructions
-        care={care ?? []}
-        patientId={patient.id}
-        patientProcedure={patient.procedure}
-      />
 
       {editing ? (
         <PatientFormDialog

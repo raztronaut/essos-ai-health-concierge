@@ -164,6 +164,8 @@ The dashboard ships in **demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1` for the UI
 4. Create the group chat containing the patient device, the concierge device, and the Spectrum agent line.
 5. `pnpm eve:dev`, `pnpm transport:imessage`, `pnpm dashboard:dev`, then text from the patient device.
 
+`pnpm eve:dev` serves Eve's HTTP API on `:3000` (the port the transport's `EVE_BASE_URL` defaults to); use `pnpm eve:tui` for the interactive console instead. To run Eve on a different port, set `EVE_BASE_URL` for the transport to match.
+
 Eve and the transport here run on the same host, so Eve's `localDev()` route auth admits the transport with no extra config. If you deploy Eve to a non-loopback host, set the same `ESSOS_TRANSPORT_SECRET` on both so the transport authenticates ([ADR 009](.docs/decisions/009-agent-hardening-and-transport-auth.md)).
 
 See [ADR 008](.docs/decisions/008-transport-eve-streaming-contract.md) for the transport/streaming details.

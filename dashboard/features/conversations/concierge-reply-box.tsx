@@ -75,7 +75,7 @@ export function ConciergeReplyBox({
 
   return (
     <form
-      className="relative overflow-hidden rounded-card bg-card shadow-border transition-shadow duration-fast ease-out focus-within:[box-shadow:var(--ring)]"
+      className="relative overflow-hidden rounded-card bg-card shadow-border transition-all duration-fast ease-out focus-within:shadow-[0_0_0_1px_var(--color-stone-50),0_4px_12px_rgba(0,0,0,0.05)]"
       onSubmit={onSubmit}
     >
       {hasDraft ? (
@@ -122,7 +122,7 @@ export function ConciergeReplyBox({
         value={text}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-border border-t bg-surface/40 px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-b-[11px] border-border border-t bg-surface/40 px-3 py-2.5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <input
             aria-label="Your name"

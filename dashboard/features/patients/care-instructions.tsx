@@ -48,7 +48,7 @@ export function CareInstructions({
           <p className="text-muted text-sm">No care instructions on file.</p>
         </Card>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4">
           {activePhases.map((phase) => {
             const docs = care.filter((c) => c.phase === phase);
             const isExpanded = expandedPhases[phase];

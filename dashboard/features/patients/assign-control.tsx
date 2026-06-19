@@ -15,9 +15,11 @@ import { useDemoIdentity } from "@/features/demo/demo-identity";
 export function AssignControl({
   patientId,
   assigneeUserId,
+  minimal = false,
 }: {
   patientId: string;
   assigneeUserId: string | null;
+  minimal?: boolean;
 }) {
   const { isLead, effectiveId, viewAs, concierges } = useDemoIdentity();
   const assign = useMutation(api.mutations.assignPatient);
@@ -41,37 +43,43 @@ export function AssignControl({
     });
   }
 
-  return (
-    <Card>
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-muted text-xs">Owner</div>
-          <div className="truncate font-medium text-ink text-sm">
-            {ownerName}
-          </div>
-        </div>
-
-        {isLead && concierges.length > 0 ? (
-          <div className="w-40">
-            <Select
-              aria-label="Assign patient to owner"
-              onChange={(e) => runAssign(e.target.value || null)}
-              value={assigneeUserId ?? ""}
-            >
-              <option value="">Unassigned</option>
-              {concierges.map((c) => (
-                <option key={c.clerkId} value={c.clerkId}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-        ) : canClaim ? (
-          <Button onClick={() => runAssign(effectiveId)} variant="primary">
-            Claim
-          </Button>
-        ) : null}
+  const content = (
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        {!minimal && <div className="text-muted text-xs">Owner</div>}
+        <div className="truncate font-medium text-ink text-sm">{ownerName}</div>
       </div>
-    </Card>
+
+      {isLead && concierges.length > 0 ? (
+        <div className={minimal ? "w-32" : "w-40"}>
+          <Select
+            aria-label="Assign patient to owner"
+            onChange={(e) => runAssign(e.target.value || null)}
+            value={assigneeUserId ?? ""}
+          >
+            <option value="">Unassigned</option>
+            {concierges.map((c) => (
+              <option key={c.clerkId} value={c.clerkId}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      ) : canClaim ? (
+        <Button
+          onClick={() => runAssign(effectiveId)}
+          size="sm"
+          variant="primary"
+        >
+          Claim
+        </Button>
+      ) : null}
+    </div>
   );
+
+  if (minimal) {
+    return content;
+  }
+
+  return <Card>{content}</Card>;
 }

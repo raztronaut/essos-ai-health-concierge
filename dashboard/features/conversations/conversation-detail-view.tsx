@@ -85,8 +85,8 @@ export function ConversationDetailView({ id }: { id: string }) {
         title={patient ? patient.name : "Unknown patient"}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 space-y-4">
+      <div className="grid h-[700px] min-h-0 gap-6 overflow-hidden lg:h-[calc(100vh-180px)] lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
           <MessageThread messages={msgs} />
           <ConciergeReplyBox
             conversationId={conversation.id}
@@ -94,7 +94,7 @@ export function ConversationDetailView({ id }: { id: string }) {
             suggestedReply={openEscalation?.suggested_reply ?? null}
           />
         </div>
-        <aside className="space-y-4">
+        <aside className="min-h-0 space-y-4 lg:h-full lg:overflow-y-auto lg:pr-1">
           {patient ? <PatientSummaryCard patient={patient} /> : null}
           <FlagsPanel
             conversationId={conversation.id}

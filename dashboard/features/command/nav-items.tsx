@@ -82,12 +82,12 @@ const TeamIcon = (
   </svg>
 );
 
-export type NavItem = {
+export interface NavItem {
   href: string;
-  label: string;
   icon: ReactNode;
   keywords?: string;
-};
+  label: string;
+}
 
 /** Primary sidebar / command-palette navigation targets. */
 export const NAV_ITEMS: NavItem[] = [

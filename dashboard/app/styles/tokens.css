@@ -105,5 +105,5 @@
  * `@theme`): the focus-ring recipe.
  */
 :root {
-  --ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary);
+  --ring: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-stone-30);
 }

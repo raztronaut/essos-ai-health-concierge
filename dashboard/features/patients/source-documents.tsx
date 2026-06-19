@@ -12,14 +12,100 @@ import { DocumentUploadDialog } from "./document-upload-dialog";
 export function SourceDocuments({
   patientId,
   docs,
+  minimal = false,
 }: {
   patientId: string;
   docs: SourceDocument[];
+  minimal?: boolean;
 }) {
   const { viewAs } = useDemoIdentity();
   const remove = useMutation(api.mutations.deleteSourceDocument);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<SourceDocument | null>(null);
+
+  const listContent = (
+    <ul className="space-y-2 text-xs">
+      {docs.map((doc) => (
+        <li
+          className="group flex items-center justify-between gap-3"
+          key={doc.id}
+        >
+          <div className="min-w-0 flex-1">
+            <TextLink
+              className="block truncate font-medium text-xs"
+              href={`/source-docs/${doc.id}`}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {doc.title}
+            </TextLink>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-[10px] text-meta">
+              {humanize(doc.source_status)}
+            </span>
+            {doc.patient_id ? (
+              <div className="opacity-0 transition-opacity duration-fast group-hover:opacity-100">
+                <Button
+                  className="px-1 py-0.5 text-[10px]"
+                  onClick={() => setDeleting(doc)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </li>
+      ))}
+      {docs.length === 0 ? (
+        <li className="text-muted text-xs italic">No documents.</li>
+      ) : null}
+    </ul>
+  );
+
+  if (minimal) {
+    return (
+      <div className="flex h-full flex-col gap-2.5">
+        <div className="flex items-center justify-between border-border/40 border-b pb-2">
+          <h3 className="font-semibold text-ink text-meta text-xs uppercase tracking-wider">
+            Source Documents
+          </h3>
+          <Button
+            className="px-2 py-0.5 text-[10px]"
+            onClick={() => setUploading(true)}
+            size="sm"
+            variant="ghost"
+          >
+            Upload
+          </Button>
+        </div>
+        <div className="max-h-[130px] flex-1 overflow-y-auto pr-1">
+          {listContent}
+        </div>
+
+        {uploading ? (
+          <DocumentUploadDialog
+            onClose={() => setUploading(false)}
+            open={true}
+            patientId={patientId}
+          />
+        ) : null}
+        {deleting ? (
+          <ConfirmDialog
+            description={`Remove "${deleting.title}"? This deletes the uploaded file.`}
+            onClose={() => setDeleting(null)}
+            onConfirm={async () => {
+              await remove({ id: deleting.id, viewAs });
+            }}
+            open={true}
+            title="Remove document"
+          />
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <section className="space-y-3">

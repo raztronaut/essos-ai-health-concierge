@@ -1,9 +1,4 @@
-import {
-  existsSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -23,7 +18,11 @@ export function acquireSingleInstanceLock(name: string): void {
 
   if (existsSync(pidfile)) {
     const existing = Number.parseInt(readFileSync(pidfile, "utf8").trim(), 10);
-    if (Number.isInteger(existing) && existing !== process.pid && isAlive(existing)) {
+    if (
+      Number.isInteger(existing) &&
+      existing !== process.pid &&
+      isAlive(existing)
+    ) {
       throw new Error(
         `Another ${name} transport is already running (pid ${existing}). ` +
           `Stop it first, or remove ${pidfile} if it's stale.`
