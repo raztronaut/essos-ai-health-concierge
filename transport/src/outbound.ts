@@ -145,6 +145,21 @@ export async function sendToPatientSpace(
   return true;
 }
 
+/** Send provider-native content to a freshly resolved iMessage space. */
+export async function sendRawToPatientSpace(
+  app: SpectrumApp,
+  spaceId: string,
+  handle: string | null,
+  content: unknown
+): Promise<boolean> {
+  const space = await resolveSpace(app, spaceId, handle);
+  if (!space) {
+    return false;
+  }
+  await space.send(content as Parameters<typeof space.send>[0]);
+  return true;
+}
+
 /**
  * Start the outbound poll loop. Returns a stop function. Ticks never overlap, so
  * a slow send can't trigger a duplicate drain.

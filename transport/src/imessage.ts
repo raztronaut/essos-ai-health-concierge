@@ -1,5 +1,4 @@
 import type { PatientCardLink } from "@essos/shared";
-import type { Space } from "spectrum-ts";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import {
@@ -14,7 +13,11 @@ import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
 import { monitorSpectrumStreamLogs, startStreamHealth } from "./health.js";
 import { type TapbackName, toImessageText } from "./imessageText.js";
-import { startOutboundLoop } from "./outbound.js";
+import {
+  sendRawToPatientSpace,
+  startOutboundLoop,
+  sendToPatientSpace,
+} from "./outbound.js";
 import { startPipeline } from "./pipeline.js";
 import { startReminderLoop } from "./reminders.js";
 import { runMessageLoop } from "./runLoop.js";
@@ -35,34 +38,34 @@ const TAPBACK_EMOJI: Record<TapbackName, string> = {
 };
 
 async function sendSpectrumMiniAppCard(
-  space: Space,
+  app: Awaited<ReturnType<typeof Spectrum>>,
+  spaceId: string,
+  handle: string | null,
   link: PatientCardLink
 ): Promise<boolean> {
   if (!APPLE_TEAM_ID) {
     return false;
   }
   const provider = (await import("spectrum-ts/providers/imessage")) as {
-    customizedMiniApp?: (input: unknown) => Parameters<typeof space.send>[0];
+    customizedMiniApp?: (input: unknown) => unknown;
   };
   if (typeof provider.customizedMiniApp !== "function") {
     return false;
   }
-  await space.send(
-    provider.customizedMiniApp({
-      appName: "Essos",
-      appStoreId: APP_STORE_ID ?? undefined,
-      extensionBundleId: IMESSAGE_EXTENSION_BUNDLE_ID,
-      teamId: APPLE_TEAM_ID,
-      url: link.url,
-      layout: {
-        caption: "Essos itinerary",
-        subcaption: "Tap for confirmations, clinic info, and pickup details",
-        trailingCaption: "Open",
-        summary: `Open your Essos ${link.purpose.replace("_", " ")} card`,
-      },
-    })
-  );
-  return true;
+  const card = provider.customizedMiniApp({
+    appName: "Essos",
+    appStoreId: APP_STORE_ID ?? undefined,
+    extensionBundleId: IMESSAGE_EXTENSION_BUNDLE_ID,
+    teamId: APPLE_TEAM_ID,
+    url: link.url,
+    layout: {
+      caption: "Essos itinerary",
+      subcaption: "Tap for confirmations, clinic info, and pickup details",
+      trailingCaption: "Open",
+      summary: `Open your Essos ${link.purpose.replace("_", " ")} card`,
+    },
+  });
+  return await sendRawToPatientSpace(app, spaceId, handle, card);
 }
 
 /**
@@ -176,20 +179,37 @@ async function main(): Promise<void> {
     },
     // Pipeline-driven delivery: fresh paced bubbles via the space, with Eve's
     // markdown/react tokens applied per bubble and a best-effort typing cue.
-    buildIO: (space, message) => ({
-      send: async (bubble) => {
-        const { text, react } = toImessageText(bubble);
-        if (react) {
-          await message.react(TAPBACK_EMOJI[react]);
-        }
-        if (text) {
-          await space.send(text);
-        }
-      },
-      sendPatientCard: (link) => sendSpectrumMiniAppCard(space, link),
-      startTyping: () => space.startTyping(),
-      stopTyping: () => space.stopTyping(),
-    }),
+    buildIO: (space, message) => {
+      const spaceId = `imessage:${space.id}`;
+      const authorHandle = normalizeHandle(message.sender?.id ?? null);
+      return {
+        send: async (bubble) => {
+          const { text, react } = toImessageText(bubble);
+          if (react) {
+            await message.react(TAPBACK_EMOJI[react]).catch((err: unknown) => {
+              console.error(
+                `[transport.imessage] tapback failed for ${spaceId}: ${String(err)}`
+              );
+            });
+          }
+          if (text) {
+            const delivered = await sendToPatientSpace(
+              app,
+              spaceId,
+              authorHandle,
+              text
+            );
+            if (!delivered) {
+              throw new Error(`could not resolve iMessage space ${spaceId}`);
+            }
+          }
+        },
+        sendPatientCard: (link) =>
+          sendSpectrumMiniAppCard(app, spaceId, authorHandle, link),
+        startTyping: () => space.startTyping(),
+        stopTyping: () => space.stopTyping(),
+      };
+    },
   });
 
   // `runMessageLoop` only returns when the message stream closes — unexpected

@@ -275,6 +275,9 @@ async function runChain(conversationId: string): Promise<void> {
       debug("pipeline", "turn aborted, carried forward", conversationId);
     } else {
       const error = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[pipeline] chain failed conversation=${conversationId} chain=${chainId} error=${error}`
+      );
       await recordJobFailure({
         queue: "pipeline.chain",
         jobId: chainId,
