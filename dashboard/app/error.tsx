@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/lib/ui";
+import { Button } from "@/components/ui";
 
 /** Route-level error boundary. Renders when a server component throws. */
 export default function Error({

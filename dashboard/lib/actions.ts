@@ -24,18 +24,14 @@ export async function resolveEscalationAction(formData: FormData): Promise<void>
 }
 
 /** Human takes over the thread: open escalations -> taken_over, automation paused. */
-export async function takeOverConversationAction(
-  formData: FormData,
-): Promise<void> {
+export async function takeOverConversationAction(formData: FormData): Promise<void> {
   const conversationId = String(formData.get("conversationId"));
   markConciergeTakeover(conversationId, ASSIGNEE);
   revalidateConversation(conversationId);
 }
 
 /** Hand the thread back to Eve (automation_state -> active). */
-export async function resumeAutomationAction(
-  formData: FormData,
-): Promise<void> {
+export async function resumeAutomationAction(formData: FormData): Promise<void> {
   const conversationId = String(formData.get("conversationId"));
   resumeAutomation(conversationId, ASSIGNEE);
   revalidateConversation(conversationId);

@@ -14,7 +14,7 @@ The admin dashboard — the single pane of glass over every conversation, escala
 
 ## Server actions
 
-`app/actions.ts` exposes `resolveEscalationAction`, `takeOverConversationAction`, and `resumeAutomationAction`, which call `resolveEscalation` / `markConciergeTakeover` / `resumeAutomation` from `@essos/shared`, then `revalidatePath`. These power the take over / resolve / resume Eve buttons.
+`lib/actions.ts` exposes `resolveEscalationAction`, `takeOverConversationAction`, and `resumeAutomationAction`, which call `resolveEscalation` / `markConciergeTakeover` / `resumeAutomation` from `@essos/shared`, then `revalidatePath`. These power the take over / resolve / resume Eve buttons.
 
 ## Data source
 
@@ -23,8 +23,8 @@ Server Components call the `@essos/shared` repo helpers directly at request time
 ## Config notes
 
 - `next.config.mjs`: `serverExternalPackages: ["@essos/shared"]` keeps the native `node:sqlite` dependency unbundled; `outputFileTracingRoot` is pinned to the repo root.
-- Brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) are declared via `@theme` in `app/globals.css`; the `rounded-card` utility comes from `--radius-card`.
-- Reusable UI primitives (`Card`, `Button`, `Stat`, `Row`, `CareRow`, `PageHeader`, badges, `ROLE_LABEL`) live in `lib/ui.tsx`. Root `loading.tsx` / `error.tsx` / `not-found.tsx` provide the route states.
+- Brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) plus radii, shadows, and font stacks are declared via `@theme` in `app/styles/tokens.css` (imported by `app/globals.css`); the `rounded-card` utility comes from `--radius-card`.
+- The UI is layered: domain-agnostic primitives (`Badge`, `Button`, `Card`, `DefinitionRow`, `PageHeader`, `Stat`) live in `components/ui/`; domain badges in `components/badges/`; the sidebar/nav in `components/layout/`; and page sections in `features/{overview,conversations,patients}/`. Shared helpers live in `lib/` (`format.ts`, `labels.ts`, `actions.ts`). Routes under `app/` stay thin (fetch + compose). Root `loading.tsx` / `error.tsx` / `not-found.tsx` provide the route states.
 
 ## Run
 

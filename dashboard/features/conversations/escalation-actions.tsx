@@ -1,10 +1,10 @@
 import type { EscalationStatus } from "@essos/shared";
-import { Button } from "@/lib/ui";
+import { Button } from "@/components/ui";
 import {
   resolveEscalationAction,
   resumeAutomationAction,
   takeOverConversationAction,
-} from "@/app/actions";
+} from "@/lib/actions";
 
 /** Take-over / resolve actions for a single escalation (queue + thread). */
 export function EscalationActions({

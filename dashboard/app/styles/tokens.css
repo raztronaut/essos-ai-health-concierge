@@ -1,0 +1,48 @@
+/*
+ * Essos design tokens.
+ *
+ * Brand values are extracted from essos.com (see .essos_branding). Everything
+ * the UI styles with lives here as a Tailwind v4 `@theme` token so it generates
+ * a utility (e.g. `bg-surface`, `text-high`, `rounded-card`, `shadow-card`).
+ * This file is the single source of truth for the design system.
+ */
+@theme {
+  /* Brand + neutrals --------------------------------------------------- */
+  --color-surface: #f5f1e5;
+  --color-card: #fffdf8;
+  --color-ink: #171715;
+  --color-primary: #0000ee;
+  --color-secondary: #bcb6a7;
+  --color-muted: #8d897d;
+
+  /* Semantic status (paired with a soft tint for badge backgrounds) ----- */
+  --color-high: #b3261e;
+  --color-high-soft: #f7e3e1;
+  --color-med: #8a6d00;
+  --color-med-soft: #f6efd6;
+  --color-ok: #1f6f43;
+  --color-ok-soft: #e3efe7;
+
+  /* Typography --------------------------------------------------------- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", "PS Times", serif;
+
+  /* Radii -------------------------------------------------------------- */
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-pill: 9999px;
+
+  /* Elevation ---------------------------------------------------------- */
+  --shadow-card: 0 1px 2px rgb(23 23 21 / 0.04);
+  --shadow-card-hover: 0 6px 20px -6px rgb(23 23 21 / 0.16);
+}
+
+/*
+ * Focus ring used by all interactive elements. Kept as a plain custom property
+ * (not a `@theme` token) because it composes a full box-shadow recipe rather
+ * than a single scalar utility value.
+ */
+:root {
+  --ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary);
+}
