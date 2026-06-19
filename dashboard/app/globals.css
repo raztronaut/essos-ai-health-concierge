@@ -14,16 +14,85 @@ body {
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Serif display face for headings; uses a robust system serif stack since no
-   custom brand webfont ships with the repo. */
+/* Serif display face for headings; tightened tracking for a sharper masthead. */
 .serif {
   font-family: var(--font-serif);
+  letter-spacing: -0.01em;
 }
 
-/* Token-driven focus ring shared by interactive elements. */
+/* Token-driven focus ring shared by interactive elements. A short transition
+   makes keyboard focus land softly rather than snapping. */
+.focus-ring {
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
 .focus-ring:focus-visible {
   outline: none;
   box-shadow: var(--ring);
+}
+
+/*
+ * Hover-lift affordance for interactive cards. Gated behind a real hover +
+ * fine-pointer device so touch taps don't trigger a sticky hover state, and
+ * only animates GPU-friendly transform/box-shadow.
+ */
+.hover-lift {
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+}
+
+.hover-lift:active {
+  transform: translateY(0);
+  transition-duration: var(--duration-fast);
+}
+
+/*
+ * One-shot entrance for server-rendered elements (message bubbles, panels)
+ * using modern CSS `@starting-style` — no JS, runs off the main thread.
+ */
+.enter-fade {
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+@starting-style {
+  .enter-fade {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/*
+ * Reduced motion: keep opacity/color transitions that aid comprehension, drop
+ * movement. We don't nuke all animation to zero (per WCAG guidance) but we do
+ * remove transforms and shorten everything to a gentle fade.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-lift:hover,
+  .hover-lift:active {
+    transform: none;
+  }
 }

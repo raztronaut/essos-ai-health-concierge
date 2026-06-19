@@ -46,7 +46,7 @@ export function ConciergeReplyBox({
             {sources.map((source) => (
               <span
                 key={source}
-                className="rounded-full border border-secondary/70 px-2 py-0.5 text-xs text-ink"
+                className="rounded-full border border-border px-2 py-0.5 text-xs text-ink"
               >
                 {source}
               </span>
@@ -61,7 +61,7 @@ export function ConciergeReplyBox({
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="Type a message — it's delivered to the patient's iMessage and takes over the thread."
-          className="focus-ring w-full resize-y rounded-control border border-secondary/70 bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted"
+          className="focus-ring w-full resize-y rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] placeholder:text-muted hover:border-secondary/70"
         />
         <div className="flex items-center gap-2">
           <input
@@ -69,7 +69,7 @@ export function ConciergeReplyBox({
             name="agentName"
             aria-label="Your name"
             placeholder="Your name (signs the message)"
-            className="focus-ring min-w-0 flex-1 rounded-control border border-secondary/70 bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-muted"
+            className="focus-ring min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-ink transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] placeholder:text-muted hover:border-secondary/70"
           />
           {hasDraft && text.length > 0 ? (
             <Button type="button" variant="ghost" onClick={() => setText("")}>

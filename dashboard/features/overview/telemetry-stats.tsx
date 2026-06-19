@@ -1,4 +1,5 @@
 import { Stat } from "@/components/ui";
+import { StaggerList } from "@/components/motion/stagger-list";
 
 export function TelemetryStats({
   patients,
@@ -16,7 +17,7 @@ export function TelemetryStats({
   escalatedTurns: number;
 }) {
   return (
-    <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <StaggerList className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <Stat label="Patients" value={patients} />
       <Stat label="Conversations" value={conversations} />
       <Stat label="Open flags" value={openFlags} hint={`${totalFlags} total`} />
@@ -25,6 +26,6 @@ export function TelemetryStats({
         value={autonomousReplies}
         hint={`${escalatedTurns} escalated`}
       />
-    </section>
+    </StaggerList>
   );
 }

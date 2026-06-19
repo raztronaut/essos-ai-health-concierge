@@ -29,7 +29,7 @@ export function FlagsPanel({
           {escalations.map((esc) => (
             <div
               key={esc.id}
-              className="border-t border-secondary/40 pt-3 first:border-t-0 first:pt-0"
+              className="border-t border-border pt-3 first:border-t-0 first:pt-0"
             >
               <div className="flex items-center gap-2">
                 <LevelBadge level={esc.level} />

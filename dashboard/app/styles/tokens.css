@@ -14,6 +14,8 @@
   --color-primary: #0000ee;
   --color-secondary: #bcb6a7;
   --color-muted: #8d897d;
+  /* Hairline border — one consistent 1px line color across the system. */
+  --color-border: #ddd6c6;
 
   /* Semantic status (paired with a soft tint for badge backgrounds) ----- */
   --color-high: #b3261e;
@@ -24,8 +26,10 @@
   --color-ok-soft: #e3efe7;
 
   /* Typography --------------------------------------------------------- */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  /* --font-sans is provided by next/font (see app/layout.tsx) via the
+   * --font-inter CSS variable, falling back to a system stack. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-serif: Georgia, "Times New Roman", "PS Times", serif;
 
   /* Radii -------------------------------------------------------------- */
@@ -33,16 +37,34 @@
   --radius-control: 8px;
   --radius-pill: 9999px;
 
-  /* Elevation ---------------------------------------------------------- */
-  --shadow-card: 0 1px 2px rgb(23 23 21 / 0.04);
-  --shadow-card-hover: 0 6px 20px -6px rgb(23 23 21 / 0.16);
+  /* Elevation — layered low-alpha shadows for real, soft depth ---------- */
+  --shadow-sm: 0 1px 2px rgb(23 23 21 / 0.05);
+  --shadow-card: 0 1px 2px rgb(23 23 21 / 0.04), 0 1px 1px rgb(23 23 21 / 0.03);
+  --shadow-card-hover: 0 2px 4px rgb(23 23 21 / 0.05),
+    0 12px 28px -8px rgb(23 23 21 / 0.18);
+  --shadow-pop: 0 4px 8px rgb(23 23 21 / 0.06),
+    0 18px 40px -12px rgb(23 23 21 / 0.22);
+
+  /* Motion — strong custom easing curves (built-in CSS easings are weak).
+   * Defined in the --ease-* namespace so they back the `ease-out` /
+   * `ease-in-out` utilities with a more intentional, punchier feel. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /*
- * Focus ring used by all interactive elements. Kept as a plain custom property
- * (not a `@theme` token) because it composes a full box-shadow recipe rather
- * than a single scalar utility value.
+ * Plain custom properties (not single-scalar utilities, so they live outside
+ * `@theme`): the focus-ring recipe, motion durations, and content width.
  */
 :root {
   --ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary);
+
+  /* Motion durations — all sub-300ms for crisp, responsive UI. */
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+  --duration-slow: 260ms;
+
+  /* Max width of the centered content column. */
+  --w-content: 1100px;
 }

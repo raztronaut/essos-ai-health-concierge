@@ -5,7 +5,7 @@ import { humanize } from "@/lib/format";
 /** A single care-instruction entry with its answer policy. */
 export function CareRow({ doc }: { doc: CareInstruction }) {
   return (
-    <li className="border-t border-secondary/40 pt-3 first:border-t-0 first:pt-0">
+    <li className="border-t border-border pt-3 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">{doc.title}</span>
         <PolicyBadge policy={doc.answer_policy} />

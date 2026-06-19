@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Escalation, Patient } from "@essos/shared";
 import { Card } from "@/components/ui";
+import { StaggerList } from "@/components/motion/stagger-list";
 import { LevelBadge } from "@/components/badges";
 import { formatRelativeTime, humanize, isSlaBreached, sortEscalationsByUrgency } from "@/lib/format";
 import { EscalationActions } from "@/features/conversations/escalation-actions";
@@ -27,7 +28,7 @@ export function EscalationQueue({
           </p>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <StaggerList className="space-y-3">
           {queue.map((esc) => {
             const patient = patientsById.get(esc.patient_id);
             const breached = isSlaBreached(esc.level, esc.created_at, now);
@@ -72,7 +73,7 @@ export function EscalationQueue({
               </Card>
             );
           })}
-        </div>
+        </StaggerList>
       )}
     </section>
   );

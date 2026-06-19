@@ -16,5 +16,9 @@ const AUTOMATION_LABELS: Record<AutomationState, string> = {
 };
 
 export function AutomationBadge({ state }: { state: AutomationState }) {
-  return <Badge className={AUTOMATION_STYLES[state]}>{AUTOMATION_LABELS[state]}</Badge>;
+  return (
+    <Badge dot className={AUTOMATION_STYLES[state]}>
+      {AUTOMATION_LABELS[state]}
+    </Badge>
+  );
 }

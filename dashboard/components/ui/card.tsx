@@ -13,9 +13,9 @@ export function Card({
   className?: string;
   interactive?: boolean;
 }) {
-  const base = "rounded-card border border-secondary/60 bg-card p-5 shadow-card";
-  const hover = interactive
-    ? "transition hover:border-primary/60 hover:shadow-card-hover"
-    : "";
+  const base = "rounded-card border border-border bg-card p-5 shadow-card";
+  // `hover-lift` (globals.css) handles the GPU-only transform + shadow on
+  // hover and the press-down on :active, gated behind a fine-pointer device.
+  const hover = interactive ? "hover-lift cursor-pointer" : "";
   return <div className={`${base} ${hover} ${className ?? ""}`}>{children}</div>;
 }

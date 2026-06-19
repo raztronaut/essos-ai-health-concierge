@@ -8,7 +8,7 @@ const NAV = [
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-secondary/60 bg-card px-5 py-6 md:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card px-5 py-6 md:flex">
       <Link href="/" className="focus-ring serif text-2xl tracking-tight">
         Essos
       </Link>

@@ -11,7 +11,7 @@ export function ItineraryTimeline({ itinerary }: { itinerary: ItineraryEvent[] }
           {itinerary.map((event) => (
             <li key={event.id} className="flex gap-3">
               <div className="w-24 shrink-0 text-xs text-muted">{formatDateTime(event.starts_at)}</div>
-              <div className="min-w-0 border-l border-secondary/50 pl-3">
+              <div className="min-w-0 border-l border-border pl-3">
                 <div className="flex items-center gap-2">
                   <span className="rounded bg-surface px-1.5 py-0.5 text-[11px] uppercase tracking-wide text-muted">
                     {event.kind}
