@@ -11,18 +11,6 @@ export function formatDateTime(value: string | null | undefined): string {
   });
 }
 
-/** Date only (used for itinerary day headers). */
-export function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 /** Turn a snake_case enum into a human label ("travel_logistics" -> "Travel logistics"). */
 export function humanize(value: string): string {
   const spaced = value.replace(/_/g, " ");

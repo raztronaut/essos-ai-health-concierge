@@ -19,15 +19,19 @@ The agent, transport, and dashboard all run locally against one SQLite file, and
 - **Overview** (`/`): telemetry (patients, conversations, open flags, autonomous replies vs escalated) plus the live open-escalation queue.
 - **Conversations** (`/conversations`, `/conversations/[id]`): list and thread view with patient summary, automation-state badge, per-thread flags, and activity log.
 - **Patient + itinerary** (`/patients/[id]`): itinerary timeline, care instructions with `source_status`/`answer_policy`, and source documents.
-- **Source documents** (`/source-docs/[id]`): a Node route handler that streams the seeded PDF from `mock-assets/pdf/essos/` (falling back to the Markdown source).
+- **Source documents** (`/source-docs/[id]`): a Node route handler that serves the seeded PDF from `mock-assets/pdf/essos/` inline (falling back to the Markdown source, then a 404). Documents are small fixtures, so the body is read fully into memory rather than streamed.
 
 ## Server actions
 
 `resolveEscalationAction`, `takeOverConversationAction`, and `resumeAutomationAction` in [dashboard/app/actions.ts](../../dashboard/app/actions.ts) call `resolveEscalation`, `markConciergeTakeover`, and `resumeAutomation` from `@essos/shared`, then `revalidatePath` the affected routes. This implements the dashboard actions required by the handoff decision (003).
 
-## Styling
+## Styling & shared UI
 
-Tailwind CSS v4 with brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) extracted from `.essos_branding`, declared via `@theme` in `dashboard/app/globals.css`.
+Tailwind CSS v4 with brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) extracted from `.essos_branding`, declared via `@theme` in `dashboard/app/globals.css`. Reusable primitives (`Card`, `Button`, `Stat`, `Row`, `CareRow`, `PageHeader`, badges, the shared `ROLE_LABEL` map) live in [dashboard/lib/ui.tsx](../../dashboard/lib/ui.tsx); the `rounded-card` radius comes from the `--radius-card` theme token.
+
+## Route states
+
+Root-level `loading.tsx`, `error.tsx`, and `not-found.tsx` provide the streaming skeleton, the error boundary (with retry), and the `notFound()` target for unknown conversation/patient ids.
 
 ## Consequences
 

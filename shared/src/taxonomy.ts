@@ -117,6 +117,17 @@ export const ALL_CATEGORIES = Object.keys(
   CATEGORY_POLICIES,
 ) as EscalationCategory[];
 
+/**
+ * Categories that can legitimately be filed as an escalation: everything that
+ * must escalate, plus `travel_logistics` (autonomous for routine updates, but
+ * escalates when the patient is blocked or stranded). The purely-autonomous
+ * reference categories are excluded so an escalation can never cite them.
+ */
+export const ESCALATABLE_CATEGORIES = ALL_CATEGORIES.filter(
+  (category) =>
+    !CATEGORY_POLICIES[category].autonomous || category === "travel_logistics",
+) as EscalationCategory[];
+
 export function isEscalationCategory(value: string): value is EscalationCategory {
   return value in CATEGORY_POLICIES;
 }

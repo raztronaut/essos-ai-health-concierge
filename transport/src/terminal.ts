@@ -2,9 +2,8 @@ import { CONCIERGE_HANDLES, DEMO_PATIENT } from "./env.js";
 import { Spectrum } from "spectrum-ts";
 import { terminal } from "spectrum-ts/providers/terminal";
 import { getPatientById } from "@essos/shared";
-import { handleInbound } from "./core.js";
 import { eveHealthy } from "./eveClient.js";
-import { contentToText } from "./contentText.js";
+import { runMessageLoop } from "./runLoop.js";
 
 /**
  * Local terminal transport. Type as the patient; the Essos concierge agent
@@ -24,7 +23,7 @@ async function main(): Promise<void> {
     console.error(
       "\n⚠  Eve dev server is not reachable. In another terminal run:\n" +
         "    cd eve-concierge && pnpm exec eve dev --no-ui --port 3000\n" +
-        "  (and set ANTHROPIC_API_KEY / AI_GATEWAY_API_KEY in .env)\n",
+        "  (and set ANTHROPIC_API_KEY in .env)\n",
     );
   }
 
@@ -36,31 +35,22 @@ async function main(): Promise<void> {
 
   const app = await Spectrum({ providers: [terminal.config()] });
 
-  for await (const [space, message] of app.messages) {
-    const raw = contentToText(message.content);
-    if (!raw) continue;
-
-    let text = raw;
-    let isConcierge = false;
-    if (raw.startsWith("/concierge ")) {
-      isConcierge = true;
-      text = raw.slice("/concierge ".length).trim();
-    }
-
-    const authorHandle = isConcierge
-      ? (CONCIERGE_HANDLES[0] ?? "concierge")
-      : patient.handle;
-
-    await space.responding(async () => {
-      const result = await handleInbound({
-        spaceId: `terminal:${space.id}`,
-        channel: "terminal",
-        authorHandle,
-        text,
+  await runMessageLoop({
+    app,
+    channel: "terminal",
+    spaceIdPrefix: "terminal:",
+    resolveAuthor: (_space, _message, raw) => {
+      const isConcierge = raw.startsWith("/concierge ");
+      const text = isConcierge ? raw.slice("/concierge ".length).trim() : raw;
+      if (!text) return null;
+      return {
+        authorHandle: isConcierge ? (CONCIERGE_HANDLES[0] ?? "concierge") : patient.handle,
         isConcierge,
+        text,
         patientId: patient.id,
-      });
-
+      };
+    },
+    onResult: async (_space, message, result) => {
       if (result.reply) {
         await message.reply(result.reply);
         return;
@@ -76,14 +66,17 @@ async function main(): Promise<void> {
           await message.reply("(Concierge took over — Eve will stay quiet.)");
           break;
         case "concierge_logged":
+        case "answered":
+        case "unknown_patient":
+        case "empty":
           break;
         default:
           if (result.reason.startsWith("eve_error")) {
             await message.reply(`(Agent error: ${result.reason})`);
           }
       }
-    });
-  }
+    },
+  });
 }
 
 main().catch((err) => {

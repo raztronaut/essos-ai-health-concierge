@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { getDb, resetDb, REPO_ROOT } from "./index.js";
+import { getDb, resetDb, transaction, REPO_ROOT } from "./index.js";
 import {
   addMessage,
   createEscalation,
@@ -200,7 +200,7 @@ function loadSourceDocuments(): Map<string, SourceDocument> {
     const manifestEntry = manifestBySlug.get(meta.slug);
     const markdownPath =
       manifestEntry?.markdown_path ?? `mock-assets/source-docs/${file}`;
-    const pdfPath = manifestEntry?.pdf_path ?? `output/pdf/essos/${meta.pdf}`;
+    const pdfPath = manifestEntry?.pdf_path ?? `mock-assets/pdf/essos/${meta.pdf}`;
     const fallbackHash = existsSync(resolve(REPO_ROOT, pdfPath))
       ? sha256File(resolve(REPO_ROOT, pdfPath))
       : sha256File(absoluteMarkdownPath);
@@ -354,14 +354,16 @@ function main(): void {
   const fixtures = loadPatientFixtures();
   const docsBySlug = loadSourceDocuments();
 
-  fixtures.forEach(seedPatientRecord);
-  seedSourceDocuments(docsBySlug);
+  transaction(() => {
+    fixtures.forEach(seedPatientRecord);
+    seedSourceDocuments(docsBySlug);
 
-  for (const fixture of fixtures) {
-    seedItinerary(fixture, docsBySlug);
-    seedCareInstructions(fixture, docsBySlug);
-    seedConversation(fixture);
-  }
+    for (const fixture of fixtures) {
+      seedItinerary(fixture, docsBySlug);
+      seedCareInstructions(fixture, docsBySlug);
+      seedConversation(fixture);
+    }
+  });
 
   const counts = getDb()
     .prepare(

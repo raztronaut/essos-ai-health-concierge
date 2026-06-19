@@ -1,70 +1,60 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  getPatientById,
-  listConversations,
-  listMessages,
-  listOpenEscalationsForConversation,
-} from "@essos/shared";
-import { AutomationBadge, Card } from "@/lib/ui";
+import { listConversationSummaries } from "@essos/shared";
+import { AutomationBadge, Card, PageHeader, ROLE_LABEL } from "@/lib/ui";
 import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = { title: "Conversations — Essos Concierge" };
+
 export default function ConversationsPage() {
-  const conversations = listConversations();
+  const conversations = listConversationSummaries();
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="serif text-4xl">Conversations</h1>
-        <p className="mt-1 text-sm text-muted">
-          Every patient thread, most recently active first.
-        </p>
-      </header>
+      <PageHeader title="Conversations" subtitle="Every patient thread, most recently active first." />
 
       <div className="space-y-3">
-        {conversations.map((conversation) => {
-          const patient = getPatientById(conversation.patient_id);
-          const messages = listMessages(conversation.id);
-          const last = messages[messages.length - 1];
-          const openFlags = listOpenEscalationsForConversation(conversation.id);
-          return (
-            <Link key={conversation.id} href={`/conversations/${conversation.id}`}>
-              <Card className="transition hover:border-primary/60">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">
-                        {patient ? patient.name : "Unknown patient"}
+        {conversations.map((c) => (
+          <Link key={c.id} href={`/conversations/${c.id}`}>
+            <Card className="transition hover:border-primary/60">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{c.patient_name ?? "Unknown patient"}</span>
+                    <AutomationBadge state={c.automation_state} />
+                    {c.open_flags > 0 ? (
+                      <span className="rounded-full bg-high-soft px-2 py-0.5 text-xs font-medium text-high">
+                        {c.open_flags} open flag{c.open_flags > 1 ? "s" : ""}
                       </span>
-                      <AutomationBadge state={conversation.automation_state} />
-                      {openFlags.length > 0 ? (
-                        <span className="rounded-full bg-high-soft px-2 py-0.5 text-xs font-medium text-high">
-                          {openFlags.length} open flag
-                          {openFlags.length > 1 ? "s" : ""}
-                        </span>
-                      ) : null}
+                    ) : null}
+                  </div>
+                  {c.patient_procedure ? (
+                    <div className="mt-0.5 text-xs text-muted">
+                      {c.patient_procedure.replace(/_/g, " ")} · {c.patient_city},{" "}
+                      {c.patient_country}
                     </div>
-                    {patient ? (
-                      <div className="mt-0.5 text-xs text-muted">
-                        {patient.procedure.replace(/_/g, " ")} ·{" "}
-                        {patient.destination_city}, {patient.destination_country}
-                      </div>
-                    ) : null}
-                    {last ? (
-                      <p className="mt-2 truncate text-sm text-ink/80">
-                        <span className="font-medium">{last.role}:</span> {last.text}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="shrink-0 text-xs text-muted">
-                    {formatDateTime(conversation.updated_at)}
-                  </div>
+                  ) : null}
+                  {c.last_text ? (
+                    <p className="mt-2 truncate text-sm text-ink/80">
+                      <span className="font-medium">
+                        {c.last_role ? ROLE_LABEL[c.last_role] : "—"}:
+                      </span>{" "}
+                      {c.last_text}
+                    </p>
+                  ) : null}
                 </div>
-              </Card>
-            </Link>
-          );
-        })}
+                <div className="shrink-0 text-xs text-muted">{formatDateTime(c.updated_at)}</div>
+              </div>
+            </Card>
+          </Link>
+        ))}
+        {conversations.length === 0 ? (
+          <Card>
+            <p className="text-sm text-muted">No conversations yet.</p>
+          </Card>
+        ) : null}
       </div>
     </div>
   );

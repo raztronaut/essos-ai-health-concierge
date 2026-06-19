@@ -7,13 +7,17 @@ The Spectrum transport bridge. It connects an iMessage (or terminal) group chat 
 | File | Role |
 | --- | --- |
 | `src/core.ts` | `handleInbound` — provider-agnostic inbound state machine (resolve patient, handoff rules, call Eve, record reply). |
-| `src/eveClient.ts` | Eve HTTP client: create/continue session + parse the ndjson event stream (`collectReply`). |
+| `src/runLoop.ts` | `runMessageLoop` — the shared inbound loop both entrypoints use (skip outbound/non-text, dispatch, typing). |
+| `src/eveClient.ts` | Eve HTTP client: create/continue session + parse the ndjson stream. Pure `reduceEveEvents`/`splitNdjson` are unit-tested. |
 | `src/context.ts` | Builds the trusted `<<ESSOS_CONTEXT>>` block prepended to each turn. |
+| `src/handles.ts` | `normalizeHandle` — canonicalize phone/email handles for patient + concierge matching. |
 | `src/terminal.ts` | Terminal provider entrypoint (play the patient locally). |
 | `src/imessage.ts` | Spectrum Cloud iMessage provider entrypoint. |
 | `src/contentText.ts` | Normalizes Spectrum message content to text. |
-| `src/env.ts` | Loads the repo-root `.env`; exposes `EVE_BASE_URL`, `DEMO_PATIENT`, `CONCIERGE_HANDLES`. |
-| `src/smoke.ts` | Deterministic end-to-end test of the core + DB + handoff rules (no live model). |
+| `src/debug.ts` | `ESSOS_DEBUG`-gated logging. |
+| `src/env.ts` | Loads the repo-root `.env`; exposes `EVE_BASE_URL`, `TRANSPORT_SECRET`, `DEMO_PATIENT`, `CONCIERGE_HANDLES`. |
+| `src/smoke.ts` | Deterministic end-to-end test of the core + DB + handoff rules (no live model); cleans up its rows. |
+| `src/eveClient.test.ts` | Fixture tests for the ndjson reducer + line-splitter (`pnpm --filter @essos/transport test`). |
 
 ## Inbound flow (`handleInbound`)
 
@@ -25,11 +29,11 @@ See [ADR 003](../.docs/decisions/003-human-handoff-and-takeover.md) for the hand
 
 ## Patient binding
 
-Inbound senders are matched to a patient by exact `handle` (E.164 phone or Apple ID email). Seeded handles are fictional — to test live, set a patient's `handle` in `mock-assets/patients/*.json` and re-seed. Concierge handles come from `ESSOS_CONCIERGE_HANDLES` (comma-separated, real handles not display names).
+Inbound senders are matched to a patient by `handle` (E.164 phone or Apple ID email), normalized first (`normalizeHandle`: lowercase emails, strip phone formatting) so formatting differences don't cause a miss. Seeded handles are fictional — to test live, set a patient's `handle` in `mock-assets/patients/*.json` and re-seed. Concierge handles come from `ESSOS_CONCIERGE_HANDLES` (comma-separated, real handles not display names), normalized the same way.
 
 ## Eve streaming client
 
-Eve sends an ndjson event stream. `collectReply` accumulates `message.appended` (`data.messageSoFar`) and takes the final `message.completed` whose `finishReason` is not `tool-calls` (the answer after any tool steps), resolving on `turn.completed`/`session.completed` and surfacing `*.failed` as errors. See [ADR 008](../.docs/decisions/008-transport-eve-streaming-contract.md).
+Eve sends an ndjson event stream. `reduceEveEvents` (pure, unit-tested) accumulates `message.appended` (`data.messageSoFar`) and takes the final `message.completed` whose `finishReason` is not `tool-calls` (the answer after any tool steps), surfacing `*.failed`/`error` as errors; `collectReply` drives it off the live stream and resolves on `turn.completed`/`session.completed`. The client sends `Authorization: Bearer $ESSOS_TRANSPORT_SECRET` when set ([ADR 009](../.docs/decisions/009-agent-hardening-and-transport-auth.md)). The typing indicator is shown only while Eve is actually composing a reply (not for concierge or paused/taken-over turns). See [ADR 008](../.docs/decisions/008-transport-eve-streaming-contract.md).
 
 ## Run
 
@@ -40,10 +44,13 @@ pnpm transport:imessage     # live Spectrum Cloud iMessage
 
 # deterministic core/handoff smoke test (no model needed)
 pnpm --filter @essos/transport run smoke
+
+# unit tests for the ndjson reducer / line-splitter
+pnpm --filter @essos/transport test
 ```
 
 In the terminal provider, prefix a line with `/concierge ` to act as the human concierge.
 
 ## Env
 
-`EVE_BASE_URL` (default `http://127.0.0.1:3000`), `ESSOS_DEMO_PATIENT`, `ESSOS_CONCIERGE_HANDLES`, and for iMessage `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET`.
+`EVE_BASE_URL` (default `http://127.0.0.1:3000`), `ESSOS_DEMO_PATIENT`, `ESSOS_CONCIERGE_HANDLES`, `ESSOS_TRANSPORT_SECRET` (bearer for a non-loopback Eve; optional on localhost), and for iMessage `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET`.

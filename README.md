@@ -13,6 +13,7 @@ flowchart LR
   Patient["Patient + concierge (iMessage group)"] --> Transport
   Transport["transport/ (Spectrum bridge)"] -->|"POST /eve/v1/session"| Eve
   Eve["eve-concierge/ (Eve agent: 7 tools, 4 skills)"] --> Shared
+  %% built-in bash/web_fetch/etc. tools are disabled for the patient-facing agent (ADR 009)
   Transport --> Shared
   Shared[("shared/ - SQLite store + repo layer")]
   Dashboard["dashboard/ (Next.js admin)"] --> Shared
@@ -105,6 +106,8 @@ Open flags surface on the dashboard Overview, where you can take over, resolve, 
 4. Create the group chat containing the patient device, the concierge device, and the Spectrum agent line.
 5. `pnpm eve:dev`, `pnpm transport:imessage`, `pnpm dashboard:dev`, then text from the patient device.
 
+Eve and the transport here run on the same host, so Eve's `localDev()` route auth admits the transport with no extra config. If you deploy Eve to a non-loopback host, set the same `ESSOS_TRANSPORT_SECRET` on both so the transport authenticates ([ADR 009](.docs/decisions/009-agent-hardening-and-transport-auth.md)).
+
 See [ADR 008](.docs/decisions/008-transport-eve-streaming-contract.md) for the transport/streaming details.
 
 ## Assumptions
@@ -130,6 +133,7 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [006](.docs/decisions/006-model-routing-direct-anthropic.md) | Model routing: direct Anthropic |
 | [007](.docs/decisions/007-admin-dashboard-architecture.md) | Admin dashboard architecture |
 | [008](.docs/decisions/008-transport-eve-streaming-contract.md) | Transport / Eve streaming contract |
+| [009](.docs/decisions/009-agent-hardening-and-transport-auth.md) | Agent hardening and transport auth |
 
 ## Package docs
 

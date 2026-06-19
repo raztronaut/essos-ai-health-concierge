@@ -10,7 +10,7 @@ The admin dashboard — the single pane of glass over every conversation, escala
 | `/conversations` | All conversations, most-recent first, with automation-state and open-flag badges. |
 | `/conversations/[id]` | Thread view: messages, patient summary, per-thread flags + actions, activity log. |
 | `/patients/[id]` | Itinerary timeline, care instructions (with `source_status`/`answer_policy`), and source documents. |
-| `/source-docs/[id]` | Route handler streaming the seeded PDF from `mock-assets/pdf/essos/` (Markdown fallback). |
+| `/source-docs/[id]` | Route handler serving the seeded PDF from `mock-assets/pdf/essos/` inline (Markdown fallback, then 404). |
 
 ## Server actions
 
@@ -23,7 +23,8 @@ Server Components call the `@essos/shared` repo helpers directly at request time
 ## Config notes
 
 - `next.config.mjs`: `serverExternalPackages: ["@essos/shared"]` keeps the native `node:sqlite` dependency unbundled; `outputFileTracingRoot` is pinned to the repo root.
-- Brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) are declared via `@theme` in `app/globals.css`.
+- Brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) are declared via `@theme` in `app/globals.css`; the `rounded-card` utility comes from `--radius-card`.
+- Reusable UI primitives (`Card`, `Button`, `Stat`, `Row`, `CareRow`, `PageHeader`, badges, `ROLE_LABEL`) live in `lib/ui.tsx`. Root `loading.tsx` / `error.tsx` / `not-found.tsx` provide the route states.
 
 ## Run
 

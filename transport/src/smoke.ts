@@ -1,6 +1,7 @@
 import {
   createEscalation,
   getConversationBySpace,
+  getDb,
   listOpenEscalationsForConversation,
   resumeAutomation,
   setAutomationState,
@@ -64,9 +65,26 @@ function check(name: string, cond: boolean): void {
   }
 }
 
-async function main(): Promise<void> {
+/** Remove every conversation (cascades to messages/escalations/activity) this run created. */
+function teardown(spaceIds: string[]): void {
+  const stmt = getDb().prepare("delete from conversations where space_id = ?");
+  for (const spaceId of spaceIds) stmt.run(spaceId);
+}
+
+async function run(): Promise<string[]> {
   const spaceId = `terminal:smoke-${Date.now()}`;
+  const orphanSpaceId = `terminal:smoke-orphan-${Date.now()}`;
   console.log(`\nSmoke test on space ${spaceId} (patient ${DEMO_PATIENT})\n`);
+
+  // 0) A brand-new space with no resolvable patient -> unknown_patient.
+  const r0 = await handleInbound({
+    spaceId: orphanSpaceId,
+    channel: "terminal",
+    authorHandle: "+10000000000",
+    text: "hello?",
+    eveRespond: stub,
+  });
+  check("unknown sender yields unknown_patient", r0.reason === "unknown_patient");
 
   // 1) Routine question -> answered, automation stays active.
   const r1 = await handleInbound({
@@ -145,6 +163,28 @@ async function main(): Promise<void> {
   });
   check("answers again after resume", r5.reason === "answered" && !!r5.reply);
 
+  // 6) Concierge message with no open escalation -> logged, no takeover.
+  const r6 = await handleInbound({
+    spaceId,
+    channel: "terminal",
+    authorHandle: "concierge",
+    text: "Following up — all set on our end.",
+    isConcierge: true,
+    eveRespond: stub,
+  });
+  check("concierge message with no open escalation is logged", r6.reason === "concierge_logged");
+
+  return [spaceId, orphanSpaceId];
+}
+
+async function main(): Promise<void> {
+  let created: string[] = [];
+  try {
+    created = await run();
+  } finally {
+    // Best-effort cleanup so repeated runs don't accumulate rows.
+    teardown(created);
+  }
   console.log(`\n${passed} passed, ${failed} failed\n`);
   process.exit(failed === 0 ? 0 : 1);
 }

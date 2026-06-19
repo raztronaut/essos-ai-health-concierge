@@ -48,6 +48,7 @@ export type EscalationStatus = "open" | "taken_over" | "resolved";
 
 export type ActivityEvent =
   | "message"
+  | "logistics"
   | "escalated"
   | "paused"
   | "taken_over"

@@ -128,28 +128,31 @@ export function getDb(): DatabaseSync {
   db.exec("pragma journal_mode = WAL;");
   db.exec("pragma foreign_keys = ON;");
   db.exec(SCHEMA);
-  migrateSchema(db);
   singleton = db;
   return db;
 }
 
-function hasColumn(db: DatabaseSync, table: string, column: string): boolean {
-  const rows = db.prepare(`pragma table_info(${table})`).all() as Array<{
-    name: string;
-  }>;
-  return rows.some((row) => row.name === column);
-}
+let txnDepth = 0;
 
-function migrateSchema(db: DatabaseSync): void {
-  if (!hasColumn(db, "itinerary_events", "source_document_id")) {
-    db.exec(
-      "alter table itinerary_events add column source_document_id text references source_documents(id) on delete set null;",
-    );
-  }
-  if (!hasColumn(db, "care_instructions", "source_document_id")) {
-    db.exec(
-      "alter table care_instructions add column source_document_id text references source_documents(id) on delete set null;",
-    );
+/**
+ * Run `fn` inside a single SQLite transaction, rolling back on any error so a
+ * partial failure never leaves a half-written store. Nested calls are flattened
+ * onto the outermost transaction.
+ */
+export function transaction<T>(fn: () => T): T {
+  const db = getDb();
+  if (txnDepth > 0) return fn();
+  db.exec("begin");
+  txnDepth += 1;
+  try {
+    const result = fn();
+    db.exec("commit");
+    return result;
+  } catch (error) {
+    db.exec("rollback");
+    throw error;
+  } finally {
+    txnDepth -= 1;
   }
 }
 

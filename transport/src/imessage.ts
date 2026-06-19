@@ -1,9 +1,9 @@
 import { CONCIERGE_HANDLES } from "./env.js";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { handleInbound } from "./core.js";
 import { eveHealthy } from "./eveClient.js";
-import { contentToText } from "./contentText.js";
+import { normalizeHandle } from "./handles.js";
+import { runMessageLoop } from "./runLoop.js";
 
 /**
  * Live iMessage transport via Spectrum Cloud. Maps each iMessage space (group
@@ -37,28 +37,23 @@ async function main(): Promise<void> {
 
   console.error("Essos concierge — iMessage transport running (Spectrum Cloud).");
 
-  for await (const [space, message] of app.messages) {
-    // Never react to our own outbound messages.
-    if (message.direction === "outbound") continue;
-
-    const text = contentToText(message.content);
-    if (!text) continue;
-
-    const authorHandle = message.sender?.id ?? null;
-    const isConcierge =
-      authorHandle != null && CONCIERGE_HANDLES.includes(authorHandle);
-
-    await space.responding(async () => {
-      const result = await handleInbound({
-        spaceId: `imessage:${space.id}`,
-        channel: "imessage",
+  await runMessageLoop({
+    app,
+    channel: "imessage",
+    spaceIdPrefix: "imessage:",
+    showTyping: true,
+    resolveAuthor: (_space, message, text) => {
+      const authorHandle = normalizeHandle(message.sender?.id ?? null);
+      return {
         authorHandle,
+        isConcierge: authorHandle != null && CONCIERGE_HANDLES.includes(authorHandle),
         text,
-        isConcierge,
-      });
+      };
+    },
+    onResult: async (_space, message, result) => {
       if (result.reply) await message.reply(result.reply);
-    });
-  }
+    },
+  });
 }
 
 main().catch((err) => {

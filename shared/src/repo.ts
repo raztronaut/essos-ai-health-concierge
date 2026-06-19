@@ -1,5 +1,5 @@
 import type { SQLInputValue } from "node:sqlite";
-import { getDb } from "./db.js";
+import { getDb, transaction } from "./db.js";
 import { newId, nowIso } from "./ids.js";
 import type {
   ActivityEvent,
@@ -210,10 +210,10 @@ export function insertCareInstruction(
 ): CareInstruction {
   const ts = nowIso();
   const row: CareInstruction = {
+    ...doc,
     id: doc.id ?? newId("care"),
     created_at: ts,
     updated_at: ts,
-    ...doc,
   };
   getDb()
     .prepare(
@@ -289,6 +289,49 @@ export function getOrCreateConversation(args: {
 /** Compatibility alias used by the transport package. */
 export const ensureConversation = getOrCreateConversation;
 
+/**
+ * One conversation row plus the denormalized fields the dashboard list needs
+ * (patient summary, last message, open-flag count), computed in a single query
+ * to avoid an N+1 read per conversation.
+ */
+export interface ConversationSummary {
+  id: string;
+  patient_id: string;
+  automation_state: AutomationState;
+  updated_at: string;
+  patient_name: string | null;
+  patient_procedure: string | null;
+  patient_city: string | null;
+  patient_country: string | null;
+  last_role: MessageRole | null;
+  last_text: string | null;
+  open_flags: number;
+}
+
+export function listConversationSummaries(): ConversationSummary[] {
+  return getDb()
+    .prepare(
+      `select
+         c.id, c.patient_id, c.automation_state, c.updated_at,
+         p.name as patient_name,
+         p.procedure as patient_procedure,
+         p.destination_city as patient_city,
+         p.destination_country as patient_country,
+         (select m.role from messages m
+            where m.conversation_id = c.id
+            order by m.created_at desc limit 1) as last_role,
+         (select m.text from messages m
+            where m.conversation_id = c.id
+            order by m.created_at desc limit 1) as last_text,
+         (select count(*) from escalations e
+            where e.conversation_id = c.id and e.status = 'open') as open_flags
+       from conversations c
+       left join patients p on p.id = c.patient_id
+       order by c.updated_at desc`,
+    )
+    .all() as unknown as ConversationSummary[];
+}
+
 export function setAutomationState(
   conversationId: string,
   state: AutomationState,
@@ -350,6 +393,13 @@ export function addMessage(args: {
 
 /** Compatibility alias used by the transport package. */
 export const appendMessage = addMessage;
+
+export function countMessagesByRole(role: MessageRole): number {
+  const row = getDb()
+    .prepare("select count(*) as n from messages where role = ?")
+    .get(role) as { n: number };
+  return row.n;
+}
 
 // ---------------------------------------------------------------------------
 // Escalations (the "trip wires")
@@ -431,16 +481,18 @@ export function markConciergeTakeover(
   conversationId: string,
   assignee: string,
 ): void {
-  const open = listOpenEscalationsForConversation(conversationId);
-  for (const escalation of open) {
-    takeOverEscalation(escalation.id, assignee);
-  }
-  setAutomationState(conversationId, "taken_over");
-  logActivity({
-    conversationId,
-    event: "taken_over",
-    actor: assignee,
-    detail: "Human concierge replied during an open escalation.",
+  transaction(() => {
+    const open = listOpenEscalationsForConversation(conversationId);
+    for (const escalation of open) {
+      takeOverEscalation(escalation.id, assignee);
+    }
+    setAutomationState(conversationId, "taken_over");
+    logActivity({
+      conversationId,
+      event: "taken_over",
+      actor: assignee,
+      detail: "Human concierge replied during an open escalation.",
+    });
   });
 }
 
@@ -503,4 +555,11 @@ export function listAllActivity(limit = 200): ActivityLogEntry[] {
   return getDb()
     .prepare("select * from activity_log order by created_at desc limit ?")
     .all(limit) as unknown as ActivityLogEntry[];
+}
+
+export function countActivityByEvent(event: ActivityEvent): number {
+  const row = getDb()
+    .prepare("select count(*) as n from activity_log where event = ?")
+    .get(event) as { n: number };
+  return row.n;
 }

@@ -9,12 +9,13 @@ eve-concierge/
 ├── package.json        name: essos-eve-concierge
 ├── tsconfig.json       include: agent/**/*.ts
 ├── .env -> ../.env     symlink; Eve loads env from its app root
-└── agent/              authored surface
-    ├── agent.ts        model config (direct Anthropic)
-    ├── instructions.md persona + escalation policy
-    ├── channels/eve.ts HTTP session channel (/eve/v1/session)
-    ├── tools/          executable tools (one per file; name = filename)
-    └── skills/         load-on-demand procedures (Markdown)
+├── agent/              authored surface
+│   ├── agent.ts        model config (direct Anthropic)
+│   ├── instructions.md persona + escalation policy
+│   ├── channels/eve.ts HTTP session channel (/eve/v1/session) + route auth
+│   ├── tools/          executable tools (one per file; name = filename)
+│   └── skills/         load-on-demand procedures (Markdown)
+└── evals/              deterministic eval suite (eve eval), wired via #evals/*
 ```
 
 ## Model
@@ -23,16 +24,21 @@ eve-concierge/
 
 ## Tools (`agent/tools/`)
 
+Seven callable tools, one per file (the filename is the tool name):
+
 | Tool | Purpose |
 | --- | --- |
 | `get_patient_overview` | Patient profile (procedure, destination, clinic, hotel, companion, dietary notes). |
-| `get_itinerary` | Flights, hotel, transport/driver, appointments, follow-ups, confirmation numbers — source of truth for logistics. |
+| `get_itinerary` | Flights, hotel, transport/driver, appointments, follow-ups, confirmation numbers — source of truth for logistics. Has an `outputSchema` and drops null fields to minimize what reaches the model. |
 | `get_care_instructions` | Documented pre/post/general care docs, each with an `answer_policy`. |
 | `get_conversation_history` | Recent messages for personalization. |
 | `search_local_places` | Restaurants/pharmacies/ATMs/etc. via Google Places, with a curated offline fallback. |
-| `update_logistics` | Records routine coordination (e.g. notify driver of a new pickup time) to the activity log. |
-| `escalate_to_human` | The trip wire: writes a High/Med escalation, pauses automation, logs the event. |
-| `web_search` | **Disabled** (`disableTool()`) — the concierge answers only from its own sources. |
+| `update_logistics` | Records routine coordination (e.g. notify driver of a new pickup time) to the activity log under a `logistics` event. |
+| `escalate_to_human` | The trip wire: writes a High/Med escalation, pauses automation, logs the event. Its `reason` enum is restricted to escalation-eligible taxonomy categories. |
+
+### Disabled built-ins
+
+Eve ships generic `bash`/`read_file`/`write_file`/`glob`/`grep`/`web_fetch`/`web_search` tools. A patient-facing agent ingests untrusted free-text, so each is removed with a `disableTool()` sentinel file named after the tool (e.g. `tools/web_fetch.ts`). The concierge answers only from its own sources. See ADR 006 and [ADR 009](../.docs/decisions/009-agent-hardening-and-transport-auth.md).
 
 ## Skills (`agent/skills/`)
 
@@ -56,6 +62,15 @@ pnpm exec eve info     # inspect discovered tools/skills/channels + app root
 
 The transport bridge calls this server at `EVE_BASE_URL` (default `http://127.0.0.1:3000`). See [ADR 008](../.docs/decisions/008-transport-eve-streaming-contract.md) for the session API and event stream.
 
-## Built-in tool hardening (follow-up)
+## Route auth
 
-Eve's default harness still exposes generic `bash`/`read_file`/`write_file`/`glob`/`grep`/`web_fetch` tools. For non-demo use, disable the ones a patient-facing concierge shouldn't have, using the same `disableTool()` pattern as `agent/tools/web_search.ts`.
+`agent/channels/eve.ts` admits loopback callers via `localDev()` (so `eve dev`, the TUI, and a same-host transport need no config) plus a `transportSecret()` authenticator: a non-loopback/deployed transport must present `Authorization: Bearer $ESSOS_TRANSPORT_SECRET`. It fails closed — an unset/mismatched secret falls through to a 401. This replaces the `eve init` `placeholderAuth()` scaffold. See [ADR 009](../.docs/decisions/009-agent-hardening-and-transport-auth.md).
+
+## Evals
+
+`evals/` holds a deterministic suite covering the six demo scenarios (autonomous answer vs. escalation), asserting on run completion and which tools Eve called. Run after seeding, with `ANTHROPIC_API_KEY` set:
+
+```bash
+pnpm exec eve eval            # all evals against a local dev server
+pnpm exec eve eval escalation # just the escalation group
+```

@@ -19,14 +19,15 @@ eve-concierge/            Eve app root (package.json, node_modules, .eve/, .outp
 ├── package.json          name: essos-eve-concierge; deps: eve, ai, @ai-sdk/anthropic, zod, @essos/shared (link:)
 ├── pnpm-lock.yaml        own lockfile (isolated install)
 ├── pnpm-workspace.yaml   own workspace markers / pinned beta deps
-├── tsconfig.json         include: agent/**/*.ts
+├── tsconfig.json         include: agent/**/*.ts, evals/**/*.ts
 ├── .env -> ../.env       symlink so Eve loads env from its app root
-└── agent/                authored surface (Eve convention)
-    ├── agent.ts          model config (defineAgent)
-    ├── instructions.md   persona + escalation policy
-    ├── channels/eve.ts   HTTP session API
-    ├── tools/            7 tools
-    └── skills/           4 skills
+├── agent/                authored surface (Eve convention)
+│   ├── agent.ts          model config (defineAgent)
+│   ├── instructions.md   persona + escalation policy
+│   ├── channels/eve.ts   HTTP session API (localDev + transport shared-secret auth)
+│   ├── tools/            7 callable tools + disable sentinels for unused built-ins
+│   └── skills/           4 skills
+└── evals/                deterministic eval suite (eve eval), wired via #evals/*
 ```
 
 ## Isolation rationale
@@ -40,7 +41,7 @@ Eve loads `.env`/`.env.local` from its app root. Since the single source-of-trut
 
 ## Build/runtime artifacts
 
-`eve build` and `eve dev` write `.eve/` and `.output/` under `eve-concierge/`. Both are gitignored.
+`eve build` and `eve dev` write `.eve/`, `.output/`, `.nitro/`, and `.workflow-data/` under `eve-concierge/`. All are gitignored (root [.gitignore](../../.gitignore)).
 
 ## Consequences
 

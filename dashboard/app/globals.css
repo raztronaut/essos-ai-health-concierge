@@ -35,6 +35,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* No custom brand webfont ships with the repo, so the serif display face uses a
+   robust system serif stack rather than referencing an unloaded family. */
 .serif {
-  font-family: "PS Times Regular", Georgia, "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", "PS Times", serif;
 }

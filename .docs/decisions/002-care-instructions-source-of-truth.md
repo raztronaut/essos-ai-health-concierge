@@ -13,7 +13,8 @@ The context says the patient itinerary and pre-op instructions are reliable sour
 ```sql
 create table care_instructions (
   id text primary key,
-  patient_id text not null references patients(id),
+  patient_id text not null references patients(id) on delete cascade,
+  source_document_id text references source_documents(id) on delete set null,
   phase text not null, -- preop | postop | general
   procedure text not null, -- rhinoplasty | hair_transplant | etc.
   title text not null,
@@ -27,6 +28,8 @@ create table care_instructions (
   updated_at text not null
 );
 ```
+
+`source_document_id` links an instruction back to the `source_documents` row it was derived from (the PDF/Markdown packet surfaced in the dashboard); see the live schema in [shared/src/db.ts](../../shared/src/db.ts).
 
 ## Answer Policy
 

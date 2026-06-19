@@ -13,7 +13,7 @@ export default defineTool({
   description:
     "Record a routine logistics coordination action that the concierge would normally perform, such as notifying the driver of a new pickup time after a flight delay, or confirming transport for an appointment. Use for routine, completable coordination only. If the patient is stranded, blocked, or the coordination cannot be completed, use escalate_to_human instead.",
   inputSchema: z.object({
-    conversation_id: z.string().min(1).describe("conversation_id from the context block."),
+    conversation_id: z.string().min(1).describe("conversation_id from the ESSOS_CONTEXT block."),
     action: z
       .enum([
         "update_driver_pickup_time",
@@ -30,9 +30,9 @@ export default defineTool({
   async execute({ conversation_id, action, detail }) {
     logActivity({
       conversationId: conversation_id,
-      event: "message",
+      event: "logistics",
       actor: "eve",
-      detail: `logistics:${action} — ${detail}`,
+      detail: `${action} — ${detail}`,
     });
     return {
       recorded: true as const,

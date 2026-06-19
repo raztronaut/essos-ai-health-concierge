@@ -21,6 +21,8 @@ build/
 # Eve agent build/runtime artifacts
 .eve/
 .output/
+.nitro/
+.workflow-data/
 
 # Local SQLite data store
 .data/

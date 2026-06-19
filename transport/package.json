@@ -7,15 +7,16 @@
     "terminal": "tsx src/terminal.ts",
     "imessage": "tsx src/imessage.ts",
     "smoke": "tsx src/smoke.ts",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@essos/shared": "workspace:*",
+    "dotenv": "^16.4.7",
     "spectrum-ts": "^4.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "dotenv": "^16.4.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

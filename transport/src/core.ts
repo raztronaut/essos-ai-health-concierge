@@ -11,6 +11,14 @@ import {
 } from "@essos/shared";
 import { buildContextMessage } from "./context.js";
 import { askEve, type EveSession } from "./eveClient.js";
+import { normalizeHandle } from "./handles.js";
+import { debug } from "./debug.js";
+
+/** Best-effort typing indicator, driven only while Eve is composing a reply. */
+export interface TypingController {
+  start: () => Promise<void> | void;
+  stop: () => Promise<void> | void;
+}
 
 export type EveResponder = (
   message: string,
@@ -44,17 +52,20 @@ export interface InboundArgs {
   patientId?: string;
   /** Injectable for tests; defaults to the live Eve HTTP client. */
   eveRespond?: EveResponder;
+  /** Shown only on the auto-respond path, while Eve is actually composing. */
+  typing?: TypingController;
 }
 
 export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   const respond = args.eveRespond ?? askEve;
 
   // 1) Resolve (or create) the conversation and its patient.
+  const authorHandle = normalizeHandle(args.authorHandle);
   let conversation = getConversationBySpace(args.spaceId);
   if (!conversation) {
     const patient =
       (args.patientId ? getPatientById(args.patientId) : null) ??
-      (args.authorHandle ? getPatientByHandle(args.authorHandle) : null);
+      (authorHandle ? getPatientByHandle(authorHandle) : null);
     if (!patient) return { reply: null, reason: "unknown_patient" };
     conversation = ensureConversation({
       spaceId: args.spaceId,
@@ -71,14 +82,14 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     appendMessage({
       conversationId: conversation.id,
       role: "concierge",
-      authorHandle: args.authorHandle,
+      authorHandle,
       text: args.text,
     });
     const open = listOpenEscalationsForConversation(conversation.id).filter(
       (e) => e.status === "open",
     );
     if (open.length > 0) {
-      markConciergeTakeover(conversation.id, args.authorHandle ?? "concierge");
+      markConciergeTakeover(conversation.id, authorHandle ?? "concierge");
       return { reply: null, reason: "concierge_takeover" };
     }
     return { reply: null, reason: "concierge_logged" };
@@ -88,7 +99,7 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   const inbound = appendMessage({
     conversationId: conversation.id,
     role: "patient",
-    authorHandle: args.authorHandle ?? patient.handle,
+    authorHandle: authorHandle ?? patient.handle,
     text: args.text,
   });
 
@@ -112,15 +123,25 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
 
   let text = "";
   try {
+    await args.typing?.start();
+  } catch {
+    // Typing is best-effort; never fail a turn because the indicator didn't set.
+  }
+  try {
     const result = await respond(contextMessage, prior);
     sessions.set(conversation.id, result.session);
     text = result.text;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { reply: null, reason: `eve_error: ${message}` };
+  } finally {
+    await Promise.resolve(args.typing?.stop()).catch(() => {});
   }
 
-  if (!text) return { reply: null, reason: "empty" };
+  if (!text) {
+    debug("transport", "eve returned an empty reply for", conversation.id);
+    return { reply: null, reason: "empty" };
+  }
 
   // 6) Record the agent's reply (escalation rows/pause are written by tools).
   appendMessage({

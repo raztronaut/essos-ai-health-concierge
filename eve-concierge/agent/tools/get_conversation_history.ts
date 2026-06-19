@@ -8,12 +8,12 @@ import { z } from "zod";
  */
 export default defineTool({
   description:
-    "Get recent messages from this conversation for context and personalization (for example, a dietary note or a previously mentioned constraint). Pass the conversation_id from the context block.",
+    "Get recent messages from this conversation for context and personalization (for example, a dietary note or a previously mentioned constraint). Pass the conversation_id from the ESSOS_CONTEXT block.",
   inputSchema: z.object({
     conversation_id: z
       .string()
       .min(1)
-      .describe("The conversation_id from the context block."),
+      .describe("The conversation_id from the ESSOS_CONTEXT block."),
     limit: z
       .number()
       .int()

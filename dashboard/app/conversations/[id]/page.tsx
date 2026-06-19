@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   getConversationById,
@@ -8,7 +9,7 @@ import {
   listMessages,
   type MessageRole,
 } from "@essos/shared";
-import { AutomationBadge, Card, LevelBadge, StatusBadge } from "@/lib/ui";
+import { AutomationBadge, Card, LevelBadge, PageHeader, Row, ROLE_LABEL, StatusBadge } from "@/lib/ui";
 import { formatDateTime, humanize } from "@/lib/format";
 import { EscalationActions, ResumeAutomationButton } from "./escalation-actions";
 
@@ -21,12 +22,17 @@ const ROLE_STYLES: Record<MessageRole, string> = {
   system: "bg-surface border border-secondary/40 text-muted italic",
 };
 
-const ROLE_LABEL: Record<MessageRole, string> = {
-  patient: "Patient",
-  agent: "Eve",
-  concierge: "Concierge",
-  system: "System",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const conversation = getConversationById(id);
+  const patient = conversation ? getPatientById(conversation.patient_id) : null;
+  const who = patient?.name ?? "Conversation";
+  return { title: `${who} — Essos Concierge` };
+}
 
 export default async function ConversationPage({
   params,
@@ -45,25 +51,25 @@ export default async function ConversationPage({
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <PageHeader
+        eyebrow={
           <Link href="/conversations" className="text-sm text-primary hover:underline">
             ← All conversations
           </Link>
-          <h1 className="serif mt-1 text-3xl">
-            {patient ? patient.name : "Unknown patient"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <AutomationBadge state={conversation.automation_state} />
-          {canResume ? <ResumeAutomationButton conversationId={conversation.id} /> : null}
-        </div>
-      </header>
+        }
+        title={patient ? patient.name : "Unknown patient"}
+        actions={
+          <>
+            <AutomationBadge state={conversation.automation_state} />
+            {canResume ? <ResumeAutomationButton conversationId={conversation.id} /> : null}
+          </>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="space-y-3">
           {messages.map((message) => (
-            <div key={message.id} className={`rounded-[var(--radius-card)] p-3.5 ${ROLE_STYLES[message.role]}`}>
+            <div key={message.id} className={`rounded-card p-3.5 ${ROLE_STYLES[message.role]}`}>
               <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted">
                 <span className="font-semibold text-ink/80">
                   {ROLE_LABEL[message.role]}
@@ -153,15 +159,6 @@ export default async function ConversationPage({
           </Card>
         </aside>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-muted">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
     </div>
   );
 }

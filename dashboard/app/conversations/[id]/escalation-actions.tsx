@@ -1,15 +1,10 @@
 import type { EscalationStatus } from "@essos/shared";
+import { Button } from "@/lib/ui";
 import {
   resolveEscalationAction,
   resumeAutomationAction,
   takeOverConversationAction,
 } from "@/app/actions";
-
-const baseBtn =
-  "rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50";
-const primaryBtn = `${baseBtn} bg-primary text-white hover:opacity-90`;
-const ghostBtn = `${baseBtn} border border-secondary/70 text-ink hover:bg-surface`;
-const okBtn = `${baseBtn} bg-ok text-white hover:opacity-90`;
 
 /** Take-over / resolve actions for a single escalation (queue + thread). */
 export function EscalationActions({
@@ -26,18 +21,18 @@ export function EscalationActions({
       {status === "open" ? (
         <form action={takeOverConversationAction}>
           <input type="hidden" name="conversationId" value={conversationId} />
-          <button type="submit" className={ghostBtn}>
+          <Button type="submit" variant="ghost">
             Take over
-          </button>
+          </Button>
         </form>
       ) : null}
       {status !== "resolved" ? (
         <form action={resolveEscalationAction}>
           <input type="hidden" name="escalationId" value={escalationId} />
           <input type="hidden" name="conversationId" value={conversationId} />
-          <button type="submit" className={okBtn}>
+          <Button type="submit" variant="ok">
             Resolve
-          </button>
+          </Button>
         </form>
       ) : null}
     </div>
@@ -45,17 +40,13 @@ export function EscalationActions({
 }
 
 /** Resume Eve automation on a paused / taken-over thread. */
-export function ResumeAutomationButton({
-  conversationId,
-}: {
-  conversationId: string;
-}) {
+export function ResumeAutomationButton({ conversationId }: { conversationId: string }) {
   return (
     <form action={resumeAutomationAction}>
       <input type="hidden" name="conversationId" value={conversationId} />
-      <button type="submit" className={primaryBtn}>
+      <Button type="submit" variant="primary">
         Resume Eve
-      </button>
+      </Button>
     </form>
   );
 }

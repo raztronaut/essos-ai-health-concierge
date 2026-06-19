@@ -1,7 +1,7 @@
 import { defineTool } from "eve/tools";
 import {
-  ALL_CATEGORIES,
   CATEGORY_POLICIES,
+  ESCALATABLE_CATEGORIES,
   createEscalation,
   logActivity,
   setAutomationState,
@@ -9,8 +9,10 @@ import {
 } from "@essos/shared";
 import { z } from "zod";
 
+// Only categories that can legitimately be escalated — the purely-autonomous
+// reference categories are excluded so an escalation can never cite them.
 const categoryEnum = z.enum(
-  ALL_CATEGORIES as [EscalationCategory, ...EscalationCategory[]],
+  ESCALATABLE_CATEGORIES as [EscalationCategory, ...EscalationCategory[]],
 );
 
 /**
@@ -22,8 +24,8 @@ export default defineTool({
   description:
     "Flag a message for the human Essos concierge team. Call this for anything that must escalate per the escalation policy (medication decisions, post-op symptoms/recovery, clinical judgment, staff safety, out-of-package requests, a stranded/blocked patient, or when you lack a reliable source / are unsure). This pauses automation for the conversation and raises a flag in the dashboard. Always reply to the patient with a brief, warm, non-clinical acknowledgement as well.",
   inputSchema: z.object({
-    conversation_id: z.string().min(1).describe("conversation_id from the context block."),
-    patient_id: z.string().min(1).describe("patient_id from the context block."),
+    conversation_id: z.string().min(1).describe("conversation_id from the ESSOS_CONTEXT block."),
+    patient_id: z.string().min(1).describe("patient_id from the ESSOS_CONTEXT block."),
     level: z
       .enum(["High", "Med"])
       .describe(
@@ -37,7 +39,7 @@ export default defineTool({
     source_message_id: z
       .string()
       .optional()
-      .describe("source_message_id from the context block, if available."),
+      .describe("source_message_id from the ESSOS_CONTEXT block, if available."),
   }),
   async execute({ conversation_id, patient_id, level, reason, summary, source_message_id }) {
     const escalation = createEscalation({
