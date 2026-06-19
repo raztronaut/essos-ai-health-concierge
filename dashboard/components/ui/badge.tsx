@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 /**
  * The base pill shape every domain badge is built on. Holds no domain
@@ -17,7 +18,10 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-0.5 font-medium text-xs ${className ?? ""}`}
+      className={cn(
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-0.5 font-medium text-xs",
+        className
+      )}
     >
       {dot ? (
         <span

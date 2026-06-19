@@ -1,18 +1,21 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 export function PageHeader({
   title,
   subtitle,
   eyebrow,
   actions,
+  className,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   eyebrow?: ReactNode;
   actions?: ReactNode;
+  className?: string;
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
+    <header className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
       <div className="min-w-0">
         {eyebrow ? <div className="mb-1">{eyebrow}</div> : null}
         <h1 className="serif text-4xl">{title}</h1>

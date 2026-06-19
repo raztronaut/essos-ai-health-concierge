@@ -3,19 +3,8 @@
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-import { Card, PageHeader, Stat } from "@/components/ui";
-
-function fmtDuration(ms: number): string {
-  if (ms <= 0) {
-    return "—";
-  }
-  const min = Math.round(ms / 60_000);
-  if (min < 60) {
-    return `${min}m`;
-  }
-  const hr = Math.floor(min / 60);
-  return `${hr}h ${min % 60}m`;
-}
+import { Card, PageHeader, Stat, LoadingState, EmptyState } from "@/components/ui";
+import { formatDuration, stripOrgPrefix } from "@/lib/format";
 
 /** Concierge team performance: response/resolution times and per-rep workload. */
 export function TeamView() {
@@ -30,7 +19,7 @@ export function TeamView() {
           title="Team"
         />
         <Card>
-          <p className="text-muted text-sm">Loading team metrics…</p>
+          <LoadingState message="Loading team metrics..." />
         </Card>
       </div>
     );
@@ -52,25 +41,22 @@ export function TeamView() {
         <Stat label="Unassigned" value={team.totals.unassignedOpen} />
         <Stat
           label="Avg first response"
-          value={fmtDuration(team.totals.avgFirstResponseMs)}
+          value={formatDuration(team.totals.avgFirstResponseMs)}
         />
         <Stat
           label="Avg resolution"
-          value={fmtDuration(team.totals.avgResolutionMs)}
+          value={formatDuration(team.totals.avgResolutionMs)}
         />
         <Stat
           label="Oldest open"
-          value={fmtDuration(team.totals.oldestOpenMs)}
+          value={formatDuration(team.totals.oldestOpenMs)}
         />
       </section>
 
       <Card>
         <h2 className="font-semibold text-sm">By concierge</h2>
         {rows.length === 0 ? (
-          <p className="mt-2 text-muted text-sm">
-            No concierge accounts synced yet. With Clerk configured, team
-            members appear here as they sign in (and via the org webhook).
-          </p>
+          <EmptyState message="No concierge accounts synced yet. With Clerk configured, team members appear here as they sign in (and via the org webhook)." />
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-sm">
@@ -95,14 +81,14 @@ export function TeamView() {
                       <div className="text-muted text-xs">{r.email}</div>
                     </td>
                     <td className="py-2 pr-4 text-muted">
-                      {r.role.replace(/^org:/, "")}
+                      {stripOrgPrefix(r.role)}
                     </td>
                     <td className="py-2 pr-4">{r.resolved}</td>
                     <td className="py-2 pr-4">{r.takenOver}</td>
                     <td className="py-2 pr-4">
-                      {fmtDuration(r.avgFirstResponseMs)}
+                      {formatDuration(r.avgFirstResponseMs)}
                     </td>
-                    <td className="py-2">{fmtDuration(r.avgResolutionMs)}</td>
+                    <td className="py-2">{formatDuration(r.avgResolutionMs)}</td>
                   </tr>
                 ))}
               </tbody>

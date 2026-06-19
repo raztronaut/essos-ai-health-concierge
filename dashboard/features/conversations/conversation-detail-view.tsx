@@ -1,11 +1,10 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { parseSuggestedReplySources } from "@essos/shared";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { AutomationBadge } from "@/components/badges";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, PageHeader, LoadingState, NotFoundCard } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { ActivityLog } from "./activity-log";
 import { ConciergeReplyBox } from "./concierge-reply-box";
@@ -13,6 +12,7 @@ import { ResumeAutomationButton } from "./escalation-actions";
 import { FlagsPanel } from "./flags-panel";
 import { MessageThread } from "./message-thread";
 import { PatientSummaryCard } from "./patient-summary-card";
+import { useConversationThread } from "./use-conversation-thread";
 
 export function ConversationDetailView({ id }: { id: string }) {
   const { viewAs } = useDemoIdentity();
@@ -34,36 +34,25 @@ export function ConversationDetailView({ id }: { id: string }) {
     viewAs,
   });
 
+  const msgs = messages ?? [];
+  const escs = escalations ?? [];
+  
+  const { unansweredCount, openEscalation, draftSources } = useConversationThread(msgs, escs);
+
   if (conversation === undefined) {
-    return <p className="text-muted text-sm">Loading conversation…</p>;
+    return <LoadingState message="Loading conversation…" />;
   }
   if (conversation === null) {
     return (
-      <Card>
-        <p className="text-muted text-sm">Conversation not found.</p>
-        <Link
-          className="mt-2 inline-block text-primary text-sm hover:underline"
-          href="/conversations"
-        >
-          ← All conversations
-        </Link>
-      </Card>
+      <NotFoundCard
+        message="Conversation not found."
+        backHref="/conversations"
+        backLabel="All conversations"
+      />
     );
   }
 
-  const msgs = messages ?? [];
-  const escs = escalations ?? [];
   const canResume = conversation.automation_state !== "active";
-
-  const lastRepliedIndex = msgs.findLastIndex(
-    (m) => m.role === "agent" || m.role === "concierge"
-  );
-  const unansweredCount = msgs
-    .slice(lastRepliedIndex + 1)
-    .filter((m) => m.role === "patient").length;
-
-  const openEscalation = escs.find((e) => e.status === "open") ?? null;
-  const draftSources = parseSuggestedReplySources(openEscalation);
 
   return (
     <div className="space-y-6">

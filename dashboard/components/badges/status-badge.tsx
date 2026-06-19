@@ -1,6 +1,7 @@
 import type { EscalationStatus } from "@essos/shared";
 import { Badge } from "@/components/ui";
 import { humanize } from "@/lib/format";
+import { cn } from "@/lib/cn";
 
 const STATUS_STYLES: Record<EscalationStatus, string> = {
   open: "bg-high-soft text-high",
@@ -8,9 +9,15 @@ const STATUS_STYLES: Record<EscalationStatus, string> = {
   resolved: "bg-ok-soft text-ok",
 };
 
-export function StatusBadge({ status }: { status: EscalationStatus }) {
+export function StatusBadge({
+  status,
+  className,
+}: {
+  status: EscalationStatus;
+  className?: string;
+}) {
   return (
-    <Badge className={STATUS_STYLES[status]} dot>
+    <Badge className={cn(STATUS_STYLES[status], className)} dot>
       {humanize(status)}
     </Badge>
   );

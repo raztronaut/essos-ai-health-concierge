@@ -1,12 +1,11 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { clerkEnabled } from "@/app/ConvexClientProvider";
-import { Button, Card } from "@/components/ui";
-import { useDemoIdentity } from "@/features/demo/demo-identity";
+import { Button } from "@/components/ui";
+import { DocIcon } from "@/components/icons";
+import { useConciergeSignature } from "./use-concierge-signature";
 
 /**
  * Lets a concierge reply to the patient directly from the dashboard. The message
@@ -21,62 +20,16 @@ import { useDemoIdentity } from "@/features/demo/demo-identity";
  * the textarea is prefilled with it (editable) so the concierge can review and
  * send in one tap. The draft is never delivered until a human submits. See ADR 011.
  */
-export function ConciergeReplyBox(props: {
-  conversationId: string;
-  suggestedReply?: string | null;
-  sources?: string[];
-}) {
-  return clerkEnabled ? (
-    <ClerkReplyBox {...props} />
-  ) : (
-    <DemoReplyBox {...props} clerkName="" />
-  );
-}
-
-function ClerkReplyBox(props: {
-  conversationId: string;
-  suggestedReply?: string | null;
-  sources?: string[];
-}) {
-  const { user } = useUser();
-  return <DemoReplyBox {...props} clerkName={user?.firstName ?? ""} />;
-}
-
-/** Resolves the demo "view as" identity (name + viewAs) on top of the real user. */
-function DemoReplyBox(props: {
-  conversationId: string;
-  suggestedReply?: string | null;
-  sources?: string[];
-  clerkName: string;
-}) {
-  const { viewAs, selected } = useDemoIdentity();
-  const defaultName = selected
-    ? (selected.name.split(" ")[0] ?? props.clerkName)
-    : props.clerkName;
-  return (
-    <ConciergeReplyBoxInner
-      conversationId={props.conversationId}
-      defaultName={defaultName}
-      sources={props.sources}
-      suggestedReply={props.suggestedReply}
-      viewAs={viewAs}
-    />
-  );
-}
-
-function ConciergeReplyBoxInner({
+export function ConciergeReplyBox({
   conversationId,
   suggestedReply,
   sources = [],
-  defaultName,
-  viewAs,
 }: {
   conversationId: string;
   suggestedReply?: string | null;
   sources?: string[];
-  defaultName: string;
-  viewAs: string | null;
 }) {
+  const { defaultName, viewAs } = useConciergeSignature();
   const draft = suggestedReply?.trim() ?? "";
   const hasDraft = draft.length > 0;
   const [text, setText] = useState(draft);
@@ -113,61 +66,71 @@ function ConciergeReplyBoxInner({
   }
 
   return (
-    <Card>
-      <form className="space-y-3" onSubmit={onSubmit}>
-        <div className="flex items-center justify-between gap-2">
-          <label
-            className="block font-semibold text-ink text-sm"
-            htmlFor="concierge-reply"
-          >
-            Reply to patient
-          </label>
-          {hasDraft ? (
-            <span className="rounded-control bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
-              AI-suggested · review before sending
-            </span>
-          ) : null}
-        </div>
-        {hasDraft && sources.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted text-xs">Drafted from</span>
-            {sources.map((source) => (
-              <span
-                className="rounded-full border border-border px-2 py-0.5 text-ink text-xs"
-                key={source}
-              >
-                {source}
-              </span>
-            ))}
-          </div>
+    <form
+      className="overflow-hidden rounded-card border border-border bg-card shadow-card transition-shadow duration-fast ease-out focus-within:border-transparent focus-within:[box-shadow:var(--ring)]"
+      onSubmit={onSubmit}
+    >
+      <div className="flex items-center justify-between gap-2 px-4 pt-3.5">
+        <label
+          className="block font-semibold text-ink text-sm"
+          htmlFor="concierge-reply"
+        >
+          Reply to patient
+        </label>
+        {hasDraft ? (
+          <span className="inline-flex items-center gap-1 rounded-pill bg-stone-10/60 px-2 py-0.5 font-medium text-[11px] text-stone-70">
+            <span className="size-1.5 rounded-full bg-stone-50" />
+            AI-suggested · review before sending
+          </span>
         ) : null}
-        <textarea
-          className="focus-ring w-full resize-y rounded-control border border-border bg-surface px-3 py-2 text-ink text-sm transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] placeholder:text-muted hover:border-secondary/70"
-          id="concierge-reply"
-          name="text"
-          onChange={(event) => setText(event.target.value)}
-          placeholder="Type a message — it's delivered to the patient's iMessage and takes over the thread."
-          required
-          rows={hasDraft ? 5 : 3}
-          value={text}
-        />
-        <p className="text-[11px] text-muted">
-          {name.trim()
-            ? `Signs as “— ${name.trim()}, Essos Care Team”`
-            : "Signs as “— Essos Care Team”"}
-        </p>
-        <div className="flex items-center gap-2">
+      </div>
+
+      {hasDraft && sources.length > 0 ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-4">
+          <span className="text-[11px] text-muted">Drafted from</span>
+          {sources.map((source) => (
+            <span
+              className="inline-flex max-w-full items-center gap-1 rounded-pill border border-border bg-surface/60 px-2 py-0.5 text-[11px] text-ink"
+              key={source}
+            >
+              <DocIcon className="size-3 shrink-0 text-muted" />
+              <span className="truncate">{source}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <textarea
+        className="mt-1.5 w-full resize-y bg-transparent px-4 py-2 text-ink text-sm leading-relaxed outline-none placeholder:text-muted"
+        id="concierge-reply"
+        name="text"
+        onChange={(event) => setText(event.target.value)}
+        placeholder="Type a message — it's delivered to the patient's iMessage and takes over the thread."
+        required
+        rows={hasDraft ? 5 : 3}
+        value={text}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-border border-t bg-surface/40 px-3 py-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <input
             aria-label="Your name"
-            className="focus-ring min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-ink text-sm transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] placeholder:text-muted hover:border-secondary/70"
+            className="focus-ring min-w-0 max-w-[12rem] flex-1 rounded-control border border-border bg-card px-2.5 py-1 text-ink text-xs transition-colors duration-fast ease-out placeholder:text-muted hover:border-secondary/70"
             onChange={(event) => {
               nameTouched.current = true;
               setName(event.target.value);
             }}
-            placeholder="Your name (signs the message)"
+            placeholder="Your name"
             type="text"
             value={name}
           />
+          <p className="truncate text-[11px] text-muted">
+            {name.trim()
+              ? `Signs “— ${name.trim()}, Essos Care Team”`
+              : "Signs “— Essos Care Team”"}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           {hasDraft && text.length > 0 ? (
             <Button onClick={() => setText("")} type="button" variant="ghost">
               Clear draft
@@ -181,7 +144,7 @@ function ConciergeReplyBoxInner({
             {sending ? "Sending…" : "Send to patient"}
           </Button>
         </div>
-      </form>
-    </Card>
+      </div>
+    </form>
   );
 }

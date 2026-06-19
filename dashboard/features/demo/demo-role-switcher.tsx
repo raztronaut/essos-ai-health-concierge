@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/components/ui";
+import { stripOrgPrefix } from "@/lib/format";
 import { demoEnabled, useDemoIdentity } from "./demo-identity";
 
 /**
@@ -23,8 +25,7 @@ export function DemoRoleSwitcher() {
       >
         Demo · view as
       </label>
-      <select
-        className="focus-ring w-full rounded-control border border-border bg-surface px-2 py-1.5 text-ink text-xs"
+      <Select
         id="demo-view-as"
         onChange={(e) => setViewAs(e.target.value || null)}
         value={viewAs ?? ""}
@@ -32,10 +33,10 @@ export function DemoRoleSwitcher() {
         <option value="">You (real account)</option>
         {concierges.map((c) => (
           <option key={c.clerkId} value={c.clerkId}>
-            {c.name} · {c.role.replace(/^org:/, "")}
+            {c.name} · {stripOrgPrefix(c.role)}
           </option>
         ))}
-      </select>
+      </Select>
       {selected ? (
         <p className="mt-1 text-[10px] text-secondary">
           Viewing as {selected.name}. Reads + actions are scoped to this

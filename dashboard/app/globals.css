@@ -13,6 +13,7 @@ body {
 
 body {
   font-family: var(--font-sans);
+  font-feature-settings: "cv03" 1, "cv04" 1, "cv09" 1, "cv11" 1, "kern" 1, "liga" 1;
   -webkit-font-smoothing: antialiased;
   /*
    * System-wide defense against unbreakable tokens (user IDs, URLs, emails,
@@ -84,6 +85,25 @@ body {
     opacity: 0;
     transform: translateY(6px);
   }
+}
+
+/*
+ * S-Tier semantic typography utilities.
+ * Eliminates recurring inline magic numbers and tracking/weight duplication.
+ */
+@utility text-eyebrow {
+  font-size: var(--text-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+@utility text-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.025em;
+  color: var(--color-muted);
 }
 
 /*

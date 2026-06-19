@@ -1,15 +1,30 @@
+import { cn } from "@/lib/cn";
+
 /** A label/value pair for the definition-list panels. */
 export function DefinitionRow({
   label,
   value,
+  layout = "horizontal",
+  className,
 }: {
   label: string;
   value: string;
+  layout?: "horizontal" | "vertical";
+  className?: string;
 }) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-muted">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
+    <div
+      className={cn(
+        layout === "vertical" ? "flex flex-col gap-0.5" : "flex justify-between gap-3",
+        className
+      )}
+    >
+      <dt className={cn("text-muted", layout === "vertical" && "text-meta uppercase tracking-wide font-medium")}>
+        {label}
+      </dt>
+      <dd className={cn("font-medium", layout === "vertical" ? "text-ink text-sm mt-0.5" : "text-right")}>
+        {value}
+      </dd>
     </div>
   );
 }

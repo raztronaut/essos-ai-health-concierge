@@ -1,24 +1,26 @@
 import type { ButtonHTMLAttributes } from "react";
+import { cn } from "@/lib/cn";
 
 type ButtonVariant = "primary" | "ghost" | "ok" | "danger";
 type ButtonSize = "sm" | "md";
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-white hover:opacity-90",
+  primary: "bg-primary text-pearl hover:opacity-90",
   ghost:
     "border border-border text-ink hover:bg-surface hover:border-secondary/70",
-  ok: "bg-ok text-white hover:opacity-90",
-  danger: "bg-high text-white hover:opacity-90",
+  ok: "bg-ok text-pearl hover:opacity-90",
+  danger: "bg-high text-pearl hover:opacity-90",
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: "px-2 py-1 text-[11px]",
+  sm: "px-2 py-1 text-meta",
   md: "px-3 py-1.5 text-xs",
 };
 
 export function Button({
   variant = "ghost",
   size = "md",
+  type = "button",
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -27,7 +29,13 @@ export function Button({
 }) {
   return (
     <button
-      className={`focus-ring inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-control font-semibold transition-[transform,background-color,opacity,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]} ${className ?? ""}`}
+      className={cn(
+        "focus-ring inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-control font-semibold transition-[transform,background-color,opacity,box-shadow] duration-fast ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
+        BUTTON_SIZES[size],
+        BUTTON_VARIANTS[variant],
+        className
+      )}
+      type={type}
       {...props}
     />
   );

@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { CareInstruction, CarePhase, Procedure } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Button, Card, ConfirmDialog } from "@/components/ui";
+import { Button, Card, ConfirmDialog, FoldTrigger } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { humanize } from "@/lib/format";
 import { CareInstructionDialog } from "./care-instruction-dialog";
@@ -26,6 +26,7 @@ export function CareInstructions({
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<CareInstruction | null>(null);
   const [deleting, setDeleting] = useState<CareInstruction | null>(null);
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
 
   const activePhases = PHASES.filter((phase) =>
     care.some((c) => c.phase === phase)
@@ -48,6 +49,10 @@ export function CareInstructions({
         <div className="grid gap-4 lg:grid-cols-2">
           {activePhases.map((phase) => {
             const docs = care.filter((c) => c.phase === phase);
+            const isExpanded = expandedPhases[phase] || false;
+            const visibleDocs = isExpanded ? docs : docs.slice(0, 3);
+            const hasMore = docs.length > 3;
+
             return (
               <Card className="flex flex-col gap-3" key={phase}>
                 <div className="flex items-center justify-between">
@@ -57,7 +62,7 @@ export function CareInstructions({
                   </span>
                 </div>
                 <ul className="space-y-3">
-                  {docs.map((doc) => (
+                  {visibleDocs.map((doc) => (
                     <CareRow
                       doc={doc}
                       key={doc.id}
@@ -66,6 +71,21 @@ export function CareInstructions({
                     />
                   ))}
                 </ul>
+
+                {hasMore ? (
+                  <FoldTrigger
+                    expanded={isExpanded}
+                    onToggle={() =>
+                      setExpandedPhases((prev) => ({
+                        ...prev,
+                        [phase]: !isExpanded,
+                      }))
+                    }
+                    count={docs.length - 3}
+                    labelSingular="instruction"
+                    labelPlural="instructions"
+                  />
+                ) : null}
               </Card>
             );
           })}

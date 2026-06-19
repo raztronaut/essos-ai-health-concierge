@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useMemo, useState } from "react";
 import { StaggerList } from "@/components/motion/stagger-list";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, PageHeader, LoadingState, EmptyState } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { ConversationListItem } from "./conversation-list-item";
 
@@ -51,12 +51,10 @@ export function ConversationsView() {
 
       {visible === undefined ? (
         <Card>
-          <p className="text-muted text-sm">Loading conversations…</p>
+          <LoadingState message="Loading conversations..." />
         </Card>
       ) : visible.length === 0 ? (
-        <Card>
-          <p className="text-muted text-sm">No conversations in this view.</p>
-        </Card>
+        <EmptyState message="No conversations in this view." />
       ) : (
         <StaggerList className="space-y-3">
           {visible.map((c) => (

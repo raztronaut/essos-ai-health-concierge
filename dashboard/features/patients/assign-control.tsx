@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
-import { Card } from "@/components/ui";
+import { Card, Select, Button } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 
 /**
@@ -38,34 +38,35 @@ export function AssignControl({
         </div>
 
         {isLead && concierges.length > 0 ? (
-          <select
-            className="focus-ring rounded-control border border-border bg-surface px-2 py-1.5 text-ink text-sm"
-            onChange={(e) =>
-              assign({
-                patientId,
-                assigneeUserId: e.target.value || null,
-                viewAs,
-              })
-            }
-            value={assigneeUserId ?? ""}
-          >
-            <option value="">Unassigned</option>
-            {concierges.map((c) => (
-              <option key={c.clerkId} value={c.clerkId}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-40">
+            <Select
+              aria-label="Assign patient to owner"
+              onChange={(e) =>
+                assign({
+                  patientId,
+                  assigneeUserId: e.target.value || null,
+                  viewAs,
+                })
+              }
+              value={assigneeUserId ?? ""}
+            >
+              <option value="">Unassigned</option>
+              {concierges.map((c) => (
+                <option key={c.clerkId} value={c.clerkId}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </div>
         ) : canClaim ? (
-          <button
-            className="focus-ring rounded-control bg-primary px-3 py-1.5 font-medium text-sm text-white"
+          <Button
             onClick={() =>
               assign({ patientId, assigneeUserId: effectiveId, viewAs })
             }
-            type="button"
+            variant="primary"
           >
             Claim
-          </button>
+          </Button>
         ) : null}
       </div>
     </Card>

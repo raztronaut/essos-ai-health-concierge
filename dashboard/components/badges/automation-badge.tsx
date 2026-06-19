@@ -1,5 +1,6 @@
 import type { AutomationState } from "@essos/shared";
 import { Badge } from "@/components/ui";
+import { cn } from "@/lib/cn";
 
 const AUTOMATION_STYLES: Record<AutomationState, string> = {
   active: "bg-ok-soft text-ok",
@@ -15,9 +16,15 @@ const AUTOMATION_LABELS: Record<AutomationState, string> = {
   resolved: "Resolved",
 };
 
-export function AutomationBadge({ state }: { state: AutomationState }) {
+export function AutomationBadge({
+  state,
+  className,
+}: {
+  state: AutomationState;
+  className?: string;
+}) {
   return (
-    <Badge className={AUTOMATION_STYLES[state]} dot>
+    <Badge className={cn(AUTOMATION_STYLES[state], className)} dot>
       {AUTOMATION_LABELS[state]}
     </Badge>
   );

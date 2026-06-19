@@ -1,7 +1,6 @@
 import type { TextareaHTMLAttributes } from "react";
-
-const BASE =
-  "focus-ring w-full rounded-control border border-border bg-surface px-3 py-2 text-ink text-sm placeholder:text-muted disabled:pointer-events-none disabled:opacity-50";
+import { cn } from "@/lib/cn";
+import { CONTROL_BASE } from "./control-base";
 
 export function Textarea({
   className,
@@ -9,6 +8,10 @@ export function Textarea({
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <textarea className={`${BASE} ${className ?? ""}`} rows={rows} {...props} />
+    <textarea
+      className={cn(CONTROL_BASE, "placeholder:text-muted", className)}
+      rows={rows}
+      {...props}
+    />
   );
 }

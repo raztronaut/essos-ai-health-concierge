@@ -5,12 +5,13 @@ import type { Patient, Procedure } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import {
-  Button,
   Dialog,
   Field,
   Input,
   Select,
   Textarea,
+  DialogForm,
+  useDialogForm,
 } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { PROCEDURE_OPTIONS } from "./options";
@@ -56,40 +57,38 @@ export function PatientFormDialog({
   const { viewAs } = useDemoIdentity();
   const upsert = useMutation(api.mutations.upsertPatient);
   const [form, setForm] = useState<FormState>(() => initialState(patient));
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const handleSubmit = async () => {
-    if (!(form.name.trim() && form.handle.trim())) {
-      setError("Name and handle are required.");
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      const id = await upsert({
+  const { pending, error, handleSubmit, setError } = useDialogForm(
+    async (formData: FormState) => {
+      if (!(formData.name.trim() && formData.handle.trim())) {
+        throw new Error("Name and handle are required.");
+      }
+      return await upsert({
         id: patient?.id,
-        name: form.name.trim(),
-        handle: form.handle.trim(),
-        procedure: form.procedure,
-        destination_city: form.destination_city.trim(),
-        destination_country: form.destination_country.trim(),
-        clinic_name: form.clinic_name.trim(),
-        hotel_name: form.hotel_name.trim(),
-        companion_name: form.companion_name.trim() || null,
-        dietary_notes: form.dietary_notes.trim() || null,
+        name: formData.name.trim(),
+        handle: formData.handle.trim(),
+        procedure: formData.procedure,
+        destination_city: formData.destination_city.trim(),
+        destination_country: formData.destination_country.trim(),
+        clinic_name: formData.clinic_name.trim(),
+        hotel_name: formData.hotel_name.trim(),
+        companion_name: formData.companion_name.trim() || null,
+        dietary_notes: formData.dietary_notes.trim() || null,
         viewAs,
       });
+    },
+    (id) => {
       onSaved?.(id);
       onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save patient.");
-    } finally {
-      setPending(false);
     }
+  );
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmit(form).catch(() => {});
   };
 
   return (
@@ -99,89 +98,86 @@ export function PatientFormDialog({
           ? "Update this patient's profile. Eve uses these fields immediately."
           : "Create a new patient record. Eve can reference it right away."
       }
-      footer={
-        <>
-          <Button disabled={pending} onClick={onClose} variant="ghost">
-            Cancel
-          </Button>
-          <Button disabled={pending} onClick={handleSubmit} variant="primary">
-            {pending ? "Saving…" : patient ? "Save changes" : "Create patient"}
-          </Button>
-        </>
-      }
       onClose={onClose}
       open={open}
       title={patient ? "Edit patient" : "New patient"}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Full name">
-          <Input
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="Maya Okafor"
-            value={form.name}
-          />
-        </Field>
-        <Field hint="iMessage / phone handle" label="Handle">
-          <Input
-            onChange={(e) => set("handle", e.target.value)}
-            placeholder="+15551234567"
-            value={form.handle}
-          />
-        </Field>
-        <Field label="Procedure">
-          <Select
-            onChange={(e) => set("procedure", e.target.value as Procedure)}
-            value={form.procedure}
-          >
-            {PROCEDURE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Clinic">
-          <Input
-            onChange={(e) => set("clinic_name", e.target.value)}
-            value={form.clinic_name}
-          />
-        </Field>
-        <Field label="Destination city">
-          <Input
-            onChange={(e) => set("destination_city", e.target.value)}
-            value={form.destination_city}
-          />
-        </Field>
-        <Field label="Destination country">
-          <Input
-            onChange={(e) => set("destination_country", e.target.value)}
-            value={form.destination_country}
-          />
-        </Field>
-        <Field label="Hotel">
-          <Input
-            onChange={(e) => set("hotel_name", e.target.value)}
-            value={form.hotel_name}
-          />
-        </Field>
-        <Field label="Companion">
-          <Input
-            onChange={(e) => set("companion_name", e.target.value)}
-            placeholder="Optional"
-            value={form.companion_name}
-          />
-        </Field>
-        <div className="sm:col-span-2">
-          <Field label="Dietary notes">
-            <Textarea
-              onChange={(e) => set("dietary_notes", e.target.value)}
-              placeholder="Optional"
-              value={form.dietary_notes}
+      <DialogForm
+        error={error}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        pending={pending}
+        submitLabel={patient ? "Save changes" : "Create patient"}
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Full name">
+            <Input
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Maya Okafor"
+              value={form.name}
             />
           </Field>
+          <Field hint="iMessage / phone handle" label="Handle">
+            <Input
+              onChange={(e) => set("handle", e.target.value)}
+              placeholder="+15551234567"
+              value={form.handle}
+            />
+          </Field>
+          <Field label="Procedure">
+            <Select
+              onChange={(e) => set("procedure", e.target.value as Procedure)}
+              value={form.procedure}
+            >
+              {PROCEDURE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Clinic">
+            <Input
+              onChange={(e) => set("clinic_name", e.target.value)}
+              value={form.clinic_name}
+            />
+          </Field>
+          <Field label="Destination city">
+            <Input
+              onChange={(e) => set("destination_city", e.target.value)}
+              value={form.destination_city}
+            />
+          </Field>
+          <Field label="Destination country">
+            <Input
+              onChange={(e) => set("destination_country", e.target.value)}
+              value={form.destination_country}
+            />
+          </Field>
+          <Field label="Hotel">
+            <Input
+              onChange={(e) => set("hotel_name", e.target.value)}
+              value={form.hotel_name}
+            />
+          </Field>
+          <Field label="Companion">
+            <Input
+              onChange={(e) => set("companion_name", e.target.value)}
+              placeholder="Optional"
+              value={form.companion_name}
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Dietary notes">
+              <Textarea
+                onChange={(e) => set("dietary_notes", e.target.value)}
+                placeholder="Optional"
+                value={form.dietary_notes}
+              />
+            </Field>
+          </div>
         </div>
-      </div>
-      {error ? <p className="mt-3 text-high text-sm">{error}</p> : null}
+      </DialogForm>
     </Dialog>
   );
 }

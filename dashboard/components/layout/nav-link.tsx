@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/lib/cn";
 
 /**
  * Sidebar navigation link with an active-route highlight. A link is active when
@@ -13,7 +14,15 @@ import { usePathname } from "next/navigation";
  * cross-fading two backgrounds. Disabled under reduced motion (the pill simply
  * snaps via `layout={false}`-equivalent: we render a plain background instead).
  */
-export function NavLink({ href, label }: { href: string; label: string }) {
+export function NavLink({
+  href,
+  label,
+  icon,
+}: {
+  href: string;
+  label: string;
+  icon?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -21,9 +30,10 @@ export function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       aria-current={isActive ? "page" : undefined}
-      className={`focus-ring relative rounded-control px-3 py-2 font-medium text-sm transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] ${
+      className={cn(
+        "focus-ring group relative flex items-center gap-3 rounded-control px-3 py-2 font-medium text-sm transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)]",
         isActive ? "text-ink" : "text-ink/70 hover:text-ink"
-      }`}
+      )}
       href={href}
     >
       {isActive ? (
@@ -34,7 +44,17 @@ export function NavLink({ href, label }: { href: string; label: string }) {
           transition={{ type: "spring", duration: 0.4, bounce: 0.18 }}
         />
       ) : null}
-      {label}
+      {icon ? (
+        <span
+          className={cn(
+            "shrink-0 transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)]",
+            isActive ? "text-ink" : "text-ink/40 group-hover:text-ink/80"
+          )}
+        >
+          {icon}
+        </span>
+      ) : null}
+      <span className="truncate">{label}</span>
     </Link>
   );
 }

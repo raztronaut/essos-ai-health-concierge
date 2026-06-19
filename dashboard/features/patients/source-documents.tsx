@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { SourceDocument } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Button, Card, ConfirmDialog } from "@/components/ui";
+import { Button, Card, ConfirmDialog, TextLink } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { humanize } from "@/lib/format";
 import { DocumentUploadDialog } from "./document-upload-dialog";
@@ -30,38 +30,42 @@ export function SourceDocuments({
         </Button>
       </div>
       <Card>
-        <ul className="space-y-2 text-sm">
+        <ul className="space-y-2.5 text-sm">
           {docs.map((doc) => (
             <li
-              className="flex items-center justify-between gap-2"
+              className="group flex items-center justify-between gap-3"
               key={doc.id}
             >
-              <a
-                className="min-w-0 truncate font-medium text-primary hover:underline"
-                href={`/source-docs/${doc.id}`}
-                rel="noreferrer"
-                target="_blank"
-              >
-                {doc.title}
-              </a>
+              <div className="min-w-0 flex-1">
+                <TextLink
+                  className="block truncate font-medium"
+                  href={`/source-docs/${doc.id}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {doc.title}
+                </TextLink>
+              </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-muted text-xs">
+                <span className="text-meta">
                   {humanize(doc.source_status)}
                 </span>
                 {doc.patient_id ? (
-                  <Button
-                    onClick={() => setDeleting(doc)}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Remove
-                  </Button>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+                    <Button
+                      onClick={() => setDeleting(doc)}
+                      size="sm"
+                      variant="ghost"
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 ) : null}
               </div>
             </li>
           ))}
           {docs.length === 0 ? (
-            <li className="text-muted">No documents.</li>
+            <li className="text-muted text-sm">No documents.</li>
           ) : null}
         </ul>
       </Card>

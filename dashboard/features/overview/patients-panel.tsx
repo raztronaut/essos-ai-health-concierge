@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { Badge, Card } from "@/components/ui";
+import { Badge, Card, LoadingState, EmptyState, SectionHeader, TextLink } from "@/components/ui";
 import { humanize } from "@/lib/format";
 
 /** Compact roster snapshot for the overview: unassigned first, then flagged. */
@@ -23,18 +23,23 @@ export function PatientsPanel() {
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-lg">Patients</h2>
-        <Link className="text-primary text-sm hover:underline" href="/patients">
-          View all →
-        </Link>
-      </div>
-      <Card>
-        {rows === undefined ? (
-          <p className="text-muted text-sm">Loading…</p>
-        ) : ranked.length === 0 ? (
-          <p className="text-muted text-sm">No patients yet.</p>
-        ) : (
+      <SectionHeader
+        title="Patients"
+        action={
+          <TextLink href="/patients">
+            View all →
+          </TextLink>
+        }
+      />
+      
+      {rows === undefined ? (
+        <Card>
+          <LoadingState message="Loading..." />
+        </Card>
+      ) : ranked.length === 0 ? (
+        <EmptyState message="No patients yet." />
+      ) : (
+        <Card>
           <ul className="divide-y divide-border">
             {ranked.map((r) => (
               <li key={r.patient.id}>
@@ -65,8 +70,8 @@ export function PatientsPanel() {
               </li>
             ))}
           </ul>
-        )}
-      </Card>
+        </Card>
+      )}
     </section>
   );
 }

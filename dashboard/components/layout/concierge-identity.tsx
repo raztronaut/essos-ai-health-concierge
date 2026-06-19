@@ -9,6 +9,7 @@ import {
   useUser,
 } from "@clerk/nextjs";
 import { clerkEnabled } from "@/app/ConvexClientProvider";
+import { Button } from "@/components/ui/button";
 
 /**
  * Sidebar identity widget. With Clerk configured it shows the signed-in
@@ -18,7 +19,7 @@ import { clerkEnabled } from "@/app/ConvexClientProvider";
 export function ConciergeIdentity() {
   if (!clerkEnabled) {
     return (
-      <div className="rounded-control border border-border bg-surface px-3 py-2 text-[11px] text-muted">
+      <div className="text-meta rounded-control border border-border bg-surface px-3 py-2">
         Signed in as{" "}
         <span className="font-medium text-ink">Demo concierge</span>
         <div className="mt-0.5">Add Clerk keys to enable real accounts.</div>
@@ -43,12 +44,9 @@ function ClerkIdentity() {
         </SignedIn>
         <SignedOut>
           <SignInButton mode="modal">
-            <button
-              className="font-medium text-primary text-xs hover:underline"
-              type="button"
-            >
+            <Button size="sm" variant="ghost">
               Sign in
-            </button>
+            </Button>
           </SignInButton>
         </SignedOut>
       </div>

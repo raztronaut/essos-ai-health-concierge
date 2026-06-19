@@ -4,16 +4,16 @@ overview: Redesign the dashboard chat interface into an asymmetric, grouped bubb
 todos:
   - id: group-messages
     content: Update message-thread.tsx to pass grouping flags
-    status: pending
+    status: completed
   - id: redesign-bubbles
     content: Redesign message-bubble.tsx with asymmetric bubbles and custom border-radii
-    status: pending
+    status: completed
   - id: redesign-reply-box
     content: Redesign concierge-reply-box.tsx with integrated editor layout
-    status: pending
+    status: completed
   - id: verify-build
     content: Verify with typecheck and build
-    status: pending
+    status: completed
 isProject: false
 ---
 

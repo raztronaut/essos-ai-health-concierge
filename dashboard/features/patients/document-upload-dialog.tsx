@@ -10,7 +10,14 @@ import type {
 } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Button, Dialog, Field, Input, Select } from "@/components/ui";
+import {
+  Dialog,
+  Field,
+  Input,
+  Select,
+  DialogForm,
+  useDialogForm,
+} from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import {
   ANSWER_POLICY_OPTIONS,
@@ -18,6 +25,15 @@ import {
   CARE_SOURCE_TYPE_OPTIONS,
   SOURCE_DOCUMENT_KIND_OPTIONS,
 } from "./options";
+
+interface UploadFormState {
+  file: File | null;
+  title: string;
+  kind: SourceDocumentKind;
+  sourceType: CareSourceType;
+  sourceStatus: CareSourceStatus;
+  answerPolicy: CareAnswerPolicy;
+}
 
 /** Upload a file to Convex storage and record it as a patient source document. */
 export function DocumentUploadDialog({
@@ -33,31 +49,29 @@ export function DocumentUploadDialog({
   const generateUploadUrl = useMutation(api.mutations.generateUploadUrl);
   const createDoc = useMutation(api.mutations.createSourceDocument);
 
-  const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<SourceDocumentKind>("care_packet");
-  const [sourceType, setSourceType] = useState<CareSourceType>("clinic_packet");
-  const [sourceStatus, setSourceStatus] =
-    useState<CareSourceStatus>("verified");
-  const [answerPolicy, setAnswerPolicy] =
-    useState<CareAnswerPolicy>("answer_reference");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<UploadFormState>({
+    file: null,
+    title: "",
+    kind: "care_packet",
+    sourceType: "clinic_packet",
+    sourceStatus: "verified",
+    answerPolicy: "answer_reference",
+  });
 
-  const handleSubmit = async () => {
-    if (!file) {
-      setError("Choose a file to upload.");
-      return;
-    }
-    const docTitle = title.trim() || file.name;
-    setPending(true);
-    setError(null);
-    try {
+  const set = <K extends keyof UploadFormState>(key: K, value: UploadFormState[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const { pending, error, handleSubmit } = useDialogForm(
+    async (formData: UploadFormState) => {
+      if (!formData.file) {
+        throw new Error("Choose a file to upload.");
+      }
+      const docTitle = formData.title.trim() || formData.file.name;
       const uploadUrl = await generateUploadUrl({});
       const res = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
+        headers: { "Content-Type": formData.file.type || "application/octet-stream" },
+        body: formData.file,
       });
       if (!res.ok) {
         throw new Error("Upload failed.");
@@ -67,116 +81,111 @@ export function DocumentUploadDialog({
       };
       await createDoc({
         patientId,
-        kind,
+        kind: formData.kind,
         title: docTitle,
-        source_type: sourceType,
-        source_status: sourceStatus,
-        answer_policy: answerPolicy,
+        source_type: formData.sourceType,
+        source_status: formData.sourceStatus,
+        answer_policy: formData.answerPolicy,
         storageId,
-        fileName: file.name,
-        contentType: file.type || null,
+        fileName: formData.file.name,
+        contentType: formData.file.type || null,
         viewAs,
       });
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload.");
-    } finally {
-      setPending(false);
-    }
+    },
+    () => onClose()
+  );
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmit(form).catch(() => {});
   };
 
   return (
     <Dialog
       description="Upload a PDF or document. Eve can be allowed to reference it."
-      footer={
-        <>
-          <Button disabled={pending} onClick={onClose} variant="ghost">
-            Cancel
-          </Button>
-          <Button disabled={pending} onClick={handleSubmit} variant="primary">
-            {pending ? "Uploading…" : "Upload"}
-          </Button>
-        </>
-      }
       onClose={onClose}
       open={open}
       title="Upload document"
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <Field label="File">
-            <Input
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              type="file"
-            />
+      <DialogForm
+        error={error}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        pending={pending}
+        submitLabel="Upload"
+        pendingLabel="Uploading…"
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Field label="File">
+              <Input
+                onChange={(e) => set("file", e.target.files?.[0] ?? null)}
+                type="file"
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
+            <Field hint="Defaults to the file name." label="Title">
+              <Input
+                onChange={(e) => set("title", e.target.value)}
+                placeholder="Pre-op care packet"
+                value={form.title}
+              />
+            </Field>
+          </div>
+          <Field label="Kind">
+            <Select
+              onChange={(e) => set("kind", e.target.value as SourceDocumentKind)}
+              value={form.kind}
+            >
+              {SOURCE_DOCUMENT_KIND_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Source type">
+            <Select
+              onChange={(e) => set("sourceType", e.target.value as CareSourceType)}
+              value={form.sourceType}
+            >
+              {CARE_SOURCE_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Source status">
+            <Select
+              onChange={(e) => set("sourceStatus", e.target.value as CareSourceStatus)}
+              value={form.sourceStatus}
+            >
+              {CARE_SOURCE_STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            hint="Whether Eve may quote this document."
+            label="Answer policy"
+          >
+            <Select
+              onChange={(e) => set("answerPolicy", e.target.value as CareAnswerPolicy)}
+              value={form.answerPolicy}
+            >
+              {ANSWER_POLICY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
           </Field>
         </div>
-        <div className="sm:col-span-2">
-          <Field hint="Defaults to the file name." label="Title">
-            <Input
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Pre-op care packet"
-              value={title}
-            />
-          </Field>
-        </div>
-        <Field label="Kind">
-          <Select
-            onChange={(e) => setKind(e.target.value as SourceDocumentKind)}
-            value={kind}
-          >
-            {SOURCE_DOCUMENT_KIND_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Source type">
-          <Select
-            onChange={(e) => setSourceType(e.target.value as CareSourceType)}
-            value={sourceType}
-          >
-            {CARE_SOURCE_TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Source status">
-          <Select
-            onChange={(e) =>
-              setSourceStatus(e.target.value as CareSourceStatus)
-            }
-            value={sourceStatus}
-          >
-            {CARE_SOURCE_STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field
-          hint="Whether Eve may quote this document."
-          label="Answer policy"
-        >
-          <Select
-            onChange={(e) =>
-              setAnswerPolicy(e.target.value as CareAnswerPolicy)
-            }
-            value={answerPolicy}
-          >
-            {ANSWER_POLICY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </div>
-      {error ? <p className="mt-3 text-high text-sm">{error}</p> : null}
+      </DialogForm>
     </Dialog>
   );
 }

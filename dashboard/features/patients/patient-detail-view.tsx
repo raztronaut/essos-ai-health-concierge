@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, ConfirmDialog, PageHeader } from "@/components/ui";
+import { Button, Card, ConfirmDialog, PageHeader, LoadingState, NotFoundCard } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { AssignControl } from "./assign-control";
 import { CareInstructions } from "./care-instructions";
@@ -35,19 +35,15 @@ export function PatientDetailView({ id }: { id: string }) {
   const [deleting, setDeleting] = useState(false);
 
   if (patient === undefined) {
-    return <p className="text-muted text-sm">Loading patient…</p>;
+    return <LoadingState message="Loading patient…" />;
   }
   if (patient === null) {
     return (
-      <Card>
-        <p className="text-muted text-sm">Patient not found.</p>
-        <Link
-          className="mt-2 inline-block text-primary text-sm hover:underline"
-          href="/patients"
-        >
-          ← Patients
-        </Link>
-      </Card>
+      <NotFoundCard
+        message="Patient not found."
+        backHref="/patients"
+        backLabel="Patients"
+      />
     );
   }
 

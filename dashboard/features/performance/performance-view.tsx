@@ -3,7 +3,8 @@
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-import { Card, PageHeader, Stat } from "@/components/ui";
+import { Card, PageHeader, Stat, LoadingState, EmptyState } from "@/components/ui";
+import { BarMeter, BarColumn } from "@/components/charts/bar-meter";
 import { humanize } from "@/lib/format";
 
 function fmtMs(ms: number): string {
@@ -33,7 +34,7 @@ export function PerformanceView() {
           title="AI performance"
         />
         <Card>
-          <p className="text-muted text-sm">Loading telemetry…</p>
+          <LoadingState message="Loading telemetry…" />
         </Card>
       </div>
     );
@@ -81,9 +82,7 @@ export function PerformanceView() {
         <Card>
           <h2 className="font-semibold text-sm">Tool usage</h2>
           {tools.length === 0 ? (
-            <p className="mt-2 text-muted text-sm">
-              No tool calls recorded yet.
-            </p>
+            <EmptyState message="No tool calls recorded yet." />
           ) : (
             <div className="mt-3 space-y-2">
               {tools.map(([tool, n]) => (
@@ -92,12 +91,7 @@ export function PerformanceView() {
                     <span className="text-ink">{humanize(tool)}</span>
                     <span className="text-muted tabular-nums">{n}</span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-surface">
-                    <div
-                      className="h-1.5 rounded-full bg-primary"
-                      style={{ width: `${maxTool ? (n / maxTool) * 100 : 0}%` }}
-                    />
-                  </div>
+                  <BarMeter label={humanize(tool)} max={maxTool} value={n} />
                 </div>
               ))}
             </div>
@@ -125,7 +119,7 @@ export function PerformanceView() {
       <Card>
         <h2 className="font-semibold text-sm">Daily volume</h2>
         {perf.trend.length === 0 ? (
-          <p className="mt-2 text-muted text-sm">No turns in this window.</p>
+          <EmptyState message="No turns in this window." />
         ) : (
           <div className="mt-4 flex items-end gap-2">
             {perf.trend.map((t) => (
@@ -134,15 +128,14 @@ export function PerformanceView() {
                 key={t.day}
               >
                 <div className="flex h-24 w-full items-end justify-center">
-                  <div
-                    className="w-full max-w-8 rounded-t bg-primary/80"
-                    style={{
-                      height: `${maxTrend ? (t.turns / maxTrend) * 100 : 0}%`,
-                    }}
+                  <BarColumn
+                    label={`Turns on ${t.day}`}
+                    max={maxTrend}
                     title={`${t.turns} turns, ${t.escalated} escalated`}
+                    value={t.turns}
                   />
                 </div>
-                <span className="truncate text-[10px] text-muted">
+                <span className="truncate text-meta">
                   {t.day.slice(5)}
                 </span>
               </div>

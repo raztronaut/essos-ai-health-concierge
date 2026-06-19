@@ -43,10 +43,51 @@ export function formatRelativeTime(
 }
 
 /** Turn a snake_case enum into a human label ("travel_logistics" -> "Travel logistics"). */
-export function humanize(value: string): string {
+export function humanize(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
   const spaced = value.replace(/_/g, " ");
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
+
+/** Format a duration in milliseconds into a human-readable string ("45m", "2h 15m"). */
+export function formatDuration(ms: number): string {
+  if (ms <= 0) {
+    return "—";
+  }
+  const min = Math.round(ms / 60_000);
+  if (min < 60) {
+    return `${min}m`;
+  }
+  const hr = Math.floor(min / 60);
+  const remainingMin = min % 60;
+  return remainingMin > 0 ? `${hr}h ${remainingMin}m` : `${hr}h`;
+}
+
+/** Pluralize a word based on a count. */
+export function pluralize(count: number, singular: string, plural?: string): string {
+  if (count === 1) {
+    return `${count} ${singular}`;
+  }
+  return `${count} ${plural ?? `${singular}s`}`;
+}
+
+/** Strip the "org:" prefix from a Clerk role string. */
+export function stripOrgPrefix(role: string | null | undefined): string {
+  if (!role) {
+    return "Member";
+  }
+  return humanize(role.replace(/^org:/, ""));
+}
+
+/** Build a standardized concierge message signature. */
+export function buildSignature(name?: string | null): string {
+  const trimmed = name?.trim();
+  return trimmed ? `— ${trimmed}, Essos Care Team` : "— Essos Care Team";
+}
+
+export const UNASSIGNED_LABEL = "Unassigned";
 
 /** Minutes a flag must wait before it counts as breaching its (demo) SLA, by level. */
 const SLA_MINUTES: Record<string, number> = { High: 15, Med: 60 };
@@ -56,7 +97,7 @@ export function isSlaBreached(
   level: string,
   createdAt: string | null | undefined,
   now: number = Date.now()
-): boolean {
+) {
   if (!createdAt) {
     return false;
   }
