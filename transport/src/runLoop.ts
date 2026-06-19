@@ -64,6 +64,11 @@ export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
       continue;
     }
 
+    const io = opts.buildIO(space, message);
+    if (!resolved.isConcierge) {
+      await Promise.allSettled([io.markRead?.(), io.startTyping?.()]);
+    }
+
     await enqueue({
       spaceId: `${opts.spaceIdPrefix}${space.id}`,
       channel: opts.channel,
@@ -73,7 +78,7 @@ export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
       allowGuest: resolved.allowGuest,
       guestName: resolved.guestName,
       text: resolved.text,
-      io: opts.buildIO(space, message),
+      io,
     });
   }
 }

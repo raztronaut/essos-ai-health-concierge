@@ -58,6 +58,8 @@ import {
 export interface ConversationIO {
   /** Send a fresh bubble into the conversation (provider-transformed). */
   send: (text: string) => Promise<void>;
+  /** Mark the inbound message/conversation as read where supported. */
+  markRead?: () => Promise<void> | void;
   /** Send a native rich patient card when the provider supports it. */
   sendPatientCard?: (link: PatientCardLink) => Promise<boolean>;
   startTyping?: () => Promise<void> | void;

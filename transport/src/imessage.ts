@@ -204,6 +204,7 @@ async function main(): Promise<void> {
             }
           }
         },
+        markRead: () => space.read(message),
         sendPatientCard: (link) =>
           sendSpectrumMiniAppCard(app, spaceId, authorHandle, link),
         startTyping: () => space.startTyping(),
