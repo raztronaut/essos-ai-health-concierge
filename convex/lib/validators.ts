@@ -216,6 +216,7 @@ export const messageDoc = v.object({
   conversation_id: v.string(),
   role: messageRole,
   author_handle: v.union(v.string(), v.null()),
+  source_event_id: v.optional(v.union(v.string(), v.null())),
   text: v.string(),
   category: v.union(v.string(), v.null()),
   created_at: v.string(),
@@ -366,6 +367,7 @@ export const conversationSummary = v.object({
 /** A drained inbound message (from batch_queue or carried_messages). */
 export const pipelineMessageDoc = v.object({
   client_guid: v.string(),
+  source_event_id: v.optional(v.union(v.string(), v.null())),
   author_handle: v.union(v.string(), v.null()),
   source_message_id: v.string(),
   text: v.string(),

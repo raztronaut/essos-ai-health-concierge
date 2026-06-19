@@ -134,6 +134,13 @@ export const hasMessageWithMetaKind = internalQuery({
     Messages.hasMessageWithMetaKind(ctx, conversationId, kind, since ?? null),
 });
 
+export const getMessageBySourceEvent = internalQuery({
+  args: { conversationId: v.string(), sourceEventId: v.string() },
+  returns: v.union(messageDoc, v.null()),
+  handler: async (ctx, { conversationId, sourceEventId }) =>
+    Messages.getBySourceEvent(ctx, conversationId, sourceEventId),
+});
+
 export const listPendingOutbound = internalQuery({
   args: {},
   returns: v.array(messageDoc),
@@ -177,6 +184,7 @@ export const appendMessage = internalMutation({
     authorHandle: v.optional(v.union(v.string(), v.null())),
     category: v.optional(v.union(v.string(), v.null())),
     meta: v.optional(v.union(v.any(), v.null())),
+    sourceEventId: v.optional(v.union(v.string(), v.null())),
   },
   returns: messageDoc,
   handler: async (ctx, args) =>
@@ -187,6 +195,7 @@ export const appendMessage = internalMutation({
       authorHandle: args.authorHandle ?? null,
       category: args.category ?? null,
       meta: (args.meta as Record<string, unknown> | null) ?? null,
+      sourceEventId: args.sourceEventId ?? null,
     }),
 });
 
@@ -816,6 +825,7 @@ export const enqueueInbound = internalMutation({
     conversationId: v.string(),
     spaceId: v.string(),
     clientGuid: v.string(),
+    sourceEventId: v.optional(v.union(v.string(), v.null())),
     authorHandle: v.union(v.string(), v.null()),
     sourceMessageId: v.string(),
     text: v.string(),

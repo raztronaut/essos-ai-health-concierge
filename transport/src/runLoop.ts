@@ -34,6 +34,26 @@ export interface MessageLoopOptions {
   spaceIdPrefix: string;
 }
 
+function sourceEventIdFor(message: Message): string | null {
+  const candidate = message as Message & {
+    externalId?: unknown;
+    guid?: unknown;
+    id?: unknown;
+    messageId?: unknown;
+  };
+  for (const value of [
+    candidate.id,
+    candidate.guid,
+    candidate.messageId,
+    candidate.externalId,
+  ]) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
 /**
  * The shared inbound loop for both transports. It skips outbound/empty/non-text
  * messages, resolves the author (provider-specific), and hands each message to
@@ -77,6 +97,7 @@ export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
       patientId: resolved.patientId,
       allowGuest: resolved.allowGuest,
       guestName: resolved.guestName,
+      sourceEventId: sourceEventIdFor(message),
       text: resolved.text,
       io,
     });

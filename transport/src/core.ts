@@ -71,6 +71,30 @@ const HOLDING_NOTICE_MED =
 const HOLDING_NOTICE_HIGH =
   "I've flagged this to the Essos care team as a priority and someone is reviewing it now — " +
   "they'll reply right here. If this is a medical emergency, please call your local emergency number.";
+const AUTO_RESUME_FALLBACK_AFTER_MS = 10 * 60 * 1000;
+
+function deliveryMeta(
+  conversation: Pick<Conversation, "channel">,
+  meta: Record<string, unknown> = {}
+): Record<string, unknown> | undefined {
+  if (conversation.channel === "imessage") {
+    return { ...meta, outbound: "pending" };
+  }
+  return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
+function isStaleAutomatedFallback(
+  escalation: { created_at: string; reason: string; summary: string },
+  now = Date.now()
+): boolean {
+  const createdAt = Date.parse(escalation.created_at);
+  return (
+    Number.isFinite(createdAt) &&
+    now - createdAt >= AUTO_RESUME_FALLBACK_AFTER_MS &&
+    escalation.reason === "missing_source_or_unsure" &&
+    escalation.summary.startsWith("Automated fallback")
+  );
+}
 
 /**
  * One-time AI disclosure prepended to Eve's first reply in a conversation. The
@@ -88,6 +112,7 @@ function buildDisclosure(_patient: Patient): string {
 }
 
 export interface InboundResult {
+  deliveryMessageIds?: string[];
   reason:
     | "answered"
     | "empty"
@@ -127,6 +152,7 @@ export interface InboundArgs {
  * latched on `handoff_holding` so follow-ups don't repeat it. See ADR 010/011.
  */
 async function degradeToHuman(args: {
+  channel: Channel;
   conversationId: string;
   patientId: string;
   sourceMessageId: string | null;
@@ -145,13 +171,20 @@ async function degradeToHuman(args: {
     summary: `Automated fallback — the AI concierge could not produce a reply (${args.errorDetail}). Routed to the care team.`,
     sourceMessageId: args.sourceMessageId,
   });
-  await appendMessage({
+  const holding = await appendMessage({
     conversationId: args.conversationId,
     role: "agent",
     text: HOLDING_NOTICE_MED,
-    meta: { kind: "handoff_holding" },
+    meta:
+      args.channel === "imessage"
+        ? { kind: "handoff_holding", outbound: "pending" }
+        : { kind: "handoff_holding" },
   });
-  return { reply: HOLDING_NOTICE_MED, reason: args.reason };
+  return {
+    deliveryMessageIds: args.channel === "imessage" ? [holding.id] : [],
+    reply: HOLDING_NOTICE_MED,
+    reason: args.reason,
+  };
 }
 
 /**
@@ -308,7 +341,7 @@ export async function generateTurn(
   const { conversation, patient } = args;
 
   // Respect handoff state (re-read fresh: a tool or human may have changed it).
-  const fresh = (await getConversationById(conversation.id)) ?? conversation;
+  let fresh = (await getConversationById(conversation.id)) ?? conversation;
   if (fresh.automation_state === "paused_for_review") {
     const open = await listOpenEscalationsForConversation(conversation.id);
     const latestOpen = open[0];
@@ -322,6 +355,18 @@ export async function generateTurn(
         conversation.id
       );
       await resumeAutomation(conversation.id, "system");
+      fresh = (await getConversationById(conversation.id)) ?? conversation;
+    } else if (
+      open.length > 0 &&
+      open.every((e) => isStaleAutomatedFallback(e))
+    ) {
+      debug(
+        "transport",
+        "auto-resuming stale automated fallback",
+        conversation.id
+      );
+      await resolveAndResume(conversation.id, "system");
+      fresh = (await getConversationById(conversation.id)) ?? conversation;
     } else {
       // Durable one-time latch anchored on the current escalation's open time,
       // so exactly one holding notice is sent per pause, a restart won't repeat
@@ -337,13 +382,17 @@ export async function generateTurn(
       }
       const isHigh = open.some((e) => e.level === "High");
       const notice = isHigh ? HOLDING_NOTICE_HIGH : HOLDING_NOTICE_MED;
-      await appendMessage({
+      const holding = await appendMessage({
         conversationId: conversation.id,
         role: "agent",
         text: notice,
-        meta: { kind: "handoff_holding" },
+        meta: deliveryMeta(fresh, { kind: "handoff_holding" }),
       });
-      return { reply: notice, reason: "paused_for_review" };
+      return {
+        deliveryMessageIds: fresh.channel === "imessage" ? [holding.id] : [],
+        reply: notice,
+        reason: "paused_for_review",
+      };
     }
   } else if (fresh.automation_state === "taken_over") {
     return { reply: null, reason: "taken_over" };
@@ -404,6 +453,7 @@ export async function generateTurn(
       debug("transport", "telemetry record failed", String(telemetryErr));
     });
     return await degradeToHuman({
+      channel: conversation.channel,
       conversationId: conversation.id,
       patientId: patient.id,
       sourceMessageId: args.sourceMessageId,
@@ -434,6 +484,7 @@ export async function generateTurn(
       debug("transport", "telemetry record failed", String(telemetryErr));
     });
     return await degradeToHuman({
+      channel: conversation.channel,
       conversationId: conversation.id,
       patientId: patient.id,
       sourceMessageId: args.sourceMessageId,
@@ -444,23 +495,31 @@ export async function generateTurn(
 
   // On Eve's very first reply, prepend a one-time AI disclosure (durably gated).
   let reply = text;
+  const deliveryMessageIds: string[] = [];
   if (!(await hasMessageWithMetaKind(conversation.id, "disclosure"))) {
     const disclosure = buildDisclosure(patient);
-    await appendMessage({
+    const disclosureMessage = await appendMessage({
       conversationId: conversation.id,
       role: "agent",
       text: disclosure,
-      meta: { kind: "disclosure" },
+      meta: deliveryMeta(fresh, { kind: "disclosure" }),
     });
+    if (fresh.channel === "imessage") {
+      deliveryMessageIds.push(disclosureMessage.id);
+    }
     reply = `${disclosure}\n\n${text}`;
   }
 
   // Record the agent's reply (escalation rows/pause are written by tools).
-  await appendMessage({
+  const replyMessage = await appendMessage({
     conversationId: conversation.id,
     role: "agent",
     text,
+    meta: deliveryMeta(fresh),
   });
+  if (fresh.channel === "imessage") {
+    deliveryMessageIds.push(replyMessage.id);
+  }
 
   // A now-paused state is a reliable "this turn escalated" signal.
   const afterState = (await getConversationById(conversation.id))
@@ -496,7 +555,7 @@ export async function generateTurn(
     debug("transport", "telemetry record failed", String(telemetryErr));
   });
 
-  return { reply, reason: "answered" };
+  return { deliveryMessageIds, reply, reason: "answered" };
 }
 
 /**

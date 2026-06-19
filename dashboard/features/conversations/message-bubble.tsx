@@ -135,14 +135,14 @@ export function MessageBubble({
             {humanize(message.category)}
           </div>
         ) : null}
-        {message.role === "concierge" && message.outbound === "failed" ? (
+        {message.role !== "patient" && message.outbound === "failed" ? (
           <div
             className="mt-1.5 text-meta text-red-200 uppercase tracking-wide"
             title={message.outbound_error ?? undefined}
           >
             Not delivered
           </div>
-        ) : message.role === "concierge" && message.outbound === "pending" ? (
+        ) : message.role !== "patient" && message.outbound === "pending" ? (
           <div className="mt-1.5 text-meta text-pearl/55 uppercase tracking-wide">
             Sending…
           </div>

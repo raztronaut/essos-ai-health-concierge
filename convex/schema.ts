@@ -238,6 +238,8 @@ export default defineSchema({
     conversation_id: v.string(),
     role: messageRole,
     author_handle: v.union(v.string(), v.null()),
+    /** Provider event id for inbound idempotency (Spectrum/iMessage GUID, etc.). */
+    source_event_id: v.optional(v.union(v.string(), v.null())),
     text: v.string(),
     category: v.union(v.string(), v.null()),
     created_at: v.string(),
@@ -412,6 +414,8 @@ export default defineSchema({
     space_id: v.string(),
     /** Stable per-message id, assigned at enqueue, used for send dedup. */
     client_guid: v.string(),
+    /** Provider event id for inbound idempotency (Spectrum/iMessage GUID, etc.). */
+    source_event_id: v.optional(v.union(v.string(), v.null())),
     author_handle: v.union(v.string(), v.null()),
     /** The logged `messages` row id (messages are logged once, at enqueue). */
     source_message_id: v.string(),
@@ -424,6 +428,8 @@ export default defineSchema({
   carried_messages: defineTable({
     conversation_id: v.string(),
     client_guid: v.string(),
+    /** Provider event id for inbound idempotency (Spectrum/iMessage GUID, etc.). */
+    source_event_id: v.optional(v.union(v.string(), v.null())),
     author_handle: v.union(v.string(), v.null()),
     source_message_id: v.string(),
     text: v.string(),
