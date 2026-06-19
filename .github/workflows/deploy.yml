@@ -1,0 +1,95 @@
+# Production deploy pipeline.
+#
+# Runs automatically on every push to `main` and deploys all three live
+# services: Convex Cloud (backend/data), Vercel (dashboard), and Railway
+# (Eve agent + Spectrum transport). You can also trigger it by hand from the
+# GitHub "Actions" tab via "Run workflow".
+#
+# Required GitHub repository secrets (Settings -> Secrets and variables ->
+# Actions -> "Secrets"):
+#   CONVEX_DEPLOY_KEY     prod deploy key from the Convex dashboard
+#                         (Settings -> Deploy keys), e.g. "prod:intent-hare-36|..."
+#   VERCEL_TOKEN          a Vercel access token (vercel.com/account/tokens)
+#   VERCEL_ORG_ID         "team_Mbwu3YmAoFqJ3pGGLvAcQ8u6"  (from .vercel/project.json)
+#   VERCEL_PROJECT_ID     "prj_UCFoxJfx1KZkxr0d2rXiNw5nZKLe" (from .vercel/project.json)
+#   RAILWAY_TOKEN         a Railway *project* token (Project -> Settings -> Tokens)
+#
+# Optional GitHub repository variables ("Variables" tab). The Railway job only
+# runs if RAILWAY_EVE_SERVICE is set, so leave these empty to skip Railway
+# (e.g. if Railway already auto-deploys from GitHub):
+#   RAILWAY_EVE_SERVICE        the Railway service name for the Eve agent
+#   RAILWAY_TRANSPORT_SERVICE  the Railway service name for the Spectrum transport
+
+name: Deploy (production)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two production deploys at once; let an in-flight one finish.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  convex:
+    name: Convex (backend + data)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # --frozen-lockfile makes CI fail loudly if pnpm-lock.yaml is out of sync
+      # with any package.json (the exact issue that broke the manual deploy).
+      - run: pnpm install --frozen-lockfile
+
+      # With CONVEX_DEPLOY_KEY set, `convex deploy` runs non-interactively.
+      - name: Push functions + schema to Convex Cloud
+        run: pnpm exec convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  vercel:
+    name: Vercel (dashboard)
+    runs-on: ubuntu-latest
+    needs: convex
+    steps:
+      - uses: actions/checkout@v4
+
+      # Vercel builds remotely using the project's "Root Directory = dashboard"
+      # setting and dashboard/vercel.json (which compiles @essos/shared first),
+      # so we only need to upload the repo and trigger a production deploy.
+      - name: Deploy to Vercel
+        run: npx vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  railway:
+    name: Railway (Eve + transport)
+    runs-on: ubuntu-latest
+    needs: convex
+    # Only runs once you've set the RAILWAY_EVE_SERVICE repo variable.
+    if: ${{ vars.RAILWAY_EVE_SERVICE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: npm install -g @railway/cli
+
+      - name: Redeploy Eve agent
+        run: railway up --service "${{ vars.RAILWAY_EVE_SERVICE }}" --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Redeploy Spectrum transport
+        run: railway up --service "${{ vars.RAILWAY_TRANSPORT_SERVICE }}" --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

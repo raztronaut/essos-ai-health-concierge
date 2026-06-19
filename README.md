@@ -218,6 +218,7 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [015](.docs/decisions/015-agent-telemetry-and-analytics.md) | Agent telemetry + analytics |
 | [016](.docs/decisions/016-concierge-ownership-and-rbac.md) | Concierge patient ownership + RBAC |
 | [017](.docs/decisions/017-guest-onboarding-and-deployment.md) | Guest iMessage onboarding + deployment topology |
+| [018](.docs/decisions/018-deploy-pipeline-cicd.md) | Deploy pipeline (CI/CD) |
 
 ## Package docs
 
