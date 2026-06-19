@@ -30,6 +30,10 @@ const TAPBACK_EMOJI: Record<TapbackName, string> = {
  * treats configured concierge handles as the human team.
  */
 async function main(): Promise<void> {
+  // Spectrum Cloud allows one live consumer per project; refuse to start a
+  // second local transport that would fight over the stream.
+  acquireSingleInstanceLock("imessage");
+
   const projectId = process.env.SPECTRUM_PROJECT_ID;
   const projectSecret = process.env.SPECTRUM_PROJECT_SECRET;
   if (!(projectId && projectSecret)) {
@@ -58,6 +62,15 @@ async function main(): Promise<void> {
     "Essos concierge — iMessage transport running (Spectrum Cloud)."
   );
 
+  // Watch stream liveness: if Spectrum's connection stays down past the stale
+  // window, crash so the supervisor restarts us with a fresh connection rather
+  // than lingering as a silently-dead consumer. See `health.ts`.
+  const healthPort = process.env.ESSOS_TRANSPORT_HEALTH_PORT
+    ? Number.parseInt(process.env.ESSOS_TRANSPORT_HEALTH_PORT, 10)
+    : undefined;
+  const health = startStreamHealth({ healthPort });
+  const restoreLogs = monitorSpectrumStreamLogs(health);
+
   // Deliver concierge replies queued by the dashboard back to the patient.
   startOutboundLoop(app);
 
@@ -69,6 +82,7 @@ async function main(): Promise<void> {
     channel: "imessage",
     spaceIdPrefix: "imessage:",
     showTyping: true,
+    onActivity: () => health.markHealthy(),
     resolveAuthor: (_space, message, text) => {
       const authorHandle = normalizeHandle(message.sender?.id ?? null);
       const isConcierge =
@@ -97,6 +111,12 @@ async function main(): Promise<void> {
       }
     },
   });
+
+  // `runMessageLoop` only returns when the message stream closes — unexpected
+  // for a long-running worker. Fail loud so the supervisor restarts us.
+  restoreLogs();
+  health.stop();
+  throw new Error("iMessage message stream ended unexpectedly");
 }
 
 main().catch((err) => {
