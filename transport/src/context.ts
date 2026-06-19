@@ -10,9 +10,11 @@ export function buildContextMessage(args: {
   conversation: Conversation;
   sourceMessageId: string;
   text: string;
+  /** Per-resource working memory ("what we know about this person"), if any. */
+  memory?: string | null;
 }): string {
-  const { patient, conversation, sourceMessageId, text } = args;
-  return [
+  const { patient, conversation, sourceMessageId, text, memory } = args;
+  const lines = [
     "<<ESSOS_CONTEXT>>",
     `conversation_id: ${conversation.id}`,
     `patient_id: ${patient.id}`,
@@ -22,7 +24,10 @@ export function buildContextMessage(args: {
     `city: ${patient.destination_city}`,
     `country: ${patient.destination_country}`,
     `automation_state: ${conversation.automation_state}`,
-    "<<END_CONTEXT>>",
-    text,
-  ].join("\n");
+  ];
+  if (memory?.trim()) {
+    lines.push(`known_about_patient: ${memory.trim()}`);
+  }
+  lines.push("<<END_CONTEXT>>", text);
+  return lines.join("\n");
 }

@@ -12,19 +12,23 @@
 import type { EscalationCategory, EscalationLevel } from "./taxonomy.js";
 import type {
   ActivityEvent,
+  AgentMemory,
   AutomationState,
   CareInstruction,
   CarePhase,
+  ChainStage,
   Channel,
   ConciergeIdentity,
   Conversation,
   Escalation,
   EscalationCard,
+  InflightChain,
   ItineraryEvent,
   Message,
   MessageRole,
   Patient,
   PatientOverview,
+  PipelineMessage,
   QueueData,
   SlackLink,
   SlackOutbox,
@@ -350,6 +354,93 @@ export function resumeAutomationFromSlack(args: {
   label: string;
 }): Promise<void> {
   return call("resumeAutomationFromSlack", args);
+}
+
+// --------------------------- Pipeline (ADR 020) ---------------------------
+
+export function enqueueInbound(args: {
+  conversationId: string;
+  spaceId: string;
+  clientGuid: string;
+  authorHandle: string | null;
+  sourceMessageId: string;
+  text: string;
+}): Promise<void> {
+  return call("enqueueInbound", args);
+}
+export function drainBatch(conversationId: string): Promise<PipelineMessage[]> {
+  return call("drainBatch", { conversationId });
+}
+export function readCarried(
+  conversationId: string
+): Promise<PipelineMessage[]> {
+  return call("readCarried", { conversationId });
+}
+export function carryForward(
+  conversationId: string,
+  messages: PipelineMessage[]
+): Promise<void> {
+  return call("carryForward", { conversationId, messages });
+}
+export function readInflight(
+  conversationId: string
+): Promise<InflightChain | null> {
+  return call("readInflight", { conversationId });
+}
+export function claimChain(args: {
+  conversationId: string;
+  chainId: string;
+  chainStartedAt: number;
+}): Promise<void> {
+  return call("claimChain", args);
+}
+export function setChainStage(
+  conversationId: string,
+  stage: ChainStage
+): Promise<void> {
+  return call("setChainStage", { conversationId, stage });
+}
+export function cancelChain(
+  conversationId: string,
+  cancelledAt: number
+): Promise<void> {
+  return call("cancelChain", { conversationId, cancelledAt });
+}
+export function advanceStartIndex(args: {
+  conversationId: string;
+  startIndex: number;
+  sentGuid: string;
+}): Promise<void> {
+  return call("advanceStartIndex", args);
+}
+export function listQueuedConversations(): Promise<string[]> {
+  return call("listQueuedConversations");
+}
+export function listOrphanedChains(): Promise<string[]> {
+  return call("listOrphanedChains");
+}
+export function recordJobFailure(args: {
+  queue: string;
+  jobId: string;
+  conversationId?: string | null;
+  payloadJson?: string | null;
+  error: string;
+}): Promise<void> {
+  return call("recordJobFailure", args);
+}
+export function sweepJobFailures(retentionDays: number): Promise<number> {
+  return call("sweepJobFailures", { retentionDays });
+}
+export function getAgentMemory(
+  resourceId: string
+): Promise<AgentMemory | null> {
+  return call("getAgentMemory", { resourceId });
+}
+export function upsertAgentMemory(
+  resourceId: string,
+  workingMemory: string
+): Promise<void> {
+  return call("upsertAgentMemory", { resourceId, workingMemory });
 }
 
 /** Parse the JSON array on escalations.suggested_reply_sources. */

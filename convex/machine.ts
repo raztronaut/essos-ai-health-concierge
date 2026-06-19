@@ -2,22 +2,28 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import {
   activityLogDoc,
+  agentMemoryDoc,
   careInstructionDoc,
   conversationDoc,
   escalationDoc,
   escalationLevel,
   eveSessionValidator,
+  inflightChainDoc,
   itineraryEventDoc,
   messageDoc,
   patientDoc,
+  pipelineMessageDoc,
   slackLinkDoc,
   slackOutboxDoc,
 } from "./lib/validators.js";
 import * as Activity from "./model/activity.js";
 import * as Conversations from "./model/conversations.js";
 import * as Escalations from "./model/escalations.js";
+import * as JobFailures from "./model/jobFailures.js";
+import * as Memory from "./model/memory.js";
 import * as Messages from "./model/messages.js";
 import * as Patients from "./model/patients.js";
+import * as Pipeline from "./model/pipeline.js";
 import * as Slack from "./model/slack.js";
 import * as Telemetry from "./model/telemetry.js";
 
@@ -694,4 +700,156 @@ export const resumeAutomationFromSlack = internalMutation({
   returns: v.null(),
   handler: async (ctx, { conversationId, label }) =>
     Escalations.resumeAutomation(ctx, conversationId, label),
+});
+
+// ----------------------------- Pipeline (ADR 020) -----------------------------
+
+const chainStage = v.union(
+  v.literal("flush"),
+  v.literal("read"),
+  v.literal("generate"),
+  v.literal("send"),
+  v.literal("done")
+);
+
+export const enqueueInbound = internalMutation({
+  args: {
+    conversationId: v.string(),
+    spaceId: v.string(),
+    clientGuid: v.string(),
+    authorHandle: v.union(v.string(), v.null()),
+    sourceMessageId: v.string(),
+    text: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await Pipeline.enqueueInbound(ctx, args);
+    return null;
+  },
+});
+
+export const drainBatch = internalMutation({
+  args: { conversationId: v.string() },
+  returns: v.array(pipelineMessageDoc),
+  handler: async (ctx, { conversationId }) =>
+    Pipeline.drainBatch(ctx, conversationId),
+});
+
+export const readCarried = internalMutation({
+  args: { conversationId: v.string() },
+  returns: v.array(pipelineMessageDoc),
+  handler: async (ctx, { conversationId }) =>
+    Pipeline.readCarried(ctx, conversationId),
+});
+
+export const carryForward = internalMutation({
+  args: {
+    conversationId: v.string(),
+    messages: v.array(pipelineMessageDoc),
+  },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, messages }) => {
+    await Pipeline.carryForward(ctx, conversationId, messages);
+    return null;
+  },
+});
+
+export const readInflight = internalQuery({
+  args: { conversationId: v.string() },
+  returns: v.union(inflightChainDoc, v.null()),
+  handler: async (ctx, { conversationId }) =>
+    Pipeline.readInflight(ctx, conversationId),
+});
+
+export const claimChain = internalMutation({
+  args: {
+    conversationId: v.string(),
+    chainId: v.string(),
+    chainStartedAt: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await Pipeline.claimChain(ctx, args);
+    return null;
+  },
+});
+
+export const setChainStage = internalMutation({
+  args: { conversationId: v.string(), stage: chainStage },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, stage }) => {
+    await Pipeline.setStage(ctx, conversationId, stage);
+    return null;
+  },
+});
+
+export const cancelChain = internalMutation({
+  args: { conversationId: v.string(), cancelledAt: v.number() },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, cancelledAt }) => {
+    await Pipeline.cancelChain(ctx, conversationId, cancelledAt);
+    return null;
+  },
+});
+
+export const advanceStartIndex = internalMutation({
+  args: {
+    conversationId: v.string(),
+    startIndex: v.number(),
+    sentGuid: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await Pipeline.advanceStartIndex(ctx, args);
+    return null;
+  },
+});
+
+export const listQueuedConversations = internalQuery({
+  args: {},
+  returns: v.array(v.string()),
+  handler: async (ctx) => Pipeline.listQueuedConversations(ctx),
+});
+
+export const listOrphanedChains = internalQuery({
+  args: {},
+  returns: v.array(v.string()),
+  handler: async (ctx) => Pipeline.listOrphanedChains(ctx),
+});
+
+export const recordJobFailure = internalMutation({
+  args: {
+    queue: v.string(),
+    jobId: v.string(),
+    conversationId: v.optional(v.union(v.string(), v.null())),
+    payloadJson: v.optional(v.union(v.string(), v.null())),
+    error: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await JobFailures.record(ctx, args);
+    return null;
+  },
+});
+
+export const sweepJobFailures = internalMutation({
+  args: { retentionDays: v.number() },
+  returns: v.number(),
+  handler: async (ctx, { retentionDays }) =>
+    JobFailures.sweep(ctx, retentionDays),
+});
+
+export const getAgentMemory = internalQuery({
+  args: { resourceId: v.string() },
+  returns: v.union(agentMemoryDoc, v.null()),
+  handler: async (ctx, { resourceId }) => Memory.get(ctx, resourceId),
+});
+
+export const upsertAgentMemory = internalMutation({
+  args: { resourceId: v.string(), workingMemory: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { resourceId, workingMemory }) => {
+    await Memory.upsert(ctx, resourceId, workingMemory);
+    return null;
+  },
 });

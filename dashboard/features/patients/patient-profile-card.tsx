@@ -1,7 +1,7 @@
 import type { Patient, SourceDocument } from "@essos/shared";
 import { Card, DefinitionList, DefinitionRow } from "@/components/ui";
+import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { humanize } from "@/lib/format";
-import { AssignControl } from "./assign-control";
 import { SourceDocuments } from "./source-documents";
 
 /** At-a-glance patient facts shown above the itinerary on the detail page. */
@@ -12,6 +12,16 @@ export function PatientProfileCard({
   patient: Patient;
   docs: SourceDocument[];
 }) {
+  const { concierges } = useDemoIdentity();
+  const ownerName =
+    concierges.find((c) => c.clerkId === patient.assignee_user_id)?.name ??
+    (patient.assignee_user_id ? "Assigned" : "Unassigned");
+
+  const associatedNames = (patient.associated_user_ids ?? [])
+    .map((id) => concierges.find((c) => c.clerkId === id)?.name)
+    .filter(Boolean)
+    .join(", ");
+
   const rows: { label: string; value: string }[] = [
     { label: "Procedure", value: humanize(patient.procedure) },
     { label: "Clinic", value: patient.clinic_name || "—" },
@@ -25,6 +35,8 @@ export function PatientProfileCard({
     { label: "Handle", value: patient.handle || "—" },
     { label: "Companion", value: patient.companion_name || "—" },
     { label: "Dietary notes", value: patient.dietary_notes || "—" },
+    { label: "Owner", value: ownerName },
+    { label: "Associated concierges", value: associatedNames || "—" },
   ];
 
   return (
@@ -41,19 +53,6 @@ export function PatientProfileCard({
                 value={row.value}
               />
             ))}
-            {/* Owner Row Inline */}
-            <div className="flex flex-col gap-1">
-              <dt className="font-medium text-meta text-muted uppercase tracking-wide">
-                Owner
-              </dt>
-              <dd className="mt-0.5">
-                <AssignControl
-                  assigneeUserId={patient.assignee_user_id ?? null}
-                  minimal={true}
-                  patientId={patient.id}
-                />
-              </dd>
-            </div>
           </DefinitionList>
         </div>
 

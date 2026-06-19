@@ -36,3 +36,20 @@ export const CONCIERGE_HANDLES = (process.env.ESSOS_CONCIERGE_HANDLES ?? "")
   .split(",")
   .map((s) => normalizeHandle(s))
   .filter((handle): handle is string => handle != null);
+
+function intEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+/** Pipeline tunables (see ADR 020). */
+/** How long to wait for a burst to settle before generating one reply. */
+export const DEBOUNCE_MS = intEnv("ESSOS_DEBOUNCE_MS", 5000);
+/** Delay between reply bubbles so a multi-part answer reads naturally. */
+export const SEND_PACING_MS = intEnv("ESSOS_SEND_PACING_MS", 800);
+/** Days to retain `job_failures` rows before the periodic sweep deletes them. */
+export const JOB_FAILURE_RETENTION_DAYS = intEnv(
+  "ESSOS_JOB_FAILURE_RETENTION_DAYS",
+  30
+);

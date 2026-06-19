@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { TextMorph } from "torph/react";
 import { DocIcon } from "@/components/icons";
@@ -37,18 +37,14 @@ export function ConciergeReplyBox({
   const draft = suggestedReply?.trim() ?? "";
   const hasDraft = draft.length > 0;
   const [text, setText] = useState(draft);
-  const [name, setName] = useState(defaultName);
-  const nameTouched = useRef(false);
+  // Track only the concierge's own edit (null = untouched). The displayed name
+  // is derived during render, so it shows `defaultName` as soon as Clerk
+  // resolves without an effect — and the typed value takes over once edited.
+  const [nameOverride, setNameOverride] = useState<string | null>(null);
+  const name = nameOverride ?? defaultName;
   const [sending, setSending] = useState(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
   const sendReply = useMutation(api.mutations.sendConciergeReply);
-
-  // Prefill the name once the Clerk user resolves, unless the concierge typed.
-  useEffect(() => {
-    if (!nameTouched.current && defaultName) {
-      setName(defaultName);
-    }
-  }, [defaultName]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,10 +133,7 @@ export function ConciergeReplyBox({
             className="focus-ring min-w-0 max-w-[12rem] flex-1 rounded-control border border-border bg-card px-2.5 py-1 text-ink text-xs outline-none transition-colors duration-fast ease-out placeholder:text-muted hover:border-secondary/70 focus:border-secondary/70"
             id="signature-name"
             name="agentName"
-            onChange={(event) => {
-              nameTouched.current = true;
-              setName(event.target.value);
-            }}
+            onChange={(event) => setNameOverride(event.target.value)}
             placeholder="Your name"
             type="text"
             value={name}

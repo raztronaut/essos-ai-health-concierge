@@ -16,6 +16,19 @@ const REPO_ROOT = resolve(
 );
 
 /**
+ * Resolve a stored relative doc path against the repo root, rejecting anything
+ * that escapes it. The paths are seed-only today, but this keeps the disk read
+ * from being a traversal vector if that ever changes.
+ */
+function resolveWithinRepo(relativePath: string): string | null {
+  const target = resolve(REPO_ROOT, relativePath);
+  if (target !== REPO_ROOT && !target.startsWith(`${REPO_ROOT}/`)) {
+    return null;
+  }
+  return target;
+}
+
+/**
  * Serve a seeded source document. Looks the document up in Convex, then reads
  * the polished PDF from `mock-assets/pdf/essos/` inline; falls back to the
  * Markdown source, then a 404.
@@ -42,9 +55,10 @@ export async function GET(
     return new Response("Document source is unavailable", { status: 404 });
   }
 
-  if (doc.pdf_path) {
+  const pdfPath = doc.pdf_path ? resolveWithinRepo(doc.pdf_path) : null;
+  if (pdfPath) {
     try {
-      const buffer = await readFile(resolve(REPO_ROOT, doc.pdf_path));
+      const buffer = await readFile(pdfPath);
       return new Response(new Uint8Array(buffer), {
         headers: {
           "content-type": "application/pdf",
@@ -56,12 +70,12 @@ export async function GET(
     }
   }
 
-  if (doc.markdown_path) {
+  const markdownPath = doc.markdown_path
+    ? resolveWithinRepo(doc.markdown_path)
+    : null;
+  if (markdownPath) {
     try {
-      const markdown = await readFile(
-        resolve(REPO_ROOT, doc.markdown_path),
-        "utf8"
-      );
+      const markdown = await readFile(markdownPath, "utf8");
       return new Response(markdown, {
         headers: { "content-type": "text/plain; charset=utf-8" },
       });

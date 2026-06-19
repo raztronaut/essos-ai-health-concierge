@@ -11,6 +11,7 @@
     "setup": "pnpm install && pnpm -C eve-concierge install && pnpm --filter @essos/shared run build && convex dev --once && convex env set ESSOS_ALLOW_SEED 1 && pnpm seed:reset && pnpm seed:team",
     "dev": "tsx scripts/dev-preflight.ts && pnpm --filter @essos/shared run build && concurrently --names \"convex,eve,web\" --prefix-colors \"blue,magenta,green\" \"pnpm convex:dev\" \"pnpm eve:dev\" \"pnpm dashboard:dev\"",
     "dev:ui": "tsx scripts/dev-preflight.ts && pnpm --filter @essos/shared run build && concurrently --names \"convex,web\" --prefix-colors \"blue,green\" \"pnpm convex:dev\" \"pnpm dashboard:dev\"",
+    "demo": "tsx scripts/dev-preflight.ts && pnpm --filter @essos/shared run build && concurrently --names \"convex,eve,web,imsg\" --prefix-colors \"blue,magenta,green,yellow\" \"pnpm convex:dev\" \"pnpm eve:dev\" \"pnpm dashboard:dev\" \"pnpm transport:imessage:supervised\"",
     "assets:generate": "node mock-assets/scripts/run_generate_pdfs.mjs",
     "convex:dev": "convex dev",
     "seed": "tsx scripts/seed.ts",

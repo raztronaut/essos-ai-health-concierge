@@ -198,6 +198,7 @@ export const upsertPatient = conciergeMutation({
     companion_name: nullableString,
     dietary_notes: nullableString,
     assignee_user_id: v.optional(nullableString),
+    associated_user_ids: v.optional(v.array(v.string())),
     ...viewAsArg,
   },
   returns: v.string(),
@@ -215,6 +216,7 @@ export const upsertPatient = conciergeMutation({
       companion_name: args.companion_name,
       dietary_notes: args.dietary_notes,
       assignee_user_id: args.assignee_user_id,
+      associated_user_ids: args.associated_user_ids,
     });
     return id;
   },

@@ -108,6 +108,7 @@ export const patientDoc = v.object({
   companion_name: v.union(v.string(), v.null()),
   dietary_notes: v.union(v.string(), v.null()),
   assignee_user_id: v.optional(v.union(v.string(), v.null())),
+  associated_user_ids: v.optional(v.array(v.string())),
   created_at: v.string(),
 });
 
@@ -298,6 +299,44 @@ export const conversationSummary = v.object({
   last_role: v.union(messageRole, v.null()),
   last_text: v.union(v.string(), v.null()),
   open_flags: v.number(),
+});
+
+// --- Pipeline docs ---
+
+/** A drained inbound message (from batch_queue or carried_messages). */
+export const pipelineMessageDoc = v.object({
+  client_guid: v.string(),
+  author_handle: v.union(v.string(), v.null()),
+  source_message_id: v.string(),
+  text: v.string(),
+  created_at: v.string(),
+});
+
+export const inflightChainDoc = v.object({
+  _id: v.id("inflight_chains"),
+  _creationTime: v.number(),
+  conversation_id: v.string(),
+  chain_id: v.string(),
+  chain_started_at: v.number(),
+  stage: v.union(
+    v.literal("flush"),
+    v.literal("read"),
+    v.literal("generate"),
+    v.literal("send"),
+    v.literal("done")
+  ),
+  cancelled_at: v.union(v.number(), v.null()),
+  start_index: v.number(),
+  sent_guids: v.array(v.string()),
+  updated_at: v.string(),
+});
+
+export const agentMemoryDoc = v.object({
+  _id: v.id("agent_memory"),
+  _creationTime: v.number(),
+  resource_id: v.string(),
+  working_memory: v.string(),
+  updated_at: v.string(),
 });
 
 export {

@@ -60,6 +60,8 @@ export type ActivityEvent =
 export interface Patient {
   /** Owning concierge (Clerk user id), or null for the unassigned queue. */
   assignee_user_id?: string | null;
+  /** Associated concierges (Clerk user ids) */
+  associated_user_ids?: string[];
   clinic_name: string;
   companion_name: string | null;
   created_at: string;
@@ -156,6 +158,35 @@ export interface Message {
   outbound_error?: string | null;
   role: MessageRole;
   text: string;
+}
+
+/** A drained inbound message from the pipeline queue. */
+export interface PipelineMessage {
+  author_handle: string | null;
+  client_guid: string;
+  created_at: string;
+  source_message_id: string;
+  text: string;
+}
+
+export type ChainStage = "flush" | "read" | "generate" | "send" | "done";
+
+/** The single in-flight chain per conversation (cancellation + send-resume). */
+export interface InflightChain {
+  cancelled_at: number | null;
+  chain_id: string;
+  chain_started_at: number;
+  conversation_id: string;
+  sent_guids: string[];
+  stage: ChainStage;
+  start_index: number;
+  updated_at: string;
+}
+
+export interface AgentMemory {
+  resource_id: string;
+  updated_at: string;
+  working_memory: string;
 }
 
 export interface Escalation {

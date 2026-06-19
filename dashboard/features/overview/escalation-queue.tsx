@@ -1,5 +1,8 @@
+"use client";
+
 import type { Escalation, Patient } from "@essos/shared";
 import Link from "next/link";
+import { useMemo } from "react";
 import { LevelBadge } from "@/components/badges";
 import { StaggerList } from "@/components/motion/stagger-list";
 import { Card } from "@/components/ui";
@@ -14,14 +17,23 @@ import {
 export function EscalationQueue({
   escalations,
   patients,
+  now,
 }: {
   escalations: Escalation[];
   patients: Patient[];
+  /** Current timestamp, supplied by the data-owning parent so this render is
+   * pure (no `Date.now()` here) and the memoized work below stays stable. */
+  now: number;
 }) {
-  const patientsById = new Map(patients.map((p) => [p.id, p]));
+  const patientsById = useMemo(
+    () => new Map(patients.map((p) => [p.id, p])),
+    [patients]
+  );
   // Most urgent first: High before Med, then longest-waiting first.
-  const queue = sortEscalationsByUrgency(escalations);
-  const now = Date.now();
+  const queue = useMemo(
+    () => sortEscalationsByUrgency(escalations),
+    [escalations]
+  );
 
   return (
     <section className="space-y-3">

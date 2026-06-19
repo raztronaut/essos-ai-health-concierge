@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AutomationBadge } from "@/components/badges";
 import { LoadingState, NotFoundCard, PageHeader } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { ActivityLog } from "./activity-log";
 import { ConciergeReplyBox } from "./concierge-reply-box";
 import { ResumeAutomationButton } from "./escalation-actions";
@@ -16,11 +17,9 @@ import { useConversationThread } from "./use-conversation-thread";
 
 export function ConversationDetailView({ id }: { id: string }) {
   const { viewAs } = useDemoIdentity();
-  const conversation = useQuery(api.queries.getConversation, { id, viewAs });
-  const patient = useQuery(
-    api.queries.getPatient,
-    conversation ? { id: conversation.patient_id, viewAs } : "skip"
-  );
+  const detail = useQuery(api.queries.getConversationDetail, { id, viewAs });
+  const conversation = detail?.conversation ?? null;
+  const patient = detail?.patient ?? null;
   const messages = useQuery(api.queries.listMessages, {
     conversationId: id,
     viewAs,
@@ -34,16 +33,16 @@ export function ConversationDetailView({ id }: { id: string }) {
     viewAs,
   });
 
-  const msgs = messages ?? [];
-  const escs = escalations ?? [];
+  const msgs = messages ?? EMPTY_ARRAY;
+  const escs = escalations ?? EMPTY_ARRAY;
 
   const { unansweredCount, openEscalation, draftSources } =
     useConversationThread(msgs, escs);
 
-  if (conversation === undefined) {
+  if (detail === undefined) {
     return <LoadingState message="Loading conversation…" />;
   }
-  if (conversation === null) {
+  if (detail === null || conversation === null) {
     return (
       <NotFoundCard
         backHref="/conversations"
@@ -101,7 +100,7 @@ export function ConversationDetailView({ id }: { id: string }) {
             escalations={escs}
             unansweredCount={unansweredCount}
           />
-          <ActivityLog activity={activity ?? []} />
+          <ActivityLog activity={activity ?? EMPTY_ARRAY} />
         </aside>
       </div>
     </div>

@@ -41,6 +41,10 @@ const QUERIES: Record<string, AnyRef> = {
   getPatientOverview: internal.machine.getPatientOverview,
   listSourceDocumentsWithUrls: internal.machine.listSourceDocumentsWithUrls,
   getQueueForConcierge: internal.machine.getQueueForConcierge,
+  readInflight: internal.machine.readInflight,
+  listQueuedConversations: internal.machine.listQueuedConversations,
+  listOrphanedChains: internal.machine.listOrphanedChains,
+  getAgentMemory: internal.machine.getAgentMemory,
 };
 
 const MUTATIONS: Record<string, AnyRef> = {
@@ -68,6 +72,17 @@ const MUTATIONS: Record<string, AnyRef> = {
   takeOverFromSlack: internal.machine.takeOverFromSlack,
   resolveEscalationFromSlack: internal.machine.resolveEscalationFromSlack,
   resumeAutomationFromSlack: internal.machine.resumeAutomationFromSlack,
+  enqueueInbound: internal.machine.enqueueInbound,
+  drainBatch: internal.machine.drainBatch,
+  readCarried: internal.machine.readCarried,
+  carryForward: internal.machine.carryForward,
+  claimChain: internal.machine.claimChain,
+  setChainStage: internal.machine.setChainStage,
+  cancelChain: internal.machine.cancelChain,
+  advanceStartIndex: internal.machine.advanceStartIndex,
+  recordJobFailure: internal.machine.recordJobFailure,
+  sweepJobFailures: internal.machine.sweepJobFailures,
+  upsertAgentMemory: internal.machine.upsertAgentMemory,
 };
 
 const machine = httpAction(async (ctx, request) => {

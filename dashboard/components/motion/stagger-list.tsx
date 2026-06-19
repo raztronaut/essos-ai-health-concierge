@@ -1,67 +1,32 @@
 "use client";
 
-import type { Variants } from "motion/react";
-import { motion, useReducedMotion } from "motion/react";
-import type { ReactNode } from "react";
-import { Children, isValidElement } from "react";
+import { lazy, Suspense } from "react";
+import type { StaggerListProps } from "./stagger-list-impl";
 
 /**
  * Wraps a list of elements and fades/translates each one in with a short
  * stagger when it first mounts. Motion is purely decorative entrance polish,
- * so it is fully disabled under `prefers-reduced-motion` — the children render
- * exactly as-is, no transform, no opacity ramp.
+ * so it is fully disabled under `prefers-reduced-motion`.
+ *
+ * The animated implementation pulls in the `motion` runtime, so it is split
+ * into its own chunk and loaded lazily. Until it resolves (and during SSR) the
+ * Suspense fallback renders the children in a plain wrapper, so list content is
+ * always present immediately — the stagger animation just plays once the chunk
+ * arrives.
  *
  * Usage:
  *   <StaggerList className="space-y-3">
  *     {items.map((item) => <Card key={item.id} ... />)}
  *   </StaggerList>
  */
+const StaggerListImpl = lazy(() =>
+  import("./stagger-list-impl").then((m) => ({ default: m.StaggerList }))
+);
 
-// Strong ease-out curve (matches --ease-out token) and a sub-300ms reveal.
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-
-const container: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.05, delayChildren: 0.02 },
-  },
-};
-
-const item: Variants = {
-  hidden: { opacity: 0, y: 8 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.26, ease: EASE_OUT },
-  },
-};
-
-export function StaggerList({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const reduceMotion = useReducedMotion();
-  const items = Children.toArray(children).filter(isValidElement);
-
-  if (reduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
-
+export function StaggerList({ children, className }: StaggerListProps) {
   return (
-    <motion.div
-      animate="show"
-      className={className}
-      initial="hidden"
-      variants={container}
-    >
-      {items.map((child, index) => (
-        <motion.div key={child.key ?? index} variants={item}>
-          {child}
-        </motion.div>
-      ))}
-    </motion.div>
+    <Suspense fallback={<div className={className}>{children}</div>}>
+      <StaggerListImpl className={className}>{children}</StaggerListImpl>
+    </Suspense>
   );
 }

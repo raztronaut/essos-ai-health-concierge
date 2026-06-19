@@ -17,6 +17,8 @@ import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { PROCEDURE_OPTIONS } from "./options";
 
 interface FormState {
+  assignee_user_id: string;
+  associated_user_ids: string[];
   clinic_name: string;
   companion_name: string;
   destination_city: string;
@@ -39,6 +41,8 @@ function initialState(patient?: Patient | null): FormState {
     hotel_name: patient?.hotel_name ?? "",
     companion_name: patient?.companion_name ?? "",
     dietary_notes: patient?.dietary_notes ?? "",
+    assignee_user_id: patient?.assignee_user_id ?? "",
+    associated_user_ids: patient?.associated_user_ids ?? [],
   };
 }
 
@@ -54,7 +58,7 @@ export function PatientFormDialog({
   patient?: Patient | null;
   onSaved?: (patientId: string) => void;
 }) {
-  const { viewAs } = useDemoIdentity();
+  const { viewAs, concierges } = useDemoIdentity();
   const upsert = useMutation(api.mutations.upsertPatient);
   const [form, setForm] = useState<FormState>(() => initialState(patient));
 
@@ -77,6 +81,8 @@ export function PatientFormDialog({
         hotel_name: formData.hotel_name.trim(),
         companion_name: formData.companion_name.trim() || null,
         dietary_notes: formData.dietary_notes.trim() || null,
+        assignee_user_id: formData.assignee_user_id || null,
+        associated_user_ids: formData.associated_user_ids,
         viewAs,
       });
     },
@@ -167,6 +173,51 @@ export function PatientFormDialog({
               value={form.companion_name}
             />
           </Field>
+          <Field label="Owner">
+            <Select
+              onChange={(e) => set("assignee_user_id", e.target.value)}
+              value={form.assignee_user_id}
+            >
+              <option value="">Unassigned</option>
+              {concierges.map((c) => (
+                <option key={c.clerkId} value={c.clerkId}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Associated Concierge Members">
+              <div className="grid grid-cols-2 gap-2 rounded-control border border-border bg-surface/20 p-3">
+                {concierges.map((c) => {
+                  const isChecked = form.associated_user_ids.includes(
+                    c.clerkId
+                  );
+                  return (
+                    <label
+                      className="flex cursor-pointer select-none items-center gap-2 font-medium text-ink text-xs"
+                      key={c.clerkId}
+                    >
+                      <input
+                        checked={isChecked}
+                        className="size-3.5 rounded border-border text-primary focus:ring-primary"
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...form.associated_user_ids, c.clerkId]
+                            : form.associated_user_ids.filter(
+                                (id) => id !== c.clerkId
+                              );
+                          set("associated_user_ids", next);
+                        }}
+                        type="checkbox"
+                      />
+                      <span>{c.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </Field>
+          </div>
           <div className="sm:col-span-2">
             <Field label="Dietary notes">
               <Textarea

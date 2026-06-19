@@ -1,9 +1,11 @@
 import {
   appendMessage,
   type Channel,
+  type Conversation,
   ensureConversation,
   ensureGuestPatient,
   escalateToHuman,
+  getAgentMemory,
   getConversationById,
   getConversationBySpace,
   getEveSession,
@@ -29,7 +31,8 @@ export interface TypingController {
 
 export type EveResponder = (
   message: string,
-  prior: EveSession | null
+  prior: EveSession | null,
+  signal?: AbortSignal
 ) => Promise<{ text: string; session: EveSession; telemetry?: TurnTelemetry }>;
 
 // In-memory map of conversation -> durable Eve session, for multi-turn threads.
@@ -125,18 +128,43 @@ async function degradeToHuman(args: {
   return { reply: HOLDING_NOTICE_MED, reason: args.reason };
 }
 
-export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
-  const respond = args.eveRespond ?? askEve;
+/**
+ * Thrown when a turn is aborted mid-generation because a follow-up message
+ * arrived. The pipeline catches it to carry the batch forward without
+ * degrading to a human (an abort is not an error).
+ */
+export class TurnAbortedError extends Error {
+  constructor() {
+    super("turn aborted");
+    this.name = "TurnAbortedError";
+  }
+}
 
-  // 1) Resolve (or create) the conversation and its patient.
+export interface ResolvedConversation {
+  conversation: Conversation;
+  patient: Patient;
+}
+
+/**
+ * Resolve (or create) the conversation and its patient for an inbound message,
+ * including guest onboarding (ADR 017). Returns null when no patient can be
+ * resolved and guest mode does not apply (an unknown sender).
+ */
+export async function resolveConversationAndPatient(args: {
+  spaceId: string;
+  channel: Channel;
+  authorHandle: string | null;
+  patientId?: string;
+  isConcierge?: boolean;
+  allowGuest?: boolean;
+  guestName?: string | null;
+}): Promise<ResolvedConversation | null> {
   const authorHandle = normalizeHandle(args.authorHandle);
   let conversation = await getConversationBySpace(args.spaceId);
   if (!conversation) {
     let patient =
       (args.patientId ? await getPatientById(args.patientId) : null) ??
       (authorHandle ? await getPatientByHandle(authorHandle) : null);
-    // Guest onboarding: an unknown sender gets a demo patient cloned from a
-    // template so they can chat with Eve right away. See ADR 017.
     if (!patient && args.allowGuest && authorHandle && !args.isConcierge) {
       patient = await ensureGuestPatient({
         handle: authorHandle,
@@ -144,7 +172,7 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
       });
     }
     if (!patient) {
-      return { reply: null, reason: "unknown_patient" };
+      return null;
     }
     conversation = await ensureConversation({
       spaceId: args.spaceId,
@@ -154,47 +182,69 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   }
   const patient = await getPatientById(conversation.patient_id);
   if (!patient) {
-    return { reply: null, reason: "unknown_patient" };
+    return null;
   }
+  return { conversation, patient };
+}
 
-  // 2) Concierge (human) message: log it, never auto-reply, and treat it as a
-  //    takeover signal if there's an open escalation. See decision 003.
-  if (args.isConcierge) {
-    await appendMessage({
-      conversationId: conversation.id,
-      role: "concierge",
-      authorHandle,
-      text: args.text,
-    });
-    const open = (
-      await listOpenEscalationsForConversation(conversation.id)
-    ).filter((e) => e.status === "open");
-    if (open.length > 0) {
-      await markConciergeTakeover(conversation.id, authorHandle ?? "concierge");
-      return { reply: null, reason: "concierge_takeover" };
-    }
-    return { reply: null, reason: "concierge_logged" };
-  }
-
-  // 3) Patient message: always log it first (so it's the escalation source).
-  const inbound = await appendMessage({
-    conversationId: conversation.id,
-    role: "patient",
-    authorHandle: authorHandle ?? patient.handle,
-    text: args.text,
+/**
+ * Log a concierge (human) message and treat it as a takeover signal when an
+ * escalation is open. Never auto-replies. See decision 003.
+ */
+export async function handleConciergeMessage(
+  conversationId: string,
+  authorHandle: string | null,
+  text: string
+): Promise<InboundResult> {
+  await appendMessage({
+    conversationId,
+    role: "concierge",
+    authorHandle,
+    text,
   });
+  const open = (
+    await listOpenEscalationsForConversation(conversationId)
+  ).filter((e) => e.status === "open");
+  if (open.length > 0) {
+    await markConciergeTakeover(conversationId, authorHandle ?? "concierge");
+    return { reply: null, reason: "concierge_takeover" };
+  }
+  return { reply: null, reason: "concierge_logged" };
+}
 
-  // 4) Respect handoff state: if a human owns the thread, don't auto-respond.
-  //    While paused, send a single warm holding notice so the patient isn't left
-  //    in silence; stay quiet on follow-ups (and once a human has taken over,
-  //    their replies reach the patient via the dashboard bridge). See decision 010.
-  const fresh = (await getConversationById(conversation.id))!;
+export interface GenerateTurnArgs {
+  /** The (already-combined, already-logged) patient text for this turn. */
+  combinedText: string;
+  conversation: Conversation;
+  /** Injectable for tests; defaults to the live Eve HTTP client. */
+  eveRespond?: EveResponder;
+  patient: Patient;
+  /** Aborts the in-flight model call when a follow-up message arrives. */
+  signal?: AbortSignal;
+  /** The logged patient message id this turn answers (the escalation source). */
+  sourceMessageId: string;
+  typing?: TypingController;
+}
+
+/**
+ * Generate one agent turn for an active conversation: respect handoff state,
+ * inject per-resource memory, ask Eve (degrading to a human on failure/empty),
+ * apply the one-time disclosure, and record telemetry. Returns the reply to
+ * send (null when paused/taken over). Throws {@link TurnAbortedError} if the
+ * `signal` fires mid-generation.
+ */
+export async function generateTurn(
+  args: GenerateTurnArgs
+): Promise<InboundResult> {
+  const respond = args.eveRespond ?? askEve;
+  const { conversation, patient } = args;
+
+  // Respect handoff state (re-read fresh: a tool or human may have changed it).
+  const fresh = (await getConversationById(conversation.id)) ?? conversation;
   if (fresh.automation_state === "paused_for_review") {
     const open = await listOpenEscalationsForConversation(conversation.id);
-    // Durable one-time latch: anchor on the current escalation's open time so
-    // we send exactly one holding notice per pause. Reading it from the DB (not
-    // an in-memory set) means a transport restart won't re-send it, and a later
-    // re-escalation (a newer `created_at`) notifies afresh. See decision 010.
+    // Durable one-time latch anchored on the current escalation's open time, so
+    // exactly one holding notice is sent per pause and a restart won't repeat it.
     const since = open[0]?.created_at;
     const alreadyNotified = since
       ? await hasMessageWithMetaKind(conversation.id, "handoff_holding", since)
@@ -216,12 +266,16 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     return { reply: null, reason: "taken_over" };
   }
 
-  // 5) Automation is active — ask the agent.
+  // Per-person memory (keyed by patient, stable across their conversations).
+  const memory =
+    (await getAgentMemory(patient.id).catch(() => null))?.working_memory ??
+    null;
   const contextMessage = buildContextMessage({
     patient,
     conversation: fresh,
-    sourceMessageId: inbound.id,
-    text: args.text,
+    sourceMessageId: args.sourceMessageId,
+    text: args.combinedText,
+    memory,
   });
   // Prefer the in-memory cache, falling back to the persisted session so a
   // transport restart resumes the same multi-turn Eve session. See ADR 010/011.
@@ -237,14 +291,17 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     // Typing is best-effort; never fail a turn because the indicator didn't set.
   }
   try {
-    const result = await respond(contextMessage, prior);
+    const result = await respond(contextMessage, prior, args.signal);
     sessions.set(conversation.id, result.session);
     await saveEveSession(conversation.id, result.session);
     text = result.text;
     telemetry = result.telemetry;
   } catch (err) {
+    if (args.signal?.aborted) {
+      // A follow-up arrived; abandon this turn so the pipeline can re-batch.
+      throw new TurnAbortedError();
+    }
     const message = err instanceof Error ? err.message : String(err);
-    // Record the failed turn for observability before bailing.
     await recordAgentTurn({
       conversationId: conversation.id,
       patientId: patient.id,
@@ -257,7 +314,7 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     return await degradeToHuman({
       conversationId: conversation.id,
       patientId: patient.id,
-      sourceMessageId: inbound.id,
+      sourceMessageId: args.sourceMessageId,
       errorDetail: message,
       reason: `eve_error: ${message}`,
     });
@@ -283,14 +340,13 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     return await degradeToHuman({
       conversationId: conversation.id,
       patientId: patient.id,
-      sourceMessageId: inbound.id,
+      sourceMessageId: args.sourceMessageId,
       errorDetail: "empty reply",
       reason: "empty",
     });
   }
 
-  // 6) On Eve's very first reply, prepend a one-time AI disclosure (durably
-  //    gated, so it survives restarts and never repeats). See ADR 011.
+  // On Eve's very first reply, prepend a one-time AI disclosure (durably gated).
   let reply = text;
   if (!(await hasMessageWithMetaKind(conversation.id, "disclosure"))) {
     const disclosure = buildDisclosure(patient);
@@ -303,16 +359,14 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     reply = `${disclosure}\n\n${text}`;
   }
 
-  // 7) Record the agent's reply (escalation rows/pause are written by tools).
+  // Record the agent's reply (escalation rows/pause are written by tools).
   await appendMessage({
     conversationId: conversation.id,
     role: "agent",
     text,
   });
 
-  // 8) Capture per-turn telemetry. The escalate tool pauses the conversation, so
-  //    a now-paused state is a reliable "this turn escalated" signal regardless
-  //    of the stream's tool-event schema.
+  // A now-paused state is a reliable "this turn escalated" signal.
   const afterState = (await getConversationById(conversation.id))
     ?.automation_state;
   await recordAgentTurn({
@@ -329,4 +383,43 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   }).catch(() => {});
 
   return { reply, reason: "answered" };
+}
+
+/**
+ * Single-message entry: resolve, handle concierge, log the patient message, and
+ * generate one turn. The live transports drive the durable pipeline instead;
+ * this is retained for the terminal smoke suite and direct callers.
+ */
+export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
+  const authorHandle = normalizeHandle(args.authorHandle);
+  const resolved = await resolveConversationAndPatient({
+    spaceId: args.spaceId,
+    channel: args.channel,
+    authorHandle,
+    patientId: args.patientId,
+    isConcierge: args.isConcierge,
+    allowGuest: args.allowGuest,
+    guestName: args.guestName,
+  });
+  if (!resolved) {
+    return { reply: null, reason: "unknown_patient" };
+  }
+  const { conversation, patient } = resolved;
+  if (args.isConcierge) {
+    return handleConciergeMessage(conversation.id, authorHandle, args.text);
+  }
+  const inbound = await appendMessage({
+    conversationId: conversation.id,
+    role: "patient",
+    authorHandle: authorHandle ?? patient.handle,
+    text: args.text,
+  });
+  return generateTurn({
+    conversation,
+    patient,
+    combinedText: args.text,
+    sourceMessageId: inbound.id,
+    eveRespond: args.eveRespond,
+    typing: args.typing,
+  });
 }

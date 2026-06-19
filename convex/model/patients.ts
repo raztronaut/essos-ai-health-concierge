@@ -36,21 +36,35 @@ export async function listForConcierge(
       .withIndex("by_assignee", (q) => q.eq("assignee_user_id", null))
       .collect(),
   ]);
-  return [...mine, ...unassigned].sort((a, b) =>
+
+  // Also include patients where the user is an associated concierge member
+  const allPatients = await list(ctx);
+  const associated = allPatients.filter(
+    (p) =>
+      p.associated_user_ids?.includes(opts.clerkId ?? "") &&
+      p.assignee_user_id !== opts.clerkId
+  );
+
+  return [...mine, ...associated, ...unassigned].sort((a, b) =>
     a.created_at.localeCompare(b.created_at)
   );
 }
 
-/** True when a concierge may view/act on a patient (lead, owner, or unassigned). */
+/** True when a concierge may view/act on a patient (lead, owner, associated owner, or unassigned). */
 export function canAccess(
-  patient: { assignee_user_id?: string | null },
+  patient: { assignee_user_id?: string | null; associated_user_ids?: string[] },
   opts: { clerkId: string | null; isLead: boolean }
 ): boolean {
   if (opts.isLead) {
     return true;
   }
   const owner = patient.assignee_user_id ?? null;
-  return owner === null || owner === opts.clerkId;
+  const associated = patient.associated_user_ids ?? [];
+  return (
+    owner === null ||
+    owner === opts.clerkId ||
+    associated.includes(opts.clerkId ?? "")
+  );
 }
 
 export async function getByExternalId(
@@ -77,10 +91,15 @@ export async function upsert(
   ctx: MutationCtx,
   patient: Omit<
     Patient,
-    "_id" | "_creationTime" | "created_at" | "assignee_user_id"
+    | "_id"
+    | "_creationTime"
+    | "created_at"
+    | "assignee_user_id"
+    | "associated_user_ids"
   > & {
     created_at?: string;
     assignee_user_id?: string | null;
+    associated_user_ids?: string[];
   }
 ): Promise<void> {
   const existing = await getByExternalId(ctx, patient.id);
@@ -97,6 +116,8 @@ export async function upsert(
     dietary_notes: patient.dietary_notes,
     assignee_user_id:
       patient.assignee_user_id ?? existing?.assignee_user_id ?? null,
+    associated_user_ids:
+      patient.associated_user_ids ?? existing?.associated_user_ids ?? [],
     created_at: patient.created_at ?? nowIso(),
   };
   if (existing) {

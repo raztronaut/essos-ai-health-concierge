@@ -29,6 +29,7 @@ export function FoldTrigger({
       )}
     >
       <Button
+        aria-expanded={expanded}
         className="flex items-center gap-1.5 rounded-control px-3 py-1.5 font-semibold text-muted text-xs hover:text-ink"
         onClick={onToggle}
         size="sm"

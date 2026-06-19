@@ -16,6 +16,7 @@ import {
 import * as Activity from "./model/activity.js";
 import * as Conversations from "./model/conversations.js";
 import * as Escalations from "./model/escalations.js";
+import * as Memory from "./model/memory.js";
 import * as Messages from "./model/messages.js";
 import * as Patients from "./model/patients.js";
 import * as Telemetry from "./model/telemetry.js";
@@ -149,6 +150,18 @@ export const getPatient = conciergeQuery({
   },
 });
 
+/** What Eve has durably remembered about this patient (per-person memory). */
+export const getPatientMemory = conciergeQuery({
+  args: { patientId: v.string(), ...viewAsArg },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { patientId, viewAs }) => {
+    const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
+    await assertPatientAccess(ctx, patientId, scope);
+    const memory = await Memory.get(ctx, patientId);
+    return memory?.working_memory ?? null;
+  },
+});
+
 export const getConversation = conciergeQuery({
   args: { id: v.string(), ...viewAsArg },
   returns: v.union(conversationDoc, v.null()),
@@ -156,6 +169,37 @@ export const getConversation = conciergeQuery({
     const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
     await assertConversationAccess(ctx, id, scope);
     return Conversations.getByExternalId(ctx, id);
+  },
+});
+
+/**
+ * Conversation detail in one round-trip: the conversation plus its patient.
+ * Collapses the former conversation->patient `useQuery` waterfall on the
+ * detail view into a single reactive subscription. Returns `null` when the
+ * conversation does not exist (or is out of scope); `patient` may still be
+ * `null` if the joined patient record is missing.
+ */
+export const getConversationDetail = conciergeQuery({
+  args: { id: v.string(), ...viewAsArg },
+  returns: v.union(
+    v.object({
+      conversation: conversationDoc,
+      patient: v.union(patientDoc, v.null()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, { id, viewAs }) => {
+    const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
+    await assertConversationAccess(ctx, id, scope);
+    const conversation = await Conversations.getByExternalId(ctx, id);
+    if (!conversation) {
+      return null;
+    }
+    const patient = await Patients.getByExternalId(
+      ctx,
+      conversation.patient_id
+    );
+    return { conversation, patient: patient ?? null };
   },
 });
 

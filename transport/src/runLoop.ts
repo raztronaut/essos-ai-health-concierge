@@ -1,8 +1,8 @@
 import type { Channel } from "@essos/shared";
 import type { Message, Space } from "spectrum-ts";
 import { contentToText } from "./contentText.js";
-import { handleInbound, type InboundResult } from "./core.js";
 import { debug } from "./debug.js";
+import { type ConversationIO, enqueue } from "./pipeline.js";
 
 /** Per-inbound author resolution; return `null` to skip the message entirely. */
 export interface ResolvedAuthor {
@@ -20,31 +20,26 @@ export interface ResolvedAuthor {
 
 export interface MessageLoopOptions {
   app: { messages: AsyncIterable<[Space, Message]> };
+  /** Build the provider-specific delivery for a message's conversation. */
+  buildIO: (space: Space, message: Message) => ConversationIO;
   channel: Channel;
   /** Called for every delivered stream event — a positive liveness signal. */
   onActivity?: () => void;
-  onResult: (
-    space: Space,
-    message: Message,
-    result: InboundResult
-  ) => Promise<void>;
   resolveAuthor: (
     space: Space,
     message: Message,
     text: string
   ) => ResolvedAuthor | null;
-  /** When true, drive a typing indicator while Eve composes (iMessage only). */
-  showTyping?: boolean;
   /** Prefix combined with `space.id` to form the conversation's space id. */
   spaceIdPrefix: string;
 }
 
 /**
- * The shared inbound loop for both transports. It handles the parts that are
- * identical across providers — skipping outbound/empty/non-text messages,
- * dispatching to `handleInbound`, and wiring the typing indicator — and defers
- * the provider-specific bits (author resolution, reply vs. narration) to the
- * caller.
+ * The shared inbound loop for both transports. It skips outbound/empty/non-text
+ * messages, resolves the author (provider-specific), and hands each message to
+ * the durable pipeline ({@link enqueue}), which owns debouncing, generation,
+ * and paced sending. Replies are delivered through the provider's
+ * {@link ConversationIO}, not from this loop.
  */
 export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
   for await (const [space, message] of opts.app.messages) {
@@ -69,20 +64,16 @@ export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
       continue;
     }
 
-    const result = await handleInbound({
+    await enqueue({
       spaceId: `${opts.spaceIdPrefix}${space.id}`,
       channel: opts.channel,
       authorHandle: resolved.authorHandle,
-      text: resolved.text,
       isConcierge: resolved.isConcierge,
       patientId: resolved.patientId,
       allowGuest: resolved.allowGuest,
       guestName: resolved.guestName,
-      typing: opts.showTyping
-        ? { start: () => space.startTyping(), stop: () => space.stopTyping() }
-        : undefined,
+      text: resolved.text,
+      io: opts.buildIO(space, message),
     });
-
-    await opts.onResult(space, message, result);
   }
 }

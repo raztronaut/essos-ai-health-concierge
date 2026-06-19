@@ -119,6 +119,8 @@ export default defineSchema({
     dietary_notes: v.union(v.string(), v.null()),
     /** Owning concierge (Clerk user id), or null for the unassigned queue. */
     assignee_user_id: v.optional(v.union(v.string(), v.null())),
+    /** Associated concierges (Clerk user ids) */
+    associated_user_ids: v.optional(v.array(v.string())),
     created_at: v.string(),
   })
     .index("by_external_id", ["id"])
@@ -342,4 +344,74 @@ export default defineSchema({
   })
     .index("by_conversation", ["conversation_id"])
     .index("by_thread", ["thread_ts"]),
+
+  // --- New: durable five-stage inbound pipeline (see ADR 020) ---
+  //
+  // Inbound bursts are debounced into one turn. `batch_queue` holds messages
+  // until the debounce settles; the flush stage drains them. `carried_messages`
+  // holds rows a chain drained but couldn't finish (cancelled mid-generation),
+  // so the next chain still sees them. `inflight_chains` tracks the single live
+  // chain per conversation for cancellation + send-resume after a crash.
+  batch_queue: defineTable({
+    conversation_id: v.string(),
+    space_id: v.string(),
+    /** Stable per-message id, assigned at enqueue, used for send dedup. */
+    client_guid: v.string(),
+    author_handle: v.union(v.string(), v.null()),
+    /** The logged `messages` row id (messages are logged once, at enqueue). */
+    source_message_id: v.string(),
+    text: v.string(),
+    created_at: v.string(),
+  })
+    .index("by_conversation", ["conversation_id", "created_at"])
+    .index("by_space", ["space_id"]),
+
+  carried_messages: defineTable({
+    conversation_id: v.string(),
+    client_guid: v.string(),
+    author_handle: v.union(v.string(), v.null()),
+    source_message_id: v.string(),
+    text: v.string(),
+    created_at: v.string(),
+    carried_at: v.string(),
+  }).index("by_conversation", ["conversation_id", "created_at"]),
+
+  inflight_chains: defineTable({
+    conversation_id: v.string(),
+    chain_id: v.string(),
+    /** Epoch ms; `cancelled_at` is compared against this (per-chain, not per-chat). */
+    chain_started_at: v.number(),
+    stage: v.union(
+      v.literal("flush"),
+      v.literal("read"),
+      v.literal("generate"),
+      v.literal("send"),
+      v.literal("done")
+    ),
+    cancelled_at: v.union(v.number(), v.null()),
+    /** Send-resume cursor: bubbles before this index were already delivered. */
+    start_index: v.number(),
+    sent_guids: v.array(v.string()),
+    updated_at: v.string(),
+  }).index("by_conversation", ["conversation_id"]),
+
+  job_failures: defineTable({
+    queue: v.string(),
+    job_id: v.string(),
+    conversation_id: v.union(v.string(), v.null()),
+    /** Truncated serialized payload for reproduction. */
+    payload_json: v.union(v.string(), v.null()),
+    error: v.string(),
+    created_at: v.string(),
+  })
+    .index("by_created", ["created_at"])
+    .index("by_conversation", ["conversation_id"]),
+
+  // Per-person working memory (keyed by sender handle, not the thread), injected
+  // into the agent's context so it remembers who someone is across conversations.
+  agent_memory: defineTable({
+    resource_id: v.string(),
+    working_memory: v.string(),
+    updated_at: v.string(),
+  }).index("by_resource", ["resource_id"]),
 });

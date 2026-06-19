@@ -7,31 +7,31 @@ todos:
     status: completed
   - id: health-gate
     content: "A2: extend health.ts with setEveReachable; add periodic eveHealthy() probe in imessage.ts that logs loudly on disconnect and feeds /healthz"
-    status: in_progress
+    status: completed
   - id: diego-dedupe
     content: "A3: set diego fixture seeded_conversation.space_id to imessage:any;-;+16472215381 (audit other real-phone fixtures); reconcile existing duplicate via reseed or delete"
-    status: pending
+    status: completed
   - id: pipeline-schema
     content: "B1: add Convex tables (batch_queue, carried_messages, inflight_chains, job_failures, agent_memory) + validators + model files; generalize messages outbound for agent role/client_guid/send_index"
-    status: pending
+    status: completed
   - id: pipeline-wiring
     content: "B2: add machine.ts internal fns, register in http.ts whitelist, add shared/convex.ts wrappers + types (incl. recovery queries)"
-    status: pending
+    status: completed
   - id: pipeline-orchestrator
     content: "B3: build transport/src/pipeline.ts (enqueuer + debounce, chain runner with AbortController + per-chain cancel polling, carry-forward)"
-    status: pending
+    status: completed
   - id: pipeline-stages
     content: "B4: implement flush/mark-read/generate(refactor handleInbound->generateTurn preserving degradation+handoff+disclosure)/paced-send+dedup; rewire runLoop + imessage/terminal entry points; keep handleInbound wrapper for smoke"
-    status: pending
+    status: completed
   - id: pipeline-recovery
     content: "B5: job_failures audit + 30-day retention sweep + startup recoverPipeline() to re-arm stranded chains"
-    status: pending
+    status: completed
   - id: memory
     content: "B6: per-resource agent_memory - inject 'what we know' block into context.ts, add eve tool to write notes, upsert after turns"
-    status: pending
+    status: completed
   - id: config-tests-docs
     content: "B7: env knobs, unit/Convex tests (debounce/carry-forward/cancel/start_index/dedup), typecheck + suites + biome, ADR"
-    status: pending
+    status: completed
 isProject: false
 ---
 

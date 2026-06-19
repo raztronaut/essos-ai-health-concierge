@@ -3,6 +3,7 @@ import { Spectrum } from "spectrum-ts";
 import { terminal } from "spectrum-ts/providers/terminal";
 import { CONCIERGE_HANDLES, DEMO_PATIENT } from "./env.js";
 import { eveHealthy } from "./eveClient.js";
+import { startPipeline } from "./pipeline.js";
 import { runMessageLoop } from "./runLoop.js";
 
 /**
@@ -35,6 +36,8 @@ async function main(): Promise<void> {
 
   const app = await Spectrum({ providers: [terminal.config()] });
 
+  await startPipeline();
+
   await runMessageLoop({
     app,
     channel: "terminal",
@@ -54,32 +57,12 @@ async function main(): Promise<void> {
         patientId: patient.id,
       };
     },
-    onResult: async (_space, message, result) => {
-      if (result.reply) {
-        await message.reply(result.reply);
-        return;
-      }
-      switch (result.reason) {
-        case "paused_for_review":
-        case "taken_over":
-          await message.reply(
-            "(Eve is paused — a human concierge is handling this thread. Resolve/resume it from the dashboard.)"
-          );
-          break;
-        case "concierge_takeover":
-          await message.reply("(Concierge took over — Eve will stay quiet.)");
-          break;
-        case "concierge_logged":
-        case "answered":
-        case "unknown_patient":
-        case "empty":
-          break;
-        default:
-          if (result.reason.startsWith("eve_error")) {
-            await message.reply(`(Agent error: ${result.reason})`);
-          }
-      }
-    },
+    // Terminal has no typing/threading; just echo each bubble back in-thread.
+    buildIO: (_space, message) => ({
+      send: async (bubble) => {
+        await message.reply(bubble);
+      },
+    }),
   });
 }
 

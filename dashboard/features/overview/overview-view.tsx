@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { PageHeader } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { EscalationQueue } from "./escalation-queue";
 import { PatientsPanel } from "./patients-panel";
 import { TelemetryStats } from "./telemetry-stats";
@@ -24,8 +25,9 @@ export function OverviewView() {
       <TelemetryStats stats={stats} />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <EscalationQueue
-          escalations={openEscalations ?? []}
-          patients={patients ?? []}
+          escalations={openEscalations ?? EMPTY_ARRAY}
+          now={Date.now()}
+          patients={patients ?? EMPTY_ARRAY}
         />
         <PatientsPanel />
       </div>

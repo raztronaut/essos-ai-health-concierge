@@ -96,13 +96,17 @@ One command starts the always-on services (Convex + Eve agent + dashboard) with 
 pnpm dev            # convex (:3210) + eve (:3000) + dashboard (:4000)
 # or, for UI work without the agent:
 pnpm dev:ui         # convex + dashboard only
+# or, the full live iMessage stack in one command (needs SPECTRUM_* in .env):
+pnpm demo           # convex + eve + dashboard + supervised iMessage transport
 ```
 
-The **transport** is interactive (it reads your keystrokes as the patient), so run it in its own terminal:
+`pnpm demo` is the one-command live demo: it adds the **supervised** iMessage transport (restarts on crash) to the `pnpm dev` set. Use plain `pnpm dev` when you don't have Spectrum credentials.
+
+The **terminal** transport is interactive (it reads your keystrokes as the patient), so run it in its own terminal:
 
 ```bash
 pnpm transport:terminal     # local: play the patient in your shell
-pnpm transport:imessage     # live: Spectrum Cloud iMessage group chat
+pnpm transport:imessage     # live: a single Spectrum Cloud iMessage transport
 ```
 
 The optional **Slack bridge** is another long-running worker — run it in its own terminal once a Slack app is configured (see [slack/README.md](slack/README.md)):
@@ -129,6 +133,8 @@ Drive these as the patient (terminal, or iMessage in the group):
 | "Is this swelling on my nose normal?" | Non-clinical acknowledgement + **High** escalation, automation paused. |
 | "Can I take ibuprofen tonight?" | Medication decision → escalates. |
 | "I can't find my driver and no one's answering." | Stranded patient → escalates; tells them where to wait. |
+| "Please call me Ms. Okafor and remember I'm travelling with my sister." | Eve saves a durable note (`remember_patient`); it appears in the **What Eve remembers** card on the conversation and informs later turns. |
+| (send "hey" / "wait" / "the question" in quick succession) | Debounced into **one** reply, not three; a follow-up mid-reply cancels and re-batches. |
 
 Open flags surface on the dashboard Overview (live, no reload), where you can take over, resolve, and resume Eve. The **AI performance** and **Team** views turn the per-turn telemetry into autonomy rate, latency, tool usage, draft quality, and per-concierge workload ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
 
@@ -137,6 +143,8 @@ When Eve escalates, the patient is never left in silence: Eve acknowledges in-th
 On top of that handoff, the concierge gets an **AI-assist**: every escalation arrives with a source-grounded draft reply Eve prepared (from the itinerary and verified packets, never medical advice), prefilled into the reply box so a human can review, edit, and send in one tap. Eve also introduces itself as an AI on its first message (with the human team on the thread), asks a clarifying question for ambiguous logistics instead of guessing, and sends proactive pre-op reminders before a procedure (`pnpm transport:remind` to fire one on demand). See [ADR 011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md).
 
 Eve is tuned to read like a person texting, not a bot. iMessage has no rich text, so the transport runs every outbound message through a Markdown→plaintext normalizer (no stray `**bold**` or `# headers` ever reach a patient), and the agent instructions add a poke-inspired texting voice: match the patient's length, drop robotic filler, mirror emoji, and use native tapbacks for light acknowledgements. See [ADR 012](.docs/decisions/012-imessage-plaintext-and-voice.md).
+
+Inbound runs through a durable **five-stage pipeline** so the agent behaves like a person under real-world conditions: a burst of texts is **debounced into one turn** (no overlapping replies), a follow-up sent mid-reply **cancels and re-batches**, the reply is sent as **paced bubbles**, and crash-safe dedup never double-sends. Every stage persists to Convex for restart recovery, failures land in a `job_failures` audit, and Eve keeps **per-patient memory** (the *What Eve remembers* card, written by the `remember_patient` tool). If Eve is ever unreachable or errors, the patient still gets a holding message + a human escalation instead of silence, and the transport's `/healthz` (set `ESSOS_TRANSPORT_HEALTH_PORT`) plus a stream watchdog make a dead connection loud rather than silent. See [ADR 020](.docs/decisions/020-spectrum-inbound-pipeline.md).
 
 The concierge team doesn't have to live in the dashboard to catch a flag: the optional **Slack bridge** posts each escalation as a threaded card (level, reason, summary, Eve's draft) into a shared channel, and a concierge can **reply to the patient, take over, resolve, or resume Eve right from the thread** — plus look up a patient's status/schedule/files with `/essos` and see their queue in App Home. The point is to bring the work to where the team already is and cut the cognitive switching that drives burnout; every Slack action still flows through the same Convex state as the dashboard. Opt-in (`SLACK_ENABLED` + Slack tokens); setup in [slack/README.md](slack/README.md). See [ADR 019](.docs/decisions/019-slack-concierge-bridge.md).
 
@@ -162,9 +170,11 @@ The dashboard ships in **demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1` for the UI
 2. **Bind a test number to a patient:** edit a patient `handle` in `mock-assets/patients/*.json` to the patient device's iMessage handle (E.164 phone or Apple ID email), then `pnpm seed:reset`. Inbound senders are matched to patients by exact handle.
 3. Set `ESSOS_CONCIERGE_HANDLES` (comma-separated) to the concierge participants' real handles (not display names) so their messages don't trigger Eve and signal takeover.
 4. Create the group chat containing the patient device, the concierge device, and the Spectrum agent line.
-5. `pnpm eve:dev`, `pnpm transport:imessage`, `pnpm dashboard:dev`, then text from the patient device.
+5. `pnpm demo` (starts convex + eve + dashboard + supervised transport together), then text from the patient device. To run the pieces separately instead: `pnpm eve:dev`, `pnpm transport:imessage`, `pnpm dashboard:dev`.
 
-`pnpm eve:dev` serves Eve's HTTP API on `:3000` (the port the transport's `EVE_BASE_URL` defaults to); use `pnpm eve:tui` for the interactive console instead. To run Eve on a different port, set `EVE_BASE_URL` for the transport to match.
+`pnpm eve:dev` serves Eve's HTTP API on `:3000` (the port the transport's `EVE_BASE_URL` defaults to); use `pnpm eve:tui` for the interactive console instead. To run Eve on a different port, set `EVE_BASE_URL` for the transport to match. Restart `eve:dev` after changing `@essos/shared` or an agent tool — the dev server snapshots them at startup.
+
+For an unattended demo, run `pnpm transport:imessage:supervised` instead of `pnpm transport:imessage`: it restarts the worker on crash and, with `ESSOS_TRANSPORT_HEALTH_PORT` set, exposes `GET /healthz`. A single-instance lock prevents two transports from fighting over the one Spectrum stream.
 
 Eve and the transport here run on the same host, so Eve's `localDev()` route auth admits the transport with no extra config. If you deploy Eve to a non-loopback host, set the same `ESSOS_TRANSPORT_SECRET` on both so the transport authenticates ([ADR 009](.docs/decisions/009-agent-hardening-and-transport-auth.md)).
 

@@ -214,11 +214,16 @@ function authHeaders(
     : extra;
 }
 
-async function postJson(url: string, body: unknown): Promise<SessionResponse> {
+async function postJson(
+  url: string,
+  body: unknown,
+  signal?: AbortSignal
+): Promise<SessionResponse> {
   const res = await fetch(url, {
     method: "POST",
     headers: authHeaders({ "content-type": "application/json" }),
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
@@ -240,11 +245,13 @@ async function postJson(url: string, body: unknown): Promise<SessionResponse> {
  */
 async function collectReply(
   sessionId: string,
-  expectedTurns: number
+  expectedTurns: number,
+  signal?: AbortSignal
 ): Promise<{ text: string; telemetry: TurnTelemetry }> {
   const url = `${EVE_BASE_URL}/eve/v1/session/${sessionId}/stream`;
   const res = await fetch(url, {
     headers: authHeaders({ accept: "application/x-ndjson" }),
+    signal,
   });
   if (!(res.ok && res.body)) {
     throw new Error(`Eve stream failed: ${res.status}`);
@@ -362,7 +369,8 @@ async function collectReply(
 /** Send a message to the agent and return its reply + the (continuable) session. */
 export async function askEve(
   message: string,
-  prior: EveSession | null
+  prior: EveSession | null,
+  signal?: AbortSignal
 ): Promise<EveReply> {
   let sessionId: string;
   let continuationToken: string;
@@ -374,14 +382,19 @@ export async function askEve(
       {
         message,
         continuationToken: prior.continuationToken,
-      }
+      },
+      signal
     );
     sessionId = prior.sessionId;
     continuationToken = cont.continuationToken ?? prior.continuationToken;
   } else {
-    const created = await postJson(`${EVE_BASE_URL}/eve/v1/session`, {
-      message,
-    });
+    const created = await postJson(
+      `${EVE_BASE_URL}/eve/v1/session`,
+      {
+        message,
+      },
+      signal
+    );
     if (!created.sessionId) {
       throw new Error("Eve did not return a sessionId");
     }
@@ -392,7 +405,11 @@ export async function askEve(
     }
   }
 
-  const { text, telemetry } = await collectReply(sessionId, expectedTurns);
+  const { text, telemetry } = await collectReply(
+    sessionId,
+    expectedTurns,
+    signal
+  );
   return {
     text,
     telemetry,

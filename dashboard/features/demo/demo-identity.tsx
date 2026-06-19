@@ -104,12 +104,19 @@ function Inner({
   realFirstName: string;
   children: ReactNode;
 }) {
-  const concierges = (useQuery(api.users.listConcierges, {}) ?? []).map(
-    (c) => ({
-      clerkId: c.clerkId,
-      name: c.name,
-      role: c.role,
-    })
+  const conciergeRows = useQuery(api.users.listConcierges, {});
+  // Project once per query result. Convex returns a stable reference until the
+  // data actually changes, so this keeps `concierges` (and the context value
+  // below) from getting a fresh identity on every render of this app-wide
+  // provider.
+  const concierges = useMemo<ConciergeOption[]>(
+    () =>
+      (conciergeRows ?? []).map((c) => ({
+        clerkId: c.clerkId,
+        name: c.name,
+        role: c.role,
+      })),
+    [conciergeRows]
   );
   const [viewAs, setViewAsState] = useState<string | null>(null);
 
