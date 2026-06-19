@@ -19,7 +19,7 @@ export async function create(
     sourceMessageId?: string | null;
     suggestedReply?: string | null;
     suggestedReplySources?: string[] | null;
-  },
+  }
 ): Promise<Escalation> {
   const id = newId("esc");
   await ctx.db.insert("escalations", {
@@ -44,13 +44,15 @@ export async function create(
     .query("escalations")
     .withIndex("by_external_id", (q) => q.eq("id", id))
     .unique();
-  if (!created) throw new Error("Failed to create escalation");
+  if (!created) {
+    throw new Error("Failed to create escalation");
+  }
   return created;
 }
 
 export async function listByStatus(
   ctx: QueryCtx | MutationCtx,
-  status?: EscalationStatus,
+  status?: EscalationStatus
 ): Promise<Escalation[]> {
   if (status) {
     return await ctx.db
@@ -64,18 +66,20 @@ export async function listByStatus(
 
 export async function listForConversation(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<Escalation[]> {
   return await ctx.db
     .query("escalations")
-    .withIndex("by_conversation", (q) => q.eq("conversation_id", conversationId))
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
     .order("desc")
     .collect();
 }
 
 export async function listOpenForConversation(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<Escalation[]> {
   const all = await listForConversation(ctx, conversationId);
   return all.filter((e) => e.status === "open");
@@ -84,26 +88,30 @@ export async function listOpenForConversation(
 export async function takeOver(
   ctx: MutationCtx,
   id: string,
-  assignee: string,
+  assignee: string
 ): Promise<void> {
   const esc = await ctx.db
     .query("escalations")
     .withIndex("by_external_id", (q) => q.eq("id", id))
     .unique();
-  if (!esc) return;
+  if (!esc) {
+    return;
+  }
   await ctx.db.patch(esc._id, { status: "taken_over", assignee });
 }
 
 export async function resolve(
   ctx: MutationCtx,
   id: string,
-  assignee?: string,
+  assignee?: string
 ): Promise<void> {
   const esc = await ctx.db
     .query("escalations")
     .withIndex("by_external_id", (q) => q.eq("id", id))
     .unique();
-  if (!esc) return;
+  if (!esc) {
+    return;
+  }
   await ctx.db.patch(esc._id, {
     status: "resolved",
     resolved_at: nowIso(),
@@ -115,7 +123,7 @@ export async function resolve(
 export async function markConciergeTakeover(
   ctx: MutationCtx,
   conversationId: string,
-  assignee: string,
+  assignee: string
 ): Promise<void> {
   const open = await listOpenForConversation(ctx, conversationId);
   for (const escalation of open) {
@@ -133,7 +141,7 @@ export async function markConciergeTakeover(
 export async function resumeAutomation(
   ctx: MutationCtx,
   conversationId: string,
-  actor: string,
+  actor: string
 ): Promise<void> {
   await Conversations.setAutomationState(ctx, conversationId, "active");
   await Activity.log(ctx, {

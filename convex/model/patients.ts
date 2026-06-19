@@ -17,7 +17,7 @@ export async function list(ctx: QueryCtx | MutationCtx): Promise<Patient[]> {
 
 export async function getByExternalId(
   ctx: QueryCtx | MutationCtx,
-  id: string,
+  id: string
 ): Promise<Patient | null> {
   return await ctx.db
     .query("patients")
@@ -27,7 +27,7 @@ export async function getByExternalId(
 
 export async function getByHandle(
   ctx: QueryCtx | MutationCtx,
-  handle: string,
+  handle: string
 ): Promise<Patient | null> {
   return await ctx.db
     .query("patients")
@@ -39,7 +39,7 @@ export async function upsert(
   ctx: MutationCtx,
   patient: Omit<Patient, "_id" | "_creationTime" | "created_at"> & {
     created_at?: string;
-  },
+  }
 ): Promise<void> {
   const existing = await getByExternalId(ctx, patient.id);
   const fields = {
@@ -65,14 +65,14 @@ export async function upsert(
 // --- Source documents ---
 
 export async function listSourceDocuments(
-  ctx: QueryCtx | MutationCtx,
+  ctx: QueryCtx | MutationCtx
 ): Promise<SourceDocument[]> {
   return await ctx.db.query("source_documents").collect();
 }
 
 export async function getSourceDocument(
   ctx: QueryCtx | MutationCtx,
-  id: string,
+  id: string
 ): Promise<SourceDocument | null> {
   return await ctx.db
     .query("source_documents")
@@ -82,7 +82,7 @@ export async function getSourceDocument(
 
 export async function listSourceDocumentsForPatient(
   ctx: QueryCtx | MutationCtx,
-  patientId: string,
+  patientId: string
 ): Promise<SourceDocument[]> {
   // Index-backed: this patient's docs plus the global (null-patient) docs.
   const [forPatient, global] = await Promise.all([
@@ -96,7 +96,7 @@ export async function listSourceDocumentsForPatient(
       .collect(),
   ]);
   return [...forPatient, ...global].sort((a, b) =>
-    `${a.kind}${a.title}`.localeCompare(`${b.kind}${b.title}`),
+    `${a.kind}${a.title}`.localeCompare(`${b.kind}${b.title}`)
   );
 }
 
@@ -104,7 +104,7 @@ export async function insertSourceDocument(
   ctx: MutationCtx,
   doc: Omit<SourceDocument, "_id" | "_creationTime" | "created_at"> & {
     created_at?: string;
-  },
+  }
 ): Promise<void> {
   const existing = await getSourceDocument(ctx, doc.id);
   const fields = { ...doc, created_at: doc.created_at ?? nowIso() };
@@ -119,7 +119,7 @@ export async function insertSourceDocument(
 
 export async function listItinerary(
   ctx: QueryCtx | MutationCtx,
-  patientId: string,
+  patientId: string
 ): Promise<ItineraryEvent[]> {
   return await ctx.db
     .query("itinerary_events")
@@ -143,7 +143,7 @@ export async function insertItineraryEvent(
     driver_name?: string | null;
     driver_phone?: string | null;
     sort_order?: number;
-  },
+  }
 ): Promise<void> {
   await ctx.db.insert("itinerary_events", {
     id: event.id ?? newId("itin"),
@@ -167,14 +167,14 @@ export async function insertItineraryEvent(
 export async function listCareInstructions(
   ctx: QueryCtx | MutationCtx,
   patientId: string,
-  phase?: CarePhase,
+  phase?: CarePhase
 ): Promise<CareInstruction[]> {
   const rows = await ctx.db
     .query("care_instructions")
     .withIndex("by_patient", (q) =>
       phase
         ? q.eq("patient_id", patientId).eq("phase", phase)
-        : q.eq("patient_id", patientId),
+        : q.eq("patient_id", patientId)
     )
     .collect();
   return rows.sort((a, b) => a.title.localeCompare(b.title));
@@ -195,7 +195,7 @@ export async function insertCareInstruction(
     answer_policy: CareInstruction["answer_policy"];
     effective_from?: string | null;
     effective_until?: string | null;
-  },
+  }
 ): Promise<void> {
   const ts = nowIso();
   await ctx.db.insert("care_instructions", {

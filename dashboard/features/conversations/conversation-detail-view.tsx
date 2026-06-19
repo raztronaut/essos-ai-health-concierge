@@ -1,23 +1,23 @@
 "use client";
 
-import Link from "next/link";
-import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { parseSuggestedReplySources } from "@essos/shared";
-import { Card, PageHeader } from "@/components/ui";
+import { useQuery } from "convex/react";
+import Link from "next/link";
 import { AutomationBadge } from "@/components/badges";
-import { MessageThread } from "./message-thread";
-import { ConciergeReplyBox } from "./concierge-reply-box";
-import { PatientSummaryCard } from "./patient-summary-card";
-import { FlagsPanel } from "./flags-panel";
+import { Card, PageHeader } from "@/components/ui";
 import { ActivityLog } from "./activity-log";
+import { ConciergeReplyBox } from "./concierge-reply-box";
 import { ResumeAutomationButton } from "./escalation-actions";
+import { FlagsPanel } from "./flags-panel";
+import { MessageThread } from "./message-thread";
+import { PatientSummaryCard } from "./patient-summary-card";
 
 export function ConversationDetailView({ id }: { id: string }) {
   const conversation = useQuery(api.queries.getConversation, { id });
   const patient = useQuery(
     api.queries.getPatient,
-    conversation ? { id: conversation.patient_id } : "skip",
+    conversation ? { id: conversation.patient_id } : "skip"
   );
   const messages = useQuery(api.queries.listMessages, { conversationId: id });
   const escalations = useQuery(api.queries.listEscalationsForConversation, {
@@ -26,13 +26,16 @@ export function ConversationDetailView({ id }: { id: string }) {
   const activity = useQuery(api.queries.listActivity, { conversationId: id });
 
   if (conversation === undefined) {
-    return <p className="text-sm text-muted">Loading conversation…</p>;
+    return <p className="text-muted text-sm">Loading conversation…</p>;
   }
   if (conversation === null) {
     return (
       <Card>
-        <p className="text-sm text-muted">Conversation not found.</p>
-        <Link href="/conversations" className="mt-2 inline-block text-sm text-primary hover:underline">
+        <p className="text-muted text-sm">Conversation not found.</p>
+        <Link
+          className="mt-2 inline-block text-primary text-sm hover:underline"
+          href="/conversations"
+        >
           ← All conversations
         </Link>
       </Card>
@@ -44,7 +47,7 @@ export function ConversationDetailView({ id }: { id: string }) {
   const canResume = conversation.automation_state !== "active";
 
   const lastRepliedIndex = msgs.findLastIndex(
-    (m) => m.role === "agent" || m.role === "concierge",
+    (m) => m.role === "agent" || m.role === "concierge"
   );
   const unansweredCount = msgs
     .slice(lastRepliedIndex + 1)
@@ -56,18 +59,23 @@ export function ConversationDetailView({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <PageHeader
+        actions={
+          <>
+            <AutomationBadge state={conversation.automation_state} />
+            {canResume ? (
+              <ResumeAutomationButton conversationId={conversation.id} />
+            ) : null}
+          </>
+        }
         eyebrow={
-          <Link href="/conversations" className="text-sm text-primary hover:underline">
+          <Link
+            className="text-primary text-sm hover:underline"
+            href="/conversations"
+          >
             ← All conversations
           </Link>
         }
         title={patient ? patient.name : "Unknown patient"}
-        actions={
-          <>
-            <AutomationBadge state={conversation.automation_state} />
-            {canResume ? <ResumeAutomationButton conversationId={conversation.id} /> : null}
-          </>
-        }
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -75,15 +83,15 @@ export function ConversationDetailView({ id }: { id: string }) {
           <MessageThread messages={msgs} />
           <ConciergeReplyBox
             conversationId={conversation.id}
-            suggestedReply={openEscalation?.suggested_reply ?? null}
             sources={draftSources}
+            suggestedReply={openEscalation?.suggested_reply ?? null}
           />
         </div>
         <aside className="space-y-4">
           {patient ? <PatientSummaryCard patient={patient} /> : null}
           <FlagsPanel
-            escalations={escs}
             conversationId={conversation.id}
+            escalations={escs}
             unansweredCount={unansweredCount}
           />
           <ActivityLog activity={activity ?? []} />

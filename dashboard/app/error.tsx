@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui";
 
 /** Route-level error boundary. Renders when a server component throws. */
-export default function Error({
+export default function DashboardError({
   error,
   reset,
 }: {
@@ -16,12 +16,13 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="mx-auto max-w-md space-y-4 rounded-card border border-border bg-card shadow-card p-6 text-center">
+    <div className="mx-auto max-w-md space-y-4 rounded-card border border-border bg-card p-6 text-center shadow-card">
       <h1 className="serif text-2xl">Something went wrong</h1>
-      <p className="text-sm text-muted">
-        The dashboard hit an unexpected error reading the local store. You can retry below.
+      <p className="text-muted text-sm">
+        The dashboard hit an unexpected error reading the local store. You can
+        retry below.
       </p>
-      <Button type="button" variant="primary" onClick={reset}>
+      <Button onClick={reset} type="button" variant="primary">
         Try again
       </Button>
     </div>

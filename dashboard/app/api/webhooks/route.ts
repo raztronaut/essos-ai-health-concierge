@@ -1,5 +1,5 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 /**
  * Clerk -> Convex user/org sync. Verified with the svix signing secret, then
@@ -7,11 +7,19 @@ import { NextRequest } from "next/server";
  * on-sign-in `storeUser` path so the `users`/membership tables stay current
  * even for offline members. See clerk-webhooks + ADR 013.
  */
-async function machine(fn: string, args: Record<string, unknown>): Promise<void> {
-  const base = process.env.CONVEX_SITE_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:3211";
-  const headers: Record<string, string> = { "content-type": "application/json" };
+async function machine(
+  fn: string,
+  args: Record<string, unknown>
+): Promise<void> {
+  const base =
+    process.env.CONVEX_SITE_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:3211";
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
   const secret = process.env.CONVEX_SERVICE_SECRET;
-  if (secret) headers.authorization = `Bearer ${secret}`;
+  if (secret) {
+    headers.authorization = `Bearer ${secret}`;
+  }
   await fetch(`${base}/machine`, {
     method: "POST",
     headers,
@@ -40,7 +48,9 @@ export async function POST(req: NextRequest): Promise<Response> {
       pictureUrl: image_url ?? null,
     });
   } else if (evt.type === "user.deleted") {
-    if (evt.data.id) await machine("deleteClerkUser", { clerkId: evt.data.id });
+    if (evt.data.id) {
+      await machine("deleteClerkUser", { clerkId: evt.data.id });
+    }
   } else if (
     evt.type === "organizationMembership.created" ||
     evt.type === "organizationMembership.updated"

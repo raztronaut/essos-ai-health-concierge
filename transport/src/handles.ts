@@ -6,10 +6,16 @@
  * other non-digits. Seed handles are already in this canonical form.
  */
 export function normalizeHandle(raw: string | null | undefined): string | null {
-  if (raw == null) return null;
+  if (raw == null) {
+    return null;
+  }
   const trimmed = raw.trim();
-  if (!trimmed) return null;
-  if (trimmed.includes("@")) return trimmed.toLowerCase();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.includes("@")) {
+    return trimmed.toLowerCase();
+  }
   const phone = trimmed.replace(/[^\d+]/g, "");
   return phone || trimmed.toLowerCase();
 }

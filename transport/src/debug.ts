@@ -2,5 +2,7 @@
 export const DEBUG = process.env.ESSOS_DEBUG === "1";
 
 export function debug(scope: string, ...args: unknown[]): void {
-  if (DEBUG) console.error(`[${scope}]`, ...args);
+  if (DEBUG) {
+    console.error(`[${scope}]`, ...args);
+  }
 }

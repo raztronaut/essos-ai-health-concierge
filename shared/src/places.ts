@@ -7,11 +7,11 @@
  */
 
 export interface Place {
-  name: string;
-  category: string;
   address: string | null;
-  rating: number | null;
+  category: string;
+  name: string;
   note: string | null;
+  rating: number | null;
 }
 
 export type PlacesSource = "google_places" | "curated_notional";
@@ -23,18 +23,78 @@ export interface PlacesResult {
 
 const FALLBACK: Record<string, Place[]> = {
   istanbul: [
-    { name: "Çiya Sofrası", category: "restaurant", address: "Kadıköy, Istanbul", rating: 4.6, note: "Renowned Anatolian home cooking; many vegetable mezes." },
-    { name: "Karaköy Lokantası", category: "restaurant", address: "Karaköy, Istanbul", rating: 4.5, note: "Classic Istanbul meyhane; soft, easy-to-eat dishes." },
-    { name: "Eczane (24h Pharmacy) Taksim", category: "pharmacy", address: "Taksim, Istanbul", rating: 4.3, note: "Late-night pharmacy near Taksim Square." },
-    { name: "Garanti BBVA ATM", category: "atm", address: "İstiklal Caddesi, Istanbul", rating: null, note: "Reliable ATM on the main pedestrian street." },
-    { name: "Kronotrop Coffee", category: "coffee", address: "Cihangir, Istanbul", rating: 4.5, note: "Quiet specialty coffee a short walk from Taksim." },
+    {
+      name: "Çiya Sofrası",
+      category: "restaurant",
+      address: "Kadıköy, Istanbul",
+      rating: 4.6,
+      note: "Renowned Anatolian home cooking; many vegetable mezes.",
+    },
+    {
+      name: "Karaköy Lokantası",
+      category: "restaurant",
+      address: "Karaköy, Istanbul",
+      rating: 4.5,
+      note: "Classic Istanbul meyhane; soft, easy-to-eat dishes.",
+    },
+    {
+      name: "Eczane (24h Pharmacy) Taksim",
+      category: "pharmacy",
+      address: "Taksim, Istanbul",
+      rating: 4.3,
+      note: "Late-night pharmacy near Taksim Square.",
+    },
+    {
+      name: "Garanti BBVA ATM",
+      category: "atm",
+      address: "İstiklal Caddesi, Istanbul",
+      rating: null,
+      note: "Reliable ATM on the main pedestrian street.",
+    },
+    {
+      name: "Kronotrop Coffee",
+      category: "coffee",
+      address: "Cihangir, Istanbul",
+      rating: 4.5,
+      note: "Quiet specialty coffee a short walk from Taksim.",
+    },
   ],
   tijuana: [
-    { name: "Caesar's Restaurant", category: "restaurant", address: "Av. Revolución, Tijuana", rating: 4.4, note: "Birthplace of the Caesar salad; calm sit-down spot." },
-    { name: "Telefónica Gastro Park", category: "restaurant", address: "Zona Río, Tijuana", rating: 4.5, note: "Food-hall variety, easy if you want something light." },
-    { name: "Farmacias Guadalajara (24h)", category: "pharmacy", address: "Zona Río, Tijuana", rating: 4.2, note: "24-hour pharmacy chain near the hotel district." },
-    { name: "BBVA ATM Zona Río", category: "atm", address: "Zona Río, Tijuana", rating: null, note: "Bank ATM; withdraw pesos rather than relying on USD." },
-    { name: "Café Praga", category: "coffee", address: "Zona Río, Tijuana", rating: 4.4, note: "Relaxed café for downtime before/after the clinic." },
+    {
+      name: "Caesar's Restaurant",
+      category: "restaurant",
+      address: "Av. Revolución, Tijuana",
+      rating: 4.4,
+      note: "Birthplace of the Caesar salad; calm sit-down spot.",
+    },
+    {
+      name: "Telefónica Gastro Park",
+      category: "restaurant",
+      address: "Zona Río, Tijuana",
+      rating: 4.5,
+      note: "Food-hall variety, easy if you want something light.",
+    },
+    {
+      name: "Farmacias Guadalajara (24h)",
+      category: "pharmacy",
+      address: "Zona Río, Tijuana",
+      rating: 4.2,
+      note: "24-hour pharmacy chain near the hotel district.",
+    },
+    {
+      name: "BBVA ATM Zona Río",
+      category: "atm",
+      address: "Zona Río, Tijuana",
+      rating: null,
+      note: "Bank ATM; withdraw pesos rather than relying on USD.",
+    },
+    {
+      name: "Café Praga",
+      category: "coffee",
+      address: "Zona Río, Tijuana",
+      rating: 4.4,
+      note: "Relaxed café for downtime before/after the clinic.",
+    },
   ],
 };
 
@@ -47,18 +107,24 @@ function curated(city: string): Place[] {
 async function googlePlaces(
   query: string,
   city: string,
-  apiKey: string,
+  apiKey: string
 ): Promise<Place[]> {
-  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "places.displayName,places.formattedAddress,places.rating,places.primaryType",
-    },
-    body: JSON.stringify({ textQuery: `${query} near ${city}`, maxResultCount: 6 }),
-  });
+  const response = await fetch(
+    "https://places.googleapis.com/v1/places:searchText",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "places.displayName,places.formattedAddress,places.rating,places.primaryType",
+      },
+      body: JSON.stringify({
+        textQuery: `${query} near ${city}`,
+        maxResultCount: 6,
+      }),
+    }
+  );
   if (!response.ok) {
     throw new Error(`Places API ${response.status}`);
   }

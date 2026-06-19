@@ -3,8 +3,8 @@ import {
   customMutation,
   customQuery,
 } from "convex-helpers/server/customFunctions";
-import { mutation, query } from "../_generated/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { nowIso } from "./util.js";
 
 /**
@@ -19,12 +19,14 @@ import { nowIso } from "./util.js";
  * so the dashboard runs without Clerk keys configured.
  */
 export interface Concierge {
-  label: string;
   clerkId: string | null;
+  label: string;
   orgId: string | null;
 }
 
-async function resolveConcierge(ctx: QueryCtx | MutationCtx): Promise<Concierge> {
+async function resolveConcierge(
+  ctx: QueryCtx | MutationCtx
+): Promise<Concierge> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     if (process.env.ESSOS_REQUIRE_AUTH) {
@@ -33,10 +35,7 @@ async function resolveConcierge(ctx: QueryCtx | MutationCtx): Promise<Concierge>
     return { label: "dashboard", clerkId: null, orgId: null };
   }
   const label =
-    identity.name ??
-    identity.nickname ??
-    identity.email ??
-    identity.subject;
+    identity.name ?? identity.nickname ?? identity.email ?? identity.subject;
   const orgId =
     (identity.orgId as string | undefined) ??
     (identity.org_id as string | undefined) ??
@@ -47,10 +46,14 @@ async function resolveConcierge(ctx: QueryCtx | MutationCtx): Promise<Concierge>
 /** Upsert the signed-in Clerk user into the `users` table (no-op in dev fallback). */
 async function syncConciergeUser(ctx: MutationCtx): Promise<void> {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity) return;
+  if (!identity) {
+    return;
+  }
   const existing = await ctx.db
     .query("users")
-    .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+    .withIndex("by_token", (q) =>
+      q.eq("tokenIdentifier", identity.tokenIdentifier)
+    )
     .unique();
   const orgId =
     (identity.orgId as string | undefined) ??
@@ -64,7 +67,8 @@ async function syncConciergeUser(ctx: MutationCtx): Promise<void> {
     await ctx.db.patch(existing._id, {
       name: identity.name ?? existing.name,
       email: identity.email ?? existing.email,
-      pictureUrl: (identity.pictureUrl as string | undefined) ?? existing.pictureUrl,
+      pictureUrl:
+        (identity.pictureUrl as string | undefined) ?? existing.pictureUrl,
       orgId,
       role,
       updatedAt: nowIso(),
@@ -87,7 +91,7 @@ async function syncConciergeUser(ctx: MutationCtx): Promise<void> {
 /** Dashboard read: Clerk-gated (or dev fallback). Exposes `ctx.concierge`. */
 export const conciergeQuery = customQuery(
   query,
-  customCtx(async (ctx) => ({ concierge: await resolveConcierge(ctx) })),
+  customCtx(async (ctx) => ({ concierge: await resolveConcierge(ctx) }))
 );
 
 /** Dashboard write: resolves + syncs the concierge and stamps actor/assignee. */
@@ -96,5 +100,5 @@ export const conciergeMutation = customMutation(
   customCtx(async (ctx) => {
     await syncConciergeUser(ctx);
     return { concierge: await resolveConcierge(ctx) };
-  }),
+  })
 );

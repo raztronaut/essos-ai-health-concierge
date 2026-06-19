@@ -12,7 +12,7 @@ export async function log(
     event: ActivityEvent;
     actor: string;
     detail?: string | null;
-  },
+  }
 ): Promise<ActivityLogEntry> {
   const id = newId("act");
   await ctx.db.insert("activity_log", {
@@ -27,23 +27,27 @@ export async function log(
     .query("activity_log")
     .withIndex("by_external_id", (q) => q.eq("id", id))
     .unique();
-  if (!created) throw new Error("Failed to create activity entry");
+  if (!created) {
+    throw new Error("Failed to create activity entry");
+  }
   return created;
 }
 
 export async function listForConversation(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<ActivityLogEntry[]> {
   return await ctx.db
     .query("activity_log")
-    .withIndex("by_conversation", (q) => q.eq("conversation_id", conversationId))
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
     .collect();
 }
 
 export async function listAll(
   ctx: QueryCtx | MutationCtx,
-  limit = 200,
+  limit = 200
 ): Promise<ActivityLogEntry[]> {
   return await ctx.db
     .query("activity_log")
@@ -54,7 +58,7 @@ export async function listAll(
 
 export async function countByEvent(
   ctx: QueryCtx | MutationCtx,
-  event: ActivityEvent,
+  event: ActivityEvent
 ): Promise<number> {
   const rows = await ctx.db
     .query("activity_log")

@@ -12,9 +12,9 @@ export function Stat({
 }) {
   return (
     <Card>
-      <div className="text-3xl font-semibold">{value}</div>
-      <div className="mt-1 text-sm font-medium text-ink/80">{label}</div>
-      {hint ? <div className="mt-0.5 text-xs text-muted">{hint}</div> : null}
+      <div className="font-semibold text-3xl">{value}</div>
+      <div className="mt-1 font-medium text-ink/80 text-sm">{label}</div>
+      {hint ? <div className="mt-0.5 text-muted text-xs">{hint}</div> : null}
     </Card>
   );
 }

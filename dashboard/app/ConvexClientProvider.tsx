@@ -1,9 +1,9 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import type { ReactNode } from "react";
 
 /**
  * Wires the dashboard to Convex, with Clerk auth when configured.

@@ -1,11 +1,11 @@
-import type { Spectrum } from "spectrum-ts";
-import { imessage } from "spectrum-ts/providers/imessage";
 import {
   getConversationById,
   getPatientById,
   listPendingOutbound,
   markOutboundDelivered,
 } from "@essos/shared";
+import type { Spectrum } from "spectrum-ts";
+import { imessage } from "spectrum-ts/providers/imessage";
 import { debug } from "./debug.js";
 import { toImessageText } from "./imessageText.js";
 
@@ -22,7 +22,9 @@ const POLL_INTERVAL_MS = 3000;
  */
 async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
   const pending = await listPendingOutbound();
-  if (pending.length === 0) return;
+  if (pending.length === 0) {
+    return;
+  }
 
   for (const message of pending) {
     const conversation = await getConversationById(message.conversation_id);
@@ -35,9 +37,18 @@ async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
       continue;
     }
     try {
-      const space = await resolveSpace(app, conversation.space_id, patient?.handle ?? null);
+      const space = await resolveSpace(
+        app,
+        conversation.space_id,
+        patient?.handle ?? null
+      );
       if (!space) {
-        debug("outbound", "could not resolve space for", message.id, "- dropping");
+        debug(
+          "outbound",
+          "could not resolve space for",
+          message.id,
+          "- dropping"
+        );
         await markOutboundDelivered(message.id);
         continue;
       }
@@ -56,16 +67,24 @@ async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
  * chat GUID with our `imessage:` prefix, so look up the existing DM first; fall
  * back to (re)creating a DM from the patient handle if the lookup fails.
  */
-async function resolveSpace(app: SpectrumApp, spaceId: string, handle: string | null) {
+async function resolveSpace(
+  app: SpectrumApp,
+  spaceId: string,
+  handle: string | null
+) {
   const im = imessage(app);
   const chatGuid = spaceId.replace(/^imessage:/, "");
   try {
     const existing = await im.space.get(chatGuid);
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
   } catch (err) {
     debug("outbound", "space.get failed, will try create:", String(err));
   }
-  if (!handle) return null;
+  if (!handle) {
+    return null;
+  }
   const user = await im.user(handle);
   return im.space.create(user);
 }
@@ -80,10 +99,12 @@ export async function sendToPatientSpace(
   app: SpectrumApp,
   spaceId: string,
   handle: string | null,
-  text: string,
+  text: string
 ): Promise<boolean> {
   const space = await resolveSpace(app, spaceId, handle);
-  if (!space) return false;
+  if (!space) {
+    return false;
+  }
   await space.send(toImessageText(text).text);
   return true;
 }
@@ -95,7 +116,9 @@ export async function sendToPatientSpace(
 export function startOutboundLoop(app: SpectrumApp): () => void {
   let running = false;
   const timer = setInterval(() => {
-    if (running) return;
+    if (running) {
+      return;
+    }
     running = true;
     void drainPendingOutbound(app)
       .catch((err) => debug("outbound", "drain error", String(err)))

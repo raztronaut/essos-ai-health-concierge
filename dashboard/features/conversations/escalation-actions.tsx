@@ -1,8 +1,8 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { EscalationStatus } from "@essos/shared";
+import { useMutation } from "convex/react";
 import { Button } from "@/components/ui";
 
 /** Take-over / resolve actions for a single escalation (queue + thread). */
@@ -20,24 +20,31 @@ export function EscalationActions({
   return (
     <div className="flex shrink-0 items-center gap-2">
       {status === "open" ? (
-        <Button variant="ghost" onClick={() => void takeOver({ conversationId })}>
+        <Button
+          onClick={() => void takeOver({ conversationId })}
+          variant="ghost"
+        >
           Take over
         </Button>
       ) : null}
-      {status !== "resolved" ? (
-        <Button variant="ok" onClick={() => void resolve({ escalationId })}>
+      {status === "resolved" ? null : (
+        <Button onClick={() => void resolve({ escalationId })} variant="ok">
           Resolve
         </Button>
-      ) : null}
+      )}
     </div>
   );
 }
 
 /** Resume Eve automation on a paused / taken-over thread. */
-export function ResumeAutomationButton({ conversationId }: { conversationId: string }) {
+export function ResumeAutomationButton({
+  conversationId,
+}: {
+  conversationId: string;
+}) {
   const resume = useMutation(api.mutations.resumeAutomation);
   return (
-    <Button variant="primary" onClick={() => void resume({ conversationId })}>
+    <Button onClick={() => void resume({ conversationId })} variant="primary">
       Resume Eve
     </Button>
   );

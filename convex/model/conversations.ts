@@ -6,7 +6,7 @@ export type Conversation = Doc<"conversations">;
 
 export async function getByExternalId(
   ctx: QueryCtx | MutationCtx,
-  id: string,
+  id: string
 ): Promise<Conversation | null> {
   return await ctx.db
     .query("conversations")
@@ -16,7 +16,7 @@ export async function getByExternalId(
 
 export async function getBySpace(
   ctx: QueryCtx | MutationCtx,
-  spaceId: string,
+  spaceId: string
 ): Promise<Conversation | null> {
   return await ctx.db
     .query("conversations")
@@ -24,7 +24,9 @@ export async function getBySpace(
     .unique();
 }
 
-export async function list(ctx: QueryCtx | MutationCtx): Promise<Conversation[]> {
+export async function list(
+  ctx: QueryCtx | MutationCtx
+): Promise<Conversation[]> {
   const rows = await ctx.db
     .query("conversations")
     .withIndex("by_updated")
@@ -35,10 +37,12 @@ export async function list(ctx: QueryCtx | MutationCtx): Promise<Conversation[]>
 
 export async function ensure(
   ctx: MutationCtx,
-  args: { spaceId: string; patientId: string; channel: "terminal" | "imessage" },
+  args: { spaceId: string; patientId: string; channel: "terminal" | "imessage" }
 ): Promise<Conversation> {
   const existing = await getBySpace(ctx, args.spaceId);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const ts = nowIso();
   const id = newId("conv");
   await ctx.db.insert("conversations", {
@@ -52,45 +56,62 @@ export async function ensure(
     updated_at: ts,
   });
   const created = await getByExternalId(ctx, id);
-  if (!created) throw new Error("Failed to create conversation");
+  if (!created) {
+    throw new Error("Failed to create conversation");
+  }
   return created;
 }
 
 export async function setAutomationState(
   ctx: MutationCtx,
   conversationId: string,
-  state: Conversation["automation_state"],
+  state: Conversation["automation_state"]
 ): Promise<void> {
   const conv = await getByExternalId(ctx, conversationId);
-  if (!conv) return;
-  await ctx.db.patch(conv._id, { automation_state: state, updated_at: nowIso() });
+  if (!conv) {
+    return;
+  }
+  await ctx.db.patch(conv._id, {
+    automation_state: state,
+    updated_at: nowIso(),
+  });
 }
 
 export async function touch(
   ctx: MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<void> {
   const conv = await getByExternalId(ctx, conversationId);
-  if (!conv) return;
+  if (!conv) {
+    return;
+  }
   await ctx.db.patch(conv._id, { updated_at: nowIso() });
 }
 
 export async function saveEveSession(
   ctx: MutationCtx,
   conversationId: string,
-  session: { sessionId: string; continuationToken: string; turns: number },
+  session: { sessionId: string; continuationToken: string; turns: number }
 ): Promise<void> {
   const conv = await getByExternalId(ctx, conversationId);
-  if (!conv) return;
+  if (!conv) {
+    return;
+  }
   await ctx.db.patch(conv._id, { eve_session: JSON.stringify(session) });
 }
 
 export async function getEveSession(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
-): Promise<{ sessionId: string; continuationToken: string; turns: number } | null> {
+  conversationId: string
+): Promise<{
+  sessionId: string;
+  continuationToken: string;
+  turns: number;
+} | null> {
   const conv = await getByExternalId(ctx, conversationId);
-  if (!conv?.eve_session) return null;
+  if (!conv?.eve_session) {
+    return null;
+  }
   try {
     return JSON.parse(conv.eve_session) as {
       sessionId: string;

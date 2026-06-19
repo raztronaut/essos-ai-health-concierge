@@ -10,7 +10,7 @@ const STATUS_STYLES: Record<EscalationStatus, string> = {
 
 export function StatusBadge({ status }: { status: EscalationStatus }) {
   return (
-    <Badge dot className={STATUS_STYLES[status]}>
+    <Badge className={STATUS_STYLES[status]} dot>
       {humanize(status)}
     </Badge>
   );

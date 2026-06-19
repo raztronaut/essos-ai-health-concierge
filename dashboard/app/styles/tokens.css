@@ -28,8 +28,9 @@
   /* Typography --------------------------------------------------------- */
   /* --font-sans is provided by next/font (see app/layout.tsx) via the
    * --font-inter CSS variable, falling back to a system stack. */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
   --font-serif: Georgia, "Times New Roman", "PS Times", serif;
 
   /* Radii -------------------------------------------------------------- */
@@ -40,10 +41,10 @@
   /* Elevation — layered low-alpha shadows for real, soft depth ---------- */
   --shadow-sm: 0 1px 2px rgb(23 23 21 / 0.05);
   --shadow-card: 0 1px 2px rgb(23 23 21 / 0.04), 0 1px 1px rgb(23 23 21 / 0.03);
-  --shadow-card-hover: 0 2px 4px rgb(23 23 21 / 0.05),
-    0 12px 28px -8px rgb(23 23 21 / 0.18);
-  --shadow-pop: 0 4px 8px rgb(23 23 21 / 0.06),
-    0 18px 40px -12px rgb(23 23 21 / 0.22);
+  --shadow-card-hover:
+    0 2px 4px rgb(23 23 21 / 0.05), 0 12px 28px -8px rgb(23 23 21 / 0.18);
+  --shadow-pop:
+    0 4px 8px rgb(23 23 21 / 0.06), 0 18px 40px -12px rgb(23 23 21 / 0.22);
 
   /* Motion — strong custom easing curves (built-in CSS easings are weak).
    * Defined in the --ease-* namespace so they back the `ease-out` /

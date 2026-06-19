@@ -1,11 +1,15 @@
-import Link from "next/link";
 import type { ConversationSummary } from "@essos/shared";
-import { Badge, Card } from "@/components/ui";
+import Link from "next/link";
 import { AutomationBadge } from "@/components/badges";
+import { Badge, Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { ROLE_LABEL } from "@/lib/labels";
 
-export function ConversationListItem({ conversation }: { conversation: ConversationSummary }) {
+export function ConversationListItem({
+  conversation,
+}: {
+  conversation: ConversationSummary;
+}) {
   const c = conversation;
   return (
     <Link href={`/conversations/${c.id}`}>
@@ -18,27 +22,34 @@ export function ConversationListItem({ conversation }: { conversation: Conversat
               </span>
               <AutomationBadge state={c.automation_state} />
               {c.open_flags > 0 ? (
-                <Badge dot className="bg-high-soft text-high">
+                <Badge className="bg-high-soft text-high" dot>
                   {c.open_flags} open flag{c.open_flags > 1 ? "s" : ""}
                 </Badge>
               ) : null}
               {c.open_flags > 0 && c.last_role === "patient" ? (
-                <Badge className="bg-high-soft text-high">patient waiting</Badge>
+                <Badge className="bg-high-soft text-high">
+                  patient waiting
+                </Badge>
               ) : null}
             </div>
             {c.patient_procedure ? (
-              <div className="mt-0.5 text-xs text-muted">
-                {c.patient_procedure.replace(/_/g, " ")} · {c.patient_city}, {c.patient_country}
+              <div className="mt-0.5 text-muted text-xs">
+                {c.patient_procedure.replace(/_/g, " ")} · {c.patient_city},{" "}
+                {c.patient_country}
               </div>
             ) : null}
             {c.last_text ? (
-              <p className="mt-2 truncate text-sm text-ink/80">
-                <span className="font-medium">{c.last_role ? ROLE_LABEL[c.last_role] : "—"}:</span>{" "}
+              <p className="mt-2 truncate text-ink/80 text-sm">
+                <span className="font-medium">
+                  {c.last_role ? ROLE_LABEL[c.last_role] : "—"}:
+                </span>{" "}
                 {c.last_text}
               </p>
             ) : null}
           </div>
-          <div className="shrink-0 text-xs text-muted">{formatDateTime(c.updated_at)}</div>
+          <div className="shrink-0 text-muted text-xs">
+            {formatDateTime(c.updated_at)}
+          </div>
         </div>
       </Card>
     </Link>

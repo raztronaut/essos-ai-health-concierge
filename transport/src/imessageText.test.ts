@@ -3,20 +3,27 @@ import { test } from "node:test";
 import { toImessageText } from "./imessageText.js";
 
 test("toImessageText: plain text passes through unchanged", () => {
-  const input = "Your driver Luis will meet you at 1:30 PM. Text here if anything changes.";
+  const input =
+    "Your driver Luis will meet you at 1:30 PM. Text here if anything changes.";
   assert.equal(toImessageText(input).text, input);
 });
 
 test("toImessageText: strips bold and italic markers", () => {
   assert.equal(
     toImessageText("Confirmation **GHT-770133** is in *your* name.").text,
-    "Confirmation GHT-770133 is in your name.",
+    "Confirmation GHT-770133 is in your name."
   );
-  assert.equal(toImessageText("__strong__ and _soft_ emphasis").text, "strong and soft emphasis");
+  assert.equal(
+    toImessageText("__strong__ and _soft_ emphasis").text,
+    "strong and soft emphasis"
+  );
 });
 
 test("toImessageText: leaves snake_case underscores intact", () => {
-  assert.equal(toImessageText("the field patient_id stays").text, "the field patient_id stays");
+  assert.equal(
+    toImessageText("the field patient_id stays").text,
+    "the field patient_id stays"
+  );
 });
 
 test("toImessageText: converts headers to plain lines", () => {
@@ -24,7 +31,9 @@ test("toImessageText: converts headers to plain lines", () => {
 });
 
 test("toImessageText: converts unordered bullets to •", () => {
-  const out = toImessageText("- Stop eating at 8pm\n- Bring your passport").text;
+  const out = toImessageText(
+    "- Stop eating at 8pm\n- Bring your passport"
+  ).text;
   assert.equal(out, "• Stop eating at 8pm\n• Bring your passport");
 });
 
@@ -35,15 +44,22 @@ test("toImessageText: keeps numbered lists", () => {
 
 test("toImessageText: rewrites links and autolinks", () => {
   assert.equal(
-    toImessageText("See [the clinic](https://clinic.example.com) for details").text,
-    "See the clinic (https://clinic.example.com) for details",
+    toImessageText("See [the clinic](https://clinic.example.com) for details")
+      .text,
+    "See the clinic (https://clinic.example.com) for details"
   );
-  assert.equal(toImessageText("<https://essos.example.com>").text, "https://essos.example.com");
+  assert.equal(
+    toImessageText("<https://essos.example.com>").text,
+    "https://essos.example.com"
+  );
 });
 
 test("toImessageText: unwraps inline and fenced code", () => {
   assert.equal(toImessageText("Call `Luis` now").text, "Call Luis now");
-  assert.equal(toImessageText("```\nline one\nline two\n```").text, "line one\nline two");
+  assert.equal(
+    toImessageText("```\nline one\nline two\n```").text,
+    "line one\nline two"
+  );
 });
 
 test("toImessageText: drops horizontal rules and collapses blank runs", () => {
@@ -78,6 +94,6 @@ test("toImessageText: real-world markdown reply renders clean", () => {
     out,
     "Your hotel reservation at the Grand Hotel Tijuana is under confirmation number GHT-770133.\n\n" +
       "• Check-in: June 20 at 1:30 PM\n" +
-      "• Pickup: Luis Herrera at SAN (https://maps.example.com/san)",
+      "• Pickup: Luis Herrera at SAN (https://maps.example.com/san)"
   );
 });

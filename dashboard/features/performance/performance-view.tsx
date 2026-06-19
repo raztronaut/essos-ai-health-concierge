@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
-import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
+import { useMemo } from "react";
 import { Card, PageHeader, Stat } from "@/components/ui";
 import { humanize } from "@/lib/format";
 
 function fmtMs(ms: number): string {
-  if (ms <= 0) return "—";
+  if (ms <= 0) {
+    return "—";
+  }
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 function pct(n: number): string {
@@ -19,16 +21,19 @@ export function PerformanceView() {
   // Window passed as an arg — Convex queries must not call Date.now().
   const since = useMemo(
     () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    [],
+    []
   );
   const perf = useQuery(api.queries.aiPerformance, { since });
 
   if (perf === undefined) {
     return (
       <div className="space-y-6">
-        <PageHeader title="AI performance" subtitle="What Eve is doing, and how well." />
+        <PageHeader
+          subtitle="What Eve is doing, and how well."
+          title="AI performance"
+        />
         <Card>
-          <p className="text-sm text-muted">Loading telemetry…</p>
+          <p className="text-muted text-sm">Loading telemetry…</p>
         </Card>
       </div>
     );
@@ -41,16 +46,16 @@ export function PerformanceView() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="AI performance"
         subtitle="Per-turn telemetry over the last 7 days — autonomy, latency, tools, cost, and draft quality."
+        title="AI performance"
       />
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Turns" value={perf.totalTurns} />
         <Stat
+          hint={`${perf.autonomousTurns} of ${perf.totalTurns}`}
           label="Autonomy"
           value={pct(perf.resolutionRate)}
-          hint={`${perf.autonomousTurns} of ${perf.totalTurns}`}
         />
         <Stat label="Escalated turns" value={perf.escalatedTurns} />
         <Stat label="Reminders sent" value={perf.remindersSent} />
@@ -58,25 +63,31 @@ export function PerformanceView() {
         <Stat label="Latency p95" value={fmtMs(perf.latency.p95)} />
         <Stat label="Avg latency" value={fmtMs(perf.latency.avg)} />
         <Stat
-          label="Tokens"
-          value={perf.tokens.totalTokens > 0 ? perf.tokens.totalTokens.toLocaleString() : "—"}
           hint={
             perf.tokens.totalTokens > 0
               ? `${perf.tokens.promptTokens.toLocaleString()} in / ${perf.tokens.completionTokens.toLocaleString()} out`
               : "no usage reported"
+          }
+          label="Tokens"
+          value={
+            perf.tokens.totalTokens > 0
+              ? perf.tokens.totalTokens.toLocaleString()
+              : "—"
           }
         />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="text-sm font-semibold">Tool usage</h2>
+          <h2 className="font-semibold text-sm">Tool usage</h2>
           {tools.length === 0 ? (
-            <p className="mt-2 text-sm text-muted">No tool calls recorded yet.</p>
+            <p className="mt-2 text-muted text-sm">
+              No tool calls recorded yet.
+            </p>
           ) : (
             <div className="mt-3 space-y-2">
               {tools.map(([tool, n]) => (
-                <div key={tool} className="space-y-1">
+                <div className="space-y-1" key={tool}>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-ink">{humanize(tool)}</span>
                     <span className="text-muted">{n}</span>
@@ -94,38 +105,46 @@ export function PerformanceView() {
         </Card>
 
         <Card>
-          <h2 className="text-sm font-semibold">Concierge AI-assist drafts</h2>
+          <h2 className="font-semibold text-sm">Concierge AI-assist drafts</h2>
           <div className="mt-3 grid grid-cols-2 gap-4">
             <Stat label="Escalations" value={perf.drafts.escalations} />
             <Stat
+              hint={`${pct(perf.drafts.draftRate)} drafted`}
               label="With draft"
               value={perf.drafts.withDraft}
-              hint={`${pct(perf.drafts.draftRate)} drafted`}
             />
           </div>
-          <p className="mt-3 text-xs text-muted">
-            Eve drafts a source-grounded reply on escalation; the concierge reviews
-            and sends it. A higher draft rate means less cold-start typing for the team.
+          <p className="mt-3 text-muted text-xs">
+            Eve drafts a source-grounded reply on escalation; the concierge
+            reviews and sends it. A higher draft rate means less cold-start
+            typing for the team.
           </p>
         </Card>
       </div>
 
       <Card>
-        <h2 className="text-sm font-semibold">Daily volume</h2>
+        <h2 className="font-semibold text-sm">Daily volume</h2>
         {perf.trend.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">No turns in this window.</p>
+          <p className="mt-2 text-muted text-sm">No turns in this window.</p>
         ) : (
           <div className="mt-4 flex items-end gap-2">
             {perf.trend.map((t) => (
-              <div key={t.day} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+              <div
+                className="flex min-w-0 flex-1 flex-col items-center gap-1"
+                key={t.day}
+              >
                 <div className="flex h-24 w-full items-end justify-center">
                   <div
                     className="w-full max-w-8 rounded-t bg-primary/80"
-                    style={{ height: `${maxTrend ? (t.turns / maxTrend) * 100 : 0}%` }}
+                    style={{
+                      height: `${maxTrend ? (t.turns / maxTrend) * 100 : 0}%`,
+                    }}
                     title={`${t.turns} turns, ${t.escalated} escalated`}
                   />
                 </div>
-                <span className="truncate text-[10px] text-muted">{t.day.slice(5)}</span>
+                <span className="truncate text-[10px] text-muted">
+                  {t.day.slice(5)}
+                </span>
               </div>
             ))}
           </div>

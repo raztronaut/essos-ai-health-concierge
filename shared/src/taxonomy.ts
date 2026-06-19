@@ -21,13 +21,13 @@ export type EscalationCategory =
   | "missing_source_or_unsure";
 
 export interface CategoryPolicy {
-  category: EscalationCategory;
   /** Whether Eve may respond without a human, at least for routine cases. */
   autonomous: boolean;
+  category: EscalationCategory;
   /** Default escalation level when this category requires a human. */
   defaultLevel: EscalationLevel | null;
-  label: string;
   description: string;
+  label: string;
 }
 
 export const CATEGORY_POLICIES: Record<EscalationCategory, CategoryPolicy> = {
@@ -114,7 +114,7 @@ export const CATEGORY_POLICIES: Record<EscalationCategory, CategoryPolicy> = {
 };
 
 export const ALL_CATEGORIES = Object.keys(
-  CATEGORY_POLICIES,
+  CATEGORY_POLICIES
 ) as EscalationCategory[];
 
 /**
@@ -125,13 +125,17 @@ export const ALL_CATEGORIES = Object.keys(
  */
 export const ESCALATABLE_CATEGORIES = ALL_CATEGORIES.filter(
   (category) =>
-    !CATEGORY_POLICIES[category].autonomous || category === "travel_logistics",
+    !CATEGORY_POLICIES[category].autonomous || category === "travel_logistics"
 ) as EscalationCategory[];
 
-export function isEscalationCategory(value: string): value is EscalationCategory {
+export function isEscalationCategory(
+  value: string
+): value is EscalationCategory {
   return value in CATEGORY_POLICIES;
 }
 
-export function categoryRequiresEscalation(category: EscalationCategory): boolean {
+export function categoryRequiresEscalation(
+  category: EscalationCategory
+): boolean {
   return !CATEGORY_POLICIES[category].autonomous;
 }

@@ -1,6 +1,6 @@
-import { config } from "dotenv";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
 import { normalizeHandle } from "./handles.js";
 
 // Repo root is two levels up from transport/src.
@@ -18,7 +18,8 @@ export const EVE_BASE_URL =
  * Optional for loopback dev (Eve's `localDev()` admits localhost); required for
  * a non-loopback/deployed agent. Must match `ESSOS_TRANSPORT_SECRET` on Eve.
  */
-export const TRANSPORT_SECRET = process.env.ESSOS_TRANSPORT_SECRET?.trim() || null;
+export const TRANSPORT_SECRET =
+  process.env.ESSOS_TRANSPORT_SECRET?.trim() || null;
 
 export const DEMO_PATIENT = process.env.ESSOS_DEMO_PATIENT ?? "pat_maya";
 

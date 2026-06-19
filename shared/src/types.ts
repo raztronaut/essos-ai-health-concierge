@@ -58,103 +58,102 @@ export type ActivityEvent =
   | "reminder";
 
 export interface Patient {
-  id: string;
-  name: string;
-  /** iMessage handle / phone used to map an inbound conversation to a patient. */
-  handle: string;
-  procedure: Procedure;
+  clinic_name: string;
+  companion_name: string | null;
+  created_at: string;
   destination_city: string;
   destination_country: string;
-  clinic_name: string;
-  hotel_name: string;
-  companion_name: string | null;
   dietary_notes: string | null;
-  created_at: string;
+  /** iMessage handle / phone used to map an inbound conversation to a patient. */
+  handle: string;
+  hotel_name: string;
+  id: string;
+  name: string;
+  procedure: Procedure;
 }
 
 export interface ItineraryEvent {
-  id: string;
-  patient_id: string;
-  source_document_id: string | null;
-  kind: ItineraryKind;
-  title: string;
-  detail: string | null;
-  location: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
   confirmation_number: string | null;
+  detail: string | null;
   driver_name: string | null;
   driver_phone: string | null;
+  ends_at: string | null;
+  id: string;
+  kind: ItineraryKind;
+  location: string | null;
+  patient_id: string;
   sort_order: number;
+  source_document_id: string | null;
+  starts_at: string | null;
+  title: string;
 }
 
 export interface CareInstruction {
-  id: string;
-  patient_id: string;
-  source_document_id: string | null;
-  phase: CarePhase;
-  procedure: Procedure;
-  title: string;
-  body: string;
-  source_type: CareSourceType;
-  source_status: CareSourceStatus;
   answer_policy: CareAnswerPolicy;
+  body: string;
+  created_at: string;
   effective_from: string | null;
   effective_until: string | null;
-  created_at: string;
+  id: string;
+  patient_id: string;
+  phase: CarePhase;
+  procedure: Procedure;
+  source_document_id: string | null;
+  source_status: CareSourceStatus;
+  source_type: CareSourceType;
+  title: string;
   updated_at: string;
 }
 
 export interface SourceDocument {
-  id: string;
-  patient_id: string | null;
-  kind: SourceDocumentKind;
-  title: string;
-  source_type: CareSourceType;
-  source_status: CareSourceStatus;
   answer_policy: CareAnswerPolicy;
+  created_at: string;
+  id: string;
+  kind: SourceDocumentKind;
   markdown_path: string;
+  patient_id: string | null;
   pdf_path: string;
   sha256: string;
-  created_at: string;
+  source_status: CareSourceStatus;
+  source_type: CareSourceType;
+  title: string;
 }
 
 export interface Conversation {
+  automation_state: AutomationState;
+  channel: Channel;
+  created_at: string;
   id: string;
   patient_id: string;
   /** Spectrum/iMessage space (group) id, or a terminal session id. */
   space_id: string;
-  channel: Channel;
-  automation_state: AutomationState;
-  created_at: string;
   updated_at: string;
 }
 
 export interface Message {
-  id: string;
-  conversation_id: string;
-  role: MessageRole;
   author_handle: string | null;
-  text: string;
   /** Taxonomy category (an EscalationCategory value); typed wide to match the store row. */
   category: string | null;
+  conversation_id: string;
   created_at: string;
+  id: string;
   meta_json: string | null;
+  role: MessageRole;
+  text: string;
 }
 
 export interface Escalation {
-  id: string;
+  assignee: string | null;
   conversation_id: string;
-  patient_id: string;
+  created_at: string;
+  id: string;
   level: EscalationLevel;
+  patient_id: string;
   /** Taxonomy category (an EscalationCategory value); typed wide to match the store row. */
   reason: string;
-  summary: string;
+  resolved_at: string | null;
   source_message_id: string | null;
   status: EscalationStatus;
-  assignee: string | null;
-  created_at: string;
-  resolved_at: string | null;
   /**
    * A source-grounded reply Eve drafts for the concierge to review, edit, and
    * send to the patient (never auto-sent). Null when no draft was produced.
@@ -162,28 +161,29 @@ export interface Escalation {
   suggested_reply: string | null;
   /** JSON array of short source labels Eve used for the draft (e.g. itinerary, pre-op packet). */
   suggested_reply_sources: string | null;
+  summary: string;
 }
 
 export interface ActivityLogEntry {
-  id: string;
-  conversation_id: string;
-  event: ActivityEvent;
   actor: string;
-  detail: string | null;
+  conversation_id: string;
   created_at: string;
+  detail: string | null;
+  event: ActivityEvent;
+  id: string;
 }
 
 /** Denormalized conversation row for the dashboard list (patient + last message + open flags). */
 export interface ConversationSummary {
-  id: string;
-  patient_id: string;
   automation_state: AutomationState;
-  updated_at: string;
-  patient_name: string | null;
-  patient_procedure: Procedure | null;
-  patient_city: string | null;
-  patient_country: string | null;
+  id: string;
   last_role: MessageRole | null;
   last_text: string | null;
   open_flags: number;
+  patient_city: string | null;
+  patient_country: string | null;
+  patient_id: string;
+  patient_name: string | null;
+  patient_procedure: Procedure | null;
+  updated_at: string;
 }

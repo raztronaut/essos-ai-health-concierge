@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next"
+  ],
+  "files": {
+    // Keep the preset's generated/build ignores, then exclude isolated and
+    // vendored areas that have their own toolchains.
+    "includes": ["!eve-concierge", "!.agents", "!mock-assets", "!**/_generated"]
+  },
+  "linter": {
+    "rules": {
+      // Loose for now: keep formatting, import hygiene, and safe correctness
+      // rules on; downgrade the stylistic/strict rules that would otherwise
+      // flood an existing codebase. Tighten these over time.
+      "a11y": {
+        "useButtonType": "warn",
+        "useKeyWithClickEvents": "off",
+        "noStaticElementInteractions": "off",
+        "noSvgWithoutTitle": "off",
+        "useSemanticElements": "off"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "off",
+        "noForEach": "off",
+        "noVoid": "off"
+      },
+      "performance": {
+        "noBarrelFile": "off",
+        "noNamespaceImport": "off",
+        "useTopLevelRegex": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "off",
+        "noNestedTernary": "off",
+        "useFilenamingConvention": "off",
+        "useNamingConvention": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noConsole": "off",
+        "noEmptyBlockStatements": "off",
+        "noEvolvingTypes": "off",
+        "noImplicitAnyLet": "off",
+        "useAwait": "off"
+      }
+    }
+  }
+}

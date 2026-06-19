@@ -1,7 +1,7 @@
-import { CONCIERGE_HANDLES, DEMO_PATIENT } from "./env.js";
+import { getPatientById } from "@essos/shared";
 import { Spectrum } from "spectrum-ts";
 import { terminal } from "spectrum-ts/providers/terminal";
-import { getPatientById } from "@essos/shared";
+import { CONCIERGE_HANDLES, DEMO_PATIENT } from "./env.js";
 import { eveHealthy } from "./eveClient.js";
 import { runMessageLoop } from "./runLoop.js";
 
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
   const patient = await getPatientById(DEMO_PATIENT);
   if (!patient) {
     console.error(
-      `Demo patient "${DEMO_PATIENT}" not found. Run \`pnpm run seed\` first.`,
+      `Demo patient "${DEMO_PATIENT}" not found. Run \`pnpm run seed\` first.`
     );
     process.exit(1);
   }
@@ -23,14 +23,14 @@ async function main(): Promise<void> {
     console.error(
       "\n⚠  Eve dev server is not reachable. In another terminal run:\n" +
         "    cd eve-concierge && pnpm exec eve dev --no-ui --port 3000\n" +
-        "  (and set ANTHROPIC_API_KEY in .env)\n",
+        "  (and set ANTHROPIC_API_KEY in .env)\n"
     );
   }
 
   console.error(
-    `\nEssos concierge — terminal demo\n` +
+    "\nEssos concierge — terminal demo\n" +
       `Playing as: ${patient.name} (${patient.procedure} in ${patient.destination_city})\n` +
-      `Type a message as the patient. Prefix with "/concierge " to act as the human team.\n`,
+      `Type a message as the patient. Prefix with "/concierge " to act as the human team.\n`
   );
 
   const app = await Spectrum({ providers: [terminal.config()] });
@@ -42,9 +42,13 @@ async function main(): Promise<void> {
     resolveAuthor: (_space, _message, raw) => {
       const isConcierge = raw.startsWith("/concierge ");
       const text = isConcierge ? raw.slice("/concierge ".length).trim() : raw;
-      if (!text) return null;
+      if (!text) {
+        return null;
+      }
       return {
-        authorHandle: isConcierge ? (CONCIERGE_HANDLES[0] ?? "concierge") : patient.handle,
+        authorHandle: isConcierge
+          ? (CONCIERGE_HANDLES[0] ?? "concierge")
+          : patient.handle,
         isConcierge,
         text,
         patientId: patient.id,
@@ -59,7 +63,7 @@ async function main(): Promise<void> {
         case "paused_for_review":
         case "taken_over":
           await message.reply(
-            "(Eve is paused — a human concierge is handling this thread. Resolve/resume it from the dashboard.)",
+            "(Eve is paused — a human concierge is handling this thread. Resolve/resume it from the dashboard.)"
           );
           break;
         case "concierge_takeover":

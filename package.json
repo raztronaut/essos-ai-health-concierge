@@ -9,7 +9,7 @@
   },
   "scripts": {
     "setup": "pnpm install && pnpm -C eve-concierge install && convex dev --once && pnpm --filter @essos/shared run build && pnpm seed:reset",
-    "dev": "pnpm --filter @essos/shared run build && concurrently --names \"convex,eve,web\" --prefix-colors \"blue,magenta,green\" --handle-input \"pnpm convex:dev\" \"pnpm eve:dev\" \"pnpm dashboard:dev\"",
+    "dev": "pnpm --filter @essos/shared run build && concurrently --names \"convex,eve,web\" --prefix-colors \"blue,magenta,green\" \"pnpm convex:dev\" \"pnpm eve:dev\" \"pnpm dashboard:dev\"",
     "dev:ui": "pnpm --filter @essos/shared run build && concurrently --names \"convex,web\" --prefix-colors \"blue,green\" \"pnpm convex:dev\" \"pnpm dashboard:dev\"",
     "assets:generate": "node mock-assets/scripts/run_generate_pdfs.mjs",
     "convex:dev": "convex dev",
@@ -21,6 +21,8 @@
     "transport:imessage": "pnpm --filter @essos/transport run imessage",
     "transport:remind": "pnpm --filter @essos/transport run remind",
     "dashboard:dev": "pnpm --filter @essos/dashboard run dev",
+    "lint": "biome check .",
+    "format": "biome check --write .",
     "typecheck": "pnpm -r run typecheck && pnpm -C eve-concierge run typecheck"
   },
   "dependencies": {
@@ -28,7 +30,9 @@
     "convex-helpers": "^0.1.119"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
     "concurrently": "^10.0.3",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "ultracite": "^7.8.3"
   }
 }

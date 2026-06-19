@@ -7,7 +7,7 @@
  * mutation. Run with `pnpm seed` or `pnpm seed:reset`.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ConvexHttpClient } from "convex/browser";
@@ -35,24 +35,28 @@ function sha256File(path: string): string {
 }
 
 interface SourceDocMeta {
-  id: string;
-  slug: string;
-  title: string;
-  patient_id: string | null;
-  kind: string;
-  source_type: string;
-  source_status: string;
   answer_policy: string;
+  id: string;
+  kind: string;
+  patient_id: string | null;
   pdf: string;
+  slug: string;
+  source_status: string;
+  source_type: string;
+  title: string;
 }
 
 function parseSourceDoc(path: string): SourceDocMeta {
   const text = readFileSync(path, "utf8");
   const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
-  if (!match) throw new Error(`Source doc missing front matter: ${path}`);
+  if (!match) {
+    throw new Error(`Source doc missing front matter: ${path}`);
+  }
   const raw: Record<string, string> = {};
   for (const line of match[1]!.split("\n")) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const [key, ...rest] = line.split(":");
     raw[key!.trim()] = rest.join(":").trim();
   }
@@ -70,41 +74,46 @@ function parseSourceDoc(path: string): SourceDocMeta {
 }
 
 interface ManifestDoc {
-  slug: string;
   markdown_path: string;
   pdf_path: string;
   sha256: string;
+  slug: string;
 }
 
 function loadManifest(): Map<string, ManifestDoc> {
-  if (!existsSync(manifestPath)) return new Map();
+  if (!existsSync(manifestPath)) {
+    return new Map();
+  }
   const manifest = readJson<{ documents?: ManifestDoc[] }>(manifestPath);
   return new Map((manifest.documents ?? []).map((d) => [d.slug, d]));
 }
 
 interface SourceDocument {
-  id: string;
-  patient_id: string | null;
-  kind: string;
-  title: string;
-  source_type: string;
-  source_status: string;
   answer_policy: string;
+  created_at: string;
+  id: string;
+  kind: string;
   markdown_path: string;
+  patient_id: string | null;
   pdf_path: string;
   sha256: string;
-  created_at: string;
+  source_status: string;
+  source_type: string;
+  title: string;
 }
 
 function loadSourceDocuments(): Map<string, SourceDocument> {
   const manifestBySlug = loadManifest();
   const docs = new Map<string, SourceDocument>();
-  const files = readdirSync(sourceDocsDir).filter((f) => f.endsWith(".md")).sort();
+  const files = readdirSync(sourceDocsDir)
+    .filter((f) => f.endsWith(".md"))
+    .sort();
   for (const file of files) {
     const absMd = resolve(sourceDocsDir, file);
     const meta = parseSourceDoc(absMd);
     const entry = manifestBySlug.get(meta.slug);
-    const markdownPath = entry?.markdown_path ?? `mock-assets/source-docs/${file}`;
+    const markdownPath =
+      entry?.markdown_path ?? `mock-assets/source-docs/${file}`;
     const pdfPath = entry?.pdf_path ?? `mock-assets/pdf/essos/${meta.pdf}`;
     const fallbackHash = existsSync(resolve(REPO_ROOT, pdfPath))
       ? sha256File(resolve(REPO_ROOT, pdfPath))
@@ -126,10 +135,17 @@ function loadSourceDocuments(): Map<string, SourceDocument> {
   return docs;
 }
 
-function sourceId(docs: Map<string, SourceDocument>, slug: string | undefined): string | null {
-  if (!slug) return null;
+function sourceId(
+  docs: Map<string, SourceDocument>,
+  slug: string | undefined
+): string | null {
+  if (!slug) {
+    return null;
+  }
   const doc = docs.get(slug);
-  if (!doc) throw new Error(`Fixture references unknown source document: ${slug}`);
+  if (!doc) {
+    throw new Error(`Fixture references unknown source document: ${slug}`);
+  }
   return doc.id;
 }
 
@@ -144,12 +160,16 @@ function loadPatientFixtures(): Json[] {
 }
 
 function readConvexUrl(): string {
-  if (process.env.CONVEX_URL) return process.env.CONVEX_URL;
+  if (process.env.CONVEX_URL) {
+    return process.env.CONVEX_URL;
+  }
   const envLocal = resolve(REPO_ROOT, ".env.local");
   if (existsSync(envLocal)) {
     for (const line of readFileSync(envLocal, "utf8").split("\n")) {
       const m = /^CONVEX_URL=(.*)$/.exec(line.trim());
-      if (m) return m[1]!.trim();
+      if (m) {
+        return m[1]!.trim();
+      }
     }
   }
   throw new Error("CONVEX_URL not set (run `npx convex dev` first)");
@@ -167,7 +187,10 @@ async function main(): Promise<void> {
   for (const fixture of fixtures) {
     patients.push({ ...fixture.patient, created_at: nowIso() });
 
-    const itinSourceId = sourceId(docsBySlug, fixture.itinerary_source_document);
+    const itinSourceId = sourceId(
+      docsBySlug,
+      fixture.itinerary_source_document
+    );
     fixture.itinerary.forEach((event: Json, index: number) => {
       itinerary.push({
         patient_id: fixture.patient.id,

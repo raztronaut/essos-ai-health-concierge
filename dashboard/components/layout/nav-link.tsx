@@ -1,8 +1,8 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
 
 /**
  * Sidebar navigation link with an active-route highlight. A link is active when
@@ -20,17 +20,17 @@ export function NavLink({ href, label }: { href: string; label: string }) {
 
   return (
     <Link
-      href={href}
       aria-current={isActive ? "page" : undefined}
-      className={`focus-ring relative rounded-control px-3 py-2 text-sm font-medium transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] ${
+      className={`focus-ring relative rounded-control px-3 py-2 font-medium text-sm transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] ${
         isActive ? "text-ink" : "text-ink/70 hover:text-ink"
       }`}
+      href={href}
     >
       {isActive ? (
         <motion.span
           aria-hidden="true"
-          layoutId={reduceMotion ? undefined : "nav-pill"}
           className="absolute inset-0 -z-10 rounded-control bg-surface shadow-sm"
+          layoutId={reduceMotion ? undefined : "nav-pill"}
           transition={{ type: "spring", duration: 0.4, bounce: 0.18 }}
         />
       ) : null}

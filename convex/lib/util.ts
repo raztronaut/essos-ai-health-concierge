@@ -11,9 +11,11 @@ export function nowIso(): string {
 
 /** Parse the JSON array stored in escalations.suggested_reply_sources. */
 export function parseSuggestedReplySources(
-  raw: string | null | undefined,
+  raw: string | null | undefined
 ): string[] {
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (Array.isArray(parsed)) {

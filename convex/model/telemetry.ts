@@ -19,7 +19,7 @@ export async function record(
     category?: string | null;
     ok: boolean;
     error?: string | null;
-  },
+  }
 ): Promise<void> {
   await ctx.db.insert("agent_turns", {
     conversation_id: args.conversationId,
@@ -41,7 +41,7 @@ export async function record(
 
 export async function listSince(
   ctx: QueryCtx | MutationCtx,
-  since: string,
+  since: string
 ): Promise<AgentTurn[]> {
   return await ctx.db
     .query("agent_turns")
@@ -51,10 +51,12 @@ export async function listSince(
 
 export async function listForConversation(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<AgentTurn[]> {
   return await ctx.db
     .query("agent_turns")
-    .withIndex("by_conversation", (q) => q.eq("conversation_id", conversationId))
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
     .collect();
 }

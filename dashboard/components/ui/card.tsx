@@ -17,5 +17,7 @@ export function Card({
   // `hover-lift` (globals.css) handles the GPU-only transform + shadow on
   // hover and the press-down on :active, gated behind a fine-pointer device.
   const hover = interactive ? "hover-lift cursor-pointer" : "";
-  return <div className={`${base} ${hover} ${className ?? ""}`}>{children}</div>;
+  return (
+    <div className={`${base} ${hover} ${className ?? ""}`}>{children}</div>
+  );
 }

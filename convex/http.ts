@@ -1,7 +1,7 @@
-import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
-import { internal } from "./_generated/api";
 import type { FunctionReference } from "convex/server";
+import { httpRouter } from "convex/server";
+import { internal } from "./_generated/api";
+import { httpAction } from "./_generated/server";
 
 /**
  * Machine path for the trusted Eve agent + Spectrum transport.
@@ -74,7 +74,9 @@ const machine = httpAction(async (ctx, request) => {
   }
   const fn = body.fn;
   const args = body.args ?? {};
-  if (!fn) return jsonError("missing fn", 400);
+  if (!fn) {
+    return jsonError("missing fn", 400);
+  }
 
   try {
     if (fn in QUERIES) {

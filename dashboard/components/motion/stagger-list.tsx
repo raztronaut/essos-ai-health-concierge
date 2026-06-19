@@ -1,9 +1,9 @@
 "use client";
 
-import { Children, isValidElement } from "react";
-import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import type { Variants } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import type { ReactNode } from "react";
+import { Children, isValidElement } from "react";
 
 /**
  * Wraps a list of elements and fades/translates each one in with a short
@@ -52,10 +52,10 @@ export function StaggerList({
 
   return (
     <motion.div
-      className={className}
-      variants={container}
-      initial="hidden"
       animate="show"
+      className={className}
+      initial="hidden"
+      variants={container}
     >
       {items.map((child, index) => (
         <motion.div key={child.key ?? index} variants={item}>

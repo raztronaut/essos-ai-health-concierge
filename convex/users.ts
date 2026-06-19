@@ -61,13 +61,19 @@ export const upsertClerkUser = internalMutation({
 
 /** Update a user's org membership/role (organizationMembership.* webhook). */
 export const setClerkMembership = internalMutation({
-  args: { clerkId: v.string(), orgId: v.union(v.string(), v.null()), role: v.string() },
+  args: {
+    clerkId: v.string(),
+    orgId: v.union(v.string(), v.null()),
+    role: v.string(),
+  },
   handler: async (ctx, { clerkId, orgId, role }) => {
     const existing = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
       .unique();
-    if (!existing) return;
+    if (!existing) {
+      return;
+    }
     await ctx.db.patch(existing._id, { orgId, role, updatedAt: nowIso() });
   },
 });
@@ -79,6 +85,8 @@ export const deleteClerkUser = internalMutation({
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
       .unique();
-    if (existing) await ctx.db.delete(existing._id);
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
   },
 });

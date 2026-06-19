@@ -7,8 +7,8 @@
 
 html,
 body {
-  background: var(--color-surface);
   color: var(--color-ink);
+  background: var(--color-surface);
 }
 
 body {
@@ -48,9 +48,9 @@ body {
 
 @media (hover: hover) and (pointer: fine) {
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-card-hover);
     border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
   }
 }
 

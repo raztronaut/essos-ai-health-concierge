@@ -10,7 +10,7 @@ export function MessageThread({ messages }: { messages: Message[] }) {
       ))}
       {messages.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted">No messages yet.</p>
+          <p className="text-muted text-sm">No messages yet.</p>
         </Card>
       ) : null}
     </section>

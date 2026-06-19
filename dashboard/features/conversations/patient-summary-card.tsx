@@ -1,13 +1,16 @@
-import Link from "next/link";
 import type { Patient } from "@essos/shared";
+import Link from "next/link";
 import { Card, DefinitionRow } from "@/components/ui";
 
 export function PatientSummaryCard({ patient }: { patient: Patient }) {
   return (
     <Card>
-      <h2 className="text-sm font-semibold">Patient</h2>
+      <h2 className="font-semibold text-sm">Patient</h2>
       <dl className="mt-2 space-y-1 text-sm">
-        <DefinitionRow label="Procedure" value={patient.procedure.replace(/_/g, " ")} />
+        <DefinitionRow
+          label="Procedure"
+          value={patient.procedure.replace(/_/g, " ")}
+        />
         <DefinitionRow
           label="Destination"
           value={`${patient.destination_city}, ${patient.destination_country}`}
@@ -22,8 +25,8 @@ export function PatientSummaryCard({ patient }: { patient: Patient }) {
         ) : null}
       </dl>
       <Link
+        className="mt-3 inline-block font-medium text-primary text-sm hover:underline"
         href={`/patients/${patient.id}`}
-        className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
       >
         View itinerary & documents →
       </Link>

@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
-import * as Conversations from "./model/conversations.js";
-import * as Messages from "./model/messages.js";
-import * as Escalations from "./model/escalations.js";
 import * as Activity from "./model/activity.js";
+import * as Conversations from "./model/conversations.js";
+import * as Escalations from "./model/escalations.js";
+import * as Messages from "./model/messages.js";
 import * as Patients from "./model/patients.js";
 import * as Telemetry from "./model/telemetry.js";
 
@@ -61,7 +61,7 @@ export const listCareInstructions = internalQuery({
   args: {
     patientId: v.string(),
     phase: v.optional(
-      v.union(v.literal("preop"), v.literal("postop"), v.literal("general")),
+      v.union(v.literal("preop"), v.literal("postop"), v.literal("general"))
     ),
   },
   handler: async (ctx, { patientId, phase }) =>
@@ -70,7 +70,8 @@ export const listCareInstructions = internalQuery({
 
 export const listMessages = internalQuery({
   args: { conversationId: v.string() },
-  handler: async (ctx, { conversationId }) => Messages.list(ctx, conversationId),
+  handler: async (ctx, { conversationId }) =>
+    Messages.list(ctx, conversationId),
 });
 
 export const listOpenEscalationsForConversation = internalQuery({
@@ -117,7 +118,7 @@ export const appendMessage = internalMutation({
       v.literal("patient"),
       v.literal("agent"),
       v.literal("concierge"),
-      v.literal("system"),
+      v.literal("system")
     ),
     text: v.string(),
     authorHandle: v.optional(v.union(v.string(), v.null())),
@@ -142,7 +143,7 @@ export const setAutomationState = internalMutation({
       v.literal("active"),
       v.literal("paused_for_review"),
       v.literal("taken_over"),
-      v.literal("resolved"),
+      v.literal("resolved")
     ),
   },
   handler: async (ctx, { conversationId, state }) =>
@@ -166,13 +167,17 @@ export const deleteConversationBySpace = internalMutation({
   args: { spaceId: v.string() },
   handler: async (ctx, { spaceId }) => {
     const conv = await Conversations.getBySpace(ctx, spaceId);
-    if (!conv) return;
+    if (!conv) {
+      return;
+    }
     for (const table of ["messages", "escalations", "activity_log"] as const) {
       const rows = await ctx.db
         .query(table)
         .withIndex("by_conversation", (q) => q.eq("conversation_id", conv.id))
         .collect();
-      for (const row of rows) await ctx.db.delete(row._id);
+      for (const row of rows) {
+        await ctx.db.delete(row._id);
+      }
     }
     await ctx.db.delete(conv._id);
   },
@@ -190,7 +195,7 @@ export const logActivity = internalMutation({
       v.literal("taken_over"),
       v.literal("resolved"),
       v.literal("resumed"),
-      v.literal("reminder"),
+      v.literal("reminder")
     ),
     actor: v.string(),
     detail: v.optional(v.union(v.string(), v.null())),
@@ -230,7 +235,7 @@ export const escalateToHuman = internalMutation({
     await Conversations.setAutomationState(
       ctx,
       args.conversationId,
-      "paused_for_review",
+      "paused_for_review"
     );
     await Activity.log(ctx, {
       conversationId: args.conversationId,

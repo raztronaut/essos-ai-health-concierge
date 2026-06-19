@@ -1,10 +1,10 @@
 import { v } from "convex/values";
 import { conciergeQuery } from "./lib/functions.js";
-import * as Patients from "./model/patients.js";
-import * as Conversations from "./model/conversations.js";
-import * as Messages from "./model/messages.js";
-import * as Escalations from "./model/escalations.js";
 import * as Activity from "./model/activity.js";
+import * as Conversations from "./model/conversations.js";
+import * as Escalations from "./model/escalations.js";
+import * as Messages from "./model/messages.js";
+import * as Patients from "./model/patients.js";
 import * as Telemetry from "./model/telemetry.js";
 
 /**
@@ -30,7 +30,8 @@ export const getConversation = conciergeQuery({
 
 export const listMessages = conciergeQuery({
   args: { conversationId: v.string() },
-  handler: async (ctx, { conversationId }) => Messages.list(ctx, conversationId),
+  handler: async (ctx, { conversationId }) =>
+    Messages.list(ctx, conversationId),
 });
 
 export const listEscalationsForConversation = conciergeQuery({
@@ -124,8 +125,13 @@ export const overviewStats = conciergeQuery({
 });
 
 function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0;
-  const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
+  if (sorted.length === 0) {
+    return 0;
+  }
+  const idx = Math.min(
+    sorted.length - 1,
+    Math.floor((p / 100) * sorted.length)
+  );
   return sorted[idx] ?? 0;
 }
 
@@ -151,7 +157,7 @@ export const aiPerformance = conciergeQuery({
     const promptTokens = turns.reduce((s, t) => s + (t.prompt_tokens ?? 0), 0);
     const completionTokens = turns.reduce(
       (s, t) => s + (t.completion_tokens ?? 0),
-      0,
+      0
     );
     const totalTokens = turns.reduce((s, t) => s + (t.total_tokens ?? 0), 0);
 
@@ -161,7 +167,9 @@ export const aiPerformance = conciergeQuery({
       const day = t.created_at.slice(0, 10);
       byDay[day] ??= { turns: 0, escalated: 0 };
       byDay[day].turns += 1;
-      if (t.escalated) byDay[day].escalated += 1;
+      if (t.escalated) {
+        byDay[day].escalated += 1;
+      }
     }
     const trend = Object.entries(byDay)
       .map(([day, v2]) => ({ day, ...v2 }))
@@ -169,26 +177,29 @@ export const aiPerformance = conciergeQuery({
 
     // Draft quality from escalations created in-window.
     const escalations = (await Escalations.listByStatus(ctx)).filter(
-      (e) => e.created_at >= since,
+      (e) => e.created_at >= since
     );
     const withDraft = escalations.filter((e) => e.suggested_reply).length;
 
     const remindersSent = (await Activity.listAll(ctx, 1000)).filter(
-      (a) => a.event === "reminder" && a.created_at >= since,
+      (a) => a.event === "reminder" && a.created_at >= since
     ).length;
 
     return {
       totalTurns,
       escalatedTurns,
       autonomousTurns: totalTurns - escalatedTurns,
-      resolutionRate: totalTurns === 0 ? 0 : (totalTurns - escalatedTurns) / totalTurns,
+      resolutionRate:
+        totalTurns === 0 ? 0 : (totalTurns - escalatedTurns) / totalTurns,
       latency: {
         p50: percentile(latencies, 50),
         p95: percentile(latencies, 95),
         avg:
           latencies.length === 0
             ? 0
-            : Math.round(latencies.reduce((s, n) => s + n, 0) / latencies.length),
+            : Math.round(
+                latencies.reduce((s, n) => s + n, 0) / latencies.length
+              ),
         count: latencies.length,
       },
       toolUsage,
@@ -197,7 +208,8 @@ export const aiPerformance = conciergeQuery({
       drafts: {
         escalations: escalations.length,
         withDraft,
-        draftRate: escalations.length === 0 ? 0 : withDraft / escalations.length,
+        draftRate:
+          escalations.length === 0 ? 0 : withDraft / escalations.length,
       },
       remindersSent,
     };
@@ -215,7 +227,9 @@ export const teamPerformance = conciergeQuery({
     const users = await usersQuery.collect();
 
     const nowMs = new Date(now).getTime();
-    const resolved = escalations.filter((e) => e.status === "resolved" && e.resolved_at);
+    const resolved = escalations.filter(
+      (e) => e.status === "resolved" && e.resolved_at
+    );
     const open = escalations.filter((e) => e.status === "open");
 
     // Per-assignee tallies.
@@ -230,26 +244,34 @@ export const teamPerformance = conciergeQuery({
         byAssignee[who].resolved += 1;
         if (e.resolved_at) {
           byAssignee[who].totalResolutionMs +=
-            new Date(e.resolved_at).getTime() - new Date(e.created_at).getTime();
+            new Date(e.resolved_at).getTime() -
+            new Date(e.created_at).getTime();
         }
       }
-      if (e.status === "taken_over") byAssignee[who].takenOver += 1;
+      if (e.status === "taken_over") {
+        byAssignee[who].takenOver += 1;
+      }
     }
 
     const resolutionTimesMs = resolved.map(
-      (e) => new Date(e.resolved_at as string).getTime() - new Date(e.created_at).getTime(),
+      (e) =>
+        new Date(e.resolved_at as string).getTime() -
+        new Date(e.created_at).getTime()
     );
     const avgResolutionMs =
       resolutionTimesMs.length === 0
         ? 0
         : Math.round(
-            resolutionTimesMs.reduce((s, n) => s + n, 0) / resolutionTimesMs.length,
+            resolutionTimesMs.reduce((s, n) => s + n, 0) /
+              resolutionTimesMs.length
           );
 
     const oldestOpenMs =
       open.length === 0
         ? 0
-        : Math.max(...open.map((e) => nowMs - new Date(e.created_at).getTime()));
+        : Math.max(
+            ...open.map((e) => nowMs - new Date(e.created_at).getTime())
+          );
 
     return {
       members: users.map((u) => ({
@@ -257,7 +279,8 @@ export const teamPerformance = conciergeQuery({
         name: u.name,
         email: u.email,
         role: u.role,
-        resolved: byAssignee[u.name]?.resolved ?? byAssignee[u.email]?.resolved ?? 0,
+        resolved:
+          byAssignee[u.name]?.resolved ?? byAssignee[u.email]?.resolved ?? 0,
         takenOver:
           byAssignee[u.name]?.takenOver ?? byAssignee[u.email]?.takenOver ?? 0,
       })),
@@ -265,7 +288,10 @@ export const teamPerformance = conciergeQuery({
         assignee,
         resolved: v2.resolved,
         takenOver: v2.takenOver,
-        avgResolutionMs: v2.resolved === 0 ? 0 : Math.round(v2.totalResolutionMs / v2.resolved),
+        avgResolutionMs:
+          v2.resolved === 0
+            ? 0
+            : Math.round(v2.totalResolutionMs / v2.resolved),
       })),
       totals: {
         open: open.length,

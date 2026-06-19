@@ -4,19 +4,19 @@ overview: Add Biome (via the Ultracite preset) as the repo's linter/formatter wi
 todos:
   - id: deps
     content: Add @biomejs/biome and ultracite to root devDependencies
-    status: in_progress
+    status: completed
   - id: config
     content: Create loosened root biome.jsonc with proper includes/ignores
-    status: pending
+    status: completed
   - id: scripts
     content: Add lint and format scripts to root package.json
-    status: pending
+    status: completed
   - id: format
     content: Run biome check --write across in-scope files (separate commit)
-    status: pending
+    status: completed
   - id: cleanup
     content: Triage remaining warnings; quick-fix or relax specific rules
-    status: pending
+    status: completed
 isProject: false
 ---
 

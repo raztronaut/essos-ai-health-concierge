@@ -1,10 +1,10 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
-import * as Patients from "./model/patients.js";
-import * as Conversations from "./model/conversations.js";
-import * as Messages from "./model/messages.js";
-import * as Escalations from "./model/escalations.js";
 import * as Activity from "./model/activity.js";
+import * as Conversations from "./model/conversations.js";
+import * as Escalations from "./model/escalations.js";
+import * as Messages from "./model/messages.js";
+import * as Patients from "./model/patients.js";
 
 /**
  * Dev seeding. A Node runner (`scripts/seed.ts`) parses the mock-asset fixture
@@ -30,7 +30,9 @@ export const clearAll = mutation({
   handler: async (ctx) => {
     for (const table of TABLES) {
       const rows = await ctx.db.query(table).collect();
-      for (const row of rows) await ctx.db.delete(row._id);
+      for (const row of rows) {
+        await ctx.db.delete(row._id);
+      }
     }
   },
 });
@@ -68,7 +70,9 @@ export const importAll = mutation({
           authorHandle: m.author_handle ?? null,
           category: m.category ?? null,
         });
-        if (m.capture_as) captured.set(m.capture_as, msg.id);
+        if (m.capture_as) {
+          captured.set(m.capture_as, msg.id);
+        }
       }
       let escalationId: string | null = null;
       if (conv.escalation) {
@@ -79,23 +83,24 @@ export const importAll = mutation({
           reason: conv.escalation.reason,
           summary: conv.escalation.summary,
           sourceMessageId: conv.escalation.source_message_capture
-            ? captured.get(conv.escalation.source_message_capture) ?? null
+            ? (captured.get(conv.escalation.source_message_capture) ?? null)
             : null,
           suggestedReply: conv.escalation.suggested_reply ?? null,
-          suggestedReplySources: conv.escalation.suggested_reply_sources ?? null,
+          suggestedReplySources:
+            conv.escalation.suggested_reply_sources ?? null,
         });
         escalationId = esc.id;
       }
       await Conversations.setAutomationState(
         ctx,
         conversation.id,
-        conv.automation_state,
+        conv.automation_state
       );
       for (const a of conv.activity ?? []) {
         const detail =
           a.event === "escalated" && escalationId
             ? `${a.detail ?? "escalated"} - ${escalationId}`
-            : a.detail ?? null;
+            : (a.detail ?? null);
         await Activity.log(ctx, {
           conversationId: conversation.id,
           event: a.event,
@@ -111,15 +116,16 @@ export const importAll = mutation({
 
 // Loose payload typing (validated upstream by the parser).
 interface ImportPayload {
-  patients: Parameters<typeof Patients.upsert>[1][];
-  sourceDocuments: Parameters<typeof Patients.insertSourceDocument>[1][];
-  itinerary: Parameters<typeof Patients.insertItineraryEvent>[1][];
   careInstructions: Parameters<typeof Patients.insertCareInstruction>[1][];
   conversations: Array<{
     space_id: string;
     channel: "terminal" | "imessage";
     patient_id: string;
-    automation_state: "active" | "paused_for_review" | "taken_over" | "resolved";
+    automation_state:
+      | "active"
+      | "paused_for_review"
+      | "taken_over"
+      | "resolved";
     messages: Array<{
       role: "patient" | "agent" | "concierge" | "system";
       text: string;
@@ -150,4 +156,7 @@ interface ImportPayload {
       detail?: string | null;
     }>;
   }>;
+  itinerary: Parameters<typeof Patients.insertItineraryEvent>[1][];
+  patients: Parameters<typeof Patients.upsert>[1][];
+  sourceDocuments: Parameters<typeof Patients.insertSourceDocument>[1][];
 }

@@ -1,12 +1,12 @@
 import {
+  deleteConversationBySpace,
+  type EscalationCategory,
   escalateToHuman,
   getConversationBySpace,
   listOpenEscalationsForConversation,
   resumeAutomation,
-  deleteConversationBySpace,
-  type EscalationCategory,
 } from "@essos/shared";
-import { handleInbound, type EveResponder } from "./core.js";
+import { type EveResponder, handleInbound } from "./core.js";
 import { DEMO_PATIENT } from "./env.js";
 
 /**
@@ -15,7 +15,11 @@ import { DEMO_PATIENT } from "./env.js";
  * a flag + pause automation) when the message looks unsafe.
  */
 const stub: EveResponder = async (message, prior) => {
-  const session = prior ?? { sessionId: "stub_ses", continuationToken: "stub", turns: 1 };
+  const session = prior ?? {
+    sessionId: "stub_ses",
+    continuationToken: "stub",
+    turns: 1,
+  };
   const lower = message.toLowerCase();
 
   // Pull ids out of the context block the transport prepended.
@@ -64,7 +68,9 @@ function check(name: string, cond: boolean): void {
 
 /** Remove every conversation (cascades to messages/escalations/activity) this run created. */
 async function teardown(spaceIds: string[]): Promise<void> {
-  for (const spaceId of spaceIds) await deleteConversationBySpace(spaceId);
+  for (const spaceId of spaceIds) {
+    await deleteConversationBySpace(spaceId);
+  }
 }
 
 async function run(): Promise<string[]> {
@@ -80,7 +86,10 @@ async function run(): Promise<string[]> {
     text: "hello?",
     eveRespond: stub,
   });
-  check("unknown sender yields unknown_patient", r0.reason === "unknown_patient");
+  check(
+    "unknown sender yields unknown_patient",
+    r0.reason === "unknown_patient"
+  );
 
   // 1) Routine question -> answered, automation stays active.
   const r1 = await handleInbound({
@@ -96,7 +105,7 @@ async function run(): Promise<string[]> {
   check("conversation created", !!conv);
   check(
     "automation active after routine answer",
-    conv.automation_state === "active",
+    conv.automation_state === "active"
   );
 
   // 2) Post-op symptom -> answered with ack, escalation created, paused.
@@ -113,12 +122,12 @@ async function run(): Promise<string[]> {
   check("an escalation was created", openAfter.length >= 1);
   check(
     "escalation reason is post-op symptom",
-    openAfter.some((e) => e.reason === "postop_symptom_or_recovery"),
+    openAfter.some((e) => e.reason === "postop_symptom_or_recovery")
   );
   const convPaused = (await getConversationBySpace(spaceId))!;
   check(
     "automation paused after escalation",
-    convPaused.automation_state === "paused_for_review",
+    convPaused.automation_state === "paused_for_review"
   );
 
   // 3) Patient sends a message while paused -> Eve doesn't autonomously answer;
@@ -131,7 +140,10 @@ async function run(): Promise<string[]> {
     patientId: DEMO_PATIENT,
     eveRespond: stub,
   });
-  check("paused: one-time holding notice, no autonomous answer", r3.reason === "paused_for_review");
+  check(
+    "paused: one-time holding notice, no autonomous answer",
+    r3.reason === "paused_for_review"
+  );
   const r3b = await handleInbound({
     spaceId,
     channel: "terminal",
@@ -142,7 +154,7 @@ async function run(): Promise<string[]> {
   });
   check(
     "paused: silent on follow-ups after the holding notice",
-    r3b.reply === null && r3b.reason === "paused_for_review",
+    r3b.reply === null && r3b.reason === "paused_for_review"
   );
 
   // 4) Concierge replies during open escalation -> takeover.
@@ -154,10 +166,13 @@ async function run(): Promise<string[]> {
     isConcierge: true,
     eveRespond: stub,
   });
-  check("concierge reply triggers takeover", r4.reason === "concierge_takeover");
+  check(
+    "concierge reply triggers takeover",
+    r4.reason === "concierge_takeover"
+  );
   check(
     "automation is taken_over",
-    (await getConversationBySpace(spaceId))!.automation_state === "taken_over",
+    (await getConversationBySpace(spaceId))!.automation_state === "taken_over"
   );
 
   // 5) Resume automation -> patient messages answered again.
@@ -181,7 +196,10 @@ async function run(): Promise<string[]> {
     isConcierge: true,
     eveRespond: stub,
   });
-  check("concierge message with no open escalation is logged", r6.reason === "concierge_logged");
+  check(
+    "concierge message with no open escalation is logged",
+    r6.reason === "concierge_logged"
+  );
 
   return [spaceId, orphanSpaceId];
 }

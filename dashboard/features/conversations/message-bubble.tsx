@@ -11,8 +11,10 @@ const ROLE_STYLES: Record<MessageRole, string> = {
 
 export function MessageBubble({ message }: { message: Message }) {
   return (
-    <div className={`enter-fade rounded-card p-3.5 ${ROLE_STYLES[message.role]}`}>
-      <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted">
+    <div
+      className={`enter-fade rounded-card p-3.5 ${ROLE_STYLES[message.role]}`}
+    >
+      <div className="mb-1 flex items-center justify-between gap-2 text-muted text-xs">
         <span className="font-semibold text-ink/80">
           {ROLE_LABEL[message.role]}
           {message.author_handle ? ` · ${message.author_handle}` : ""}
@@ -21,7 +23,9 @@ export function MessageBubble({ message }: { message: Message }) {
       </div>
       <p className="whitespace-pre-wrap text-sm">{message.text}</p>
       {message.category ? (
-        <div className="mt-1.5 text-[11px] text-muted">{humanize(message.category)}</div>
+        <div className="mt-1.5 text-[11px] text-muted">
+          {humanize(message.category)}
+        </div>
       ) : null}
     </div>
   );

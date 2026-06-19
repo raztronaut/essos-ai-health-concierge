@@ -22,7 +22,7 @@ export const takeOverConversation = conciergeMutation({
     await Escalations.markConciergeTakeover(
       ctx,
       conversationId,
-      ctx.concierge.label,
+      ctx.concierge.label
     );
   },
 });
@@ -30,7 +30,11 @@ export const takeOverConversation = conciergeMutation({
 export const resumeAutomation = conciergeMutation({
   args: { conversationId: v.string() },
   handler: async (ctx, { conversationId }) => {
-    await Escalations.resumeAutomation(ctx, conversationId, ctx.concierge.label);
+    await Escalations.resumeAutomation(
+      ctx,
+      conversationId,
+      ctx.concierge.label
+    );
   },
 });
 
@@ -42,7 +46,9 @@ export const sendConciergeReply = conciergeMutation({
   args: { conversationId: v.string(), text: v.string() },
   handler: async (ctx, { conversationId, text }) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      return;
+    }
     await Messages.enqueueConciergeOutbound(ctx, {
       conversationId,
       text: trimmed,
@@ -51,7 +57,7 @@ export const sendConciergeReply = conciergeMutation({
     await Escalations.markConciergeTakeover(
       ctx,
       conversationId,
-      ctx.concierge.label,
+      ctx.concierge.label
     );
   },
 });

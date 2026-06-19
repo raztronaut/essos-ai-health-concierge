@@ -1,22 +1,26 @@
 import { Stat } from "@/components/ui";
 
 export interface OverviewStats {
-  patients: number;
-  conversations: number;
-  openFlags: number;
-  totalFlags: number;
   autonomousReplies: number;
+  conversations: number;
   escalatedTurns: number;
+  openFlags: number;
+  patients: number;
   remindersSent: number;
+  totalFlags: number;
 }
 
-export function TelemetryStats({ stats }: { stats: OverviewStats | undefined }) {
+export function TelemetryStats({
+  stats,
+}: {
+  stats: OverviewStats | undefined;
+}) {
   const containment =
     stats && stats.autonomousReplies + stats.escalatedTurns > 0
       ? Math.round(
           (stats.autonomousReplies /
             (stats.autonomousReplies + stats.escalatedTurns)) *
-            100,
+            100
         )
       : null;
 
@@ -25,16 +29,14 @@ export function TelemetryStats({ stats }: { stats: OverviewStats | undefined }) 
       <Stat label="Patients" value={stats?.patients ?? "—"} />
       <Stat label="Conversations" value={stats?.conversations ?? "—"} />
       <Stat
+        hint={stats ? `${stats.totalFlags} total` : undefined}
         label="Open flags"
         value={stats?.openFlags ?? "—"}
-        hint={stats ? `${stats.totalFlags} total` : undefined}
       />
       <Stat
+        hint={containment === null ? undefined : `${containment}% contained`}
         label="Autonomous replies"
         value={stats?.autonomousReplies ?? "—"}
-        hint={
-          containment !== null ? `${containment}% contained` : undefined
-        }
       />
       <Stat label="Reminders sent" value={stats?.remindersSent ?? "—"} />
     </section>

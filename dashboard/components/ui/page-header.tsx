@@ -16,9 +16,13 @@ export function PageHeader({
       <div className="min-w-0">
         {eyebrow ? <div className="mb-1">{eyebrow}</div> : null}
         <h1 className="serif text-4xl">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="mt-1 text-muted text-sm">{subtitle}</p>
+        ) : null}
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex items-center gap-2">{actions}</div>
+      ) : null}
     </header>
   );
 }

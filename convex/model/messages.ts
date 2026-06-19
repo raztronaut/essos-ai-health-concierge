@@ -8,11 +8,13 @@ export type MessageRole = Message["role"];
 
 export async function list(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<Message[]> {
   return await ctx.db
     .query("messages")
-    .withIndex("by_conversation", (q) => q.eq("conversation_id", conversationId))
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
     .collect();
 }
 
@@ -25,7 +27,7 @@ export async function add(
     authorHandle?: string | null;
     category?: string | null;
     meta?: Record<string, unknown> | null;
-  },
+  }
 ): Promise<Message> {
   const meta = args.meta ?? null;
   const metaKind =
@@ -52,25 +54,29 @@ export async function add(
     .query("messages")
     .withIndex("by_external_id", (q) => q.eq("id", id))
     .unique();
-  if (!created) throw new Error("Failed to create message");
+  if (!created) {
+    throw new Error("Failed to create message");
+  }
   return created;
 }
 
 /** The most recent message in a conversation (index-backed, single row). */
 export async function last(
   ctx: QueryCtx | MutationCtx,
-  conversationId: string,
+  conversationId: string
 ): Promise<Message | null> {
   return await ctx.db
     .query("messages")
-    .withIndex("by_conversation", (q) => q.eq("conversation_id", conversationId))
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
     .order("desc")
     .first();
 }
 
 export async function countByRole(
   ctx: QueryCtx | MutationCtx,
-  role: MessageRole,
+  role: MessageRole
 ): Promise<number> {
   const rows = await ctx.db
     .query("messages")
@@ -87,21 +93,23 @@ export async function hasMessageWithMetaKind(
   ctx: QueryCtx | MutationCtx,
   conversationId: string,
   kind: string,
-  since?: string | null,
+  since?: string | null
 ): Promise<boolean> {
   const rows = await ctx.db
     .query("messages")
     .withIndex("by_conversation_and_kind", (q) =>
-      q.eq("conversation_id", conversationId).eq("meta_kind", kind),
+      q.eq("conversation_id", conversationId).eq("meta_kind", kind)
     )
     .collect();
-  if (!since) return rows.length > 0;
+  if (!since) {
+    return rows.length > 0;
+  }
   return rows.some((m) => m.created_at >= since);
 }
 
 export async function enqueueConciergeOutbound(
   ctx: MutationCtx,
-  args: { conversationId: string; text: string; authorHandle?: string | null },
+  args: { conversationId: string; text: string; authorHandle?: string | null }
 ): Promise<Message> {
   return await add(ctx, {
     conversationId: args.conversationId,
@@ -113,7 +121,7 @@ export async function enqueueConciergeOutbound(
 }
 
 export async function listPendingOutbound(
-  ctx: QueryCtx | MutationCtx,
+  ctx: QueryCtx | MutationCtx
 ): Promise<Message[]> {
   const rows = await ctx.db
     .query("messages")
@@ -126,12 +134,14 @@ export async function listPendingOutbound(
 
 export async function markOutboundDelivered(
   ctx: MutationCtx,
-  messageId: string,
+  messageId: string
 ): Promise<void> {
   const msg = await ctx.db
     .query("messages")
     .withIndex("by_external_id", (q) => q.eq("id", messageId))
     .unique();
-  if (!msg) return;
+  if (!msg) {
+    return;
+  }
   await ctx.db.patch(msg._id, { outbound: "sent" });
 }

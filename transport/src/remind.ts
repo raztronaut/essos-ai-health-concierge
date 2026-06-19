@@ -19,9 +19,9 @@ async function main(): Promise<void> {
 
   const projectId = process.env.SPECTRUM_PROJECT_ID;
   const projectSecret = process.env.SPECTRUM_PROJECT_SECRET;
-  if (!projectId || !projectSecret) {
+  if (!(projectId && projectSecret)) {
     console.error(
-      "Missing SPECTRUM_PROJECT_ID / SPECTRUM_PROJECT_SECRET — set them in .env first.",
+      "Missing SPECTRUM_PROJECT_ID / SPECTRUM_PROJECT_SECRET — set them in .env first."
     );
     process.exit(1);
   }

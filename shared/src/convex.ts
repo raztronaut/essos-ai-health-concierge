@@ -8,6 +8,8 @@
  * These exports keep the SAME names as the old SQLite repo layer so call sites
  * only need to add `await`. Returns are typed against the shared interfaces.
  */
+
+import type { EscalationCategory, EscalationLevel } from "./taxonomy.js";
 import type {
   ActivityEvent,
   AutomationState,
@@ -21,11 +23,10 @@ import type {
   MessageRole,
   Patient,
 } from "./types.js";
-import type { EscalationCategory, EscalationLevel } from "./taxonomy.js";
 
 export interface PersistedEveSession {
-  sessionId: string;
   continuationToken: string;
+  sessionId: string;
   turns: number;
 }
 
@@ -35,10 +36,17 @@ function baseUrl(): string {
   );
 }
 
-async function call<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+async function call<T>(
+  fn: string,
+  args: Record<string, unknown> = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
   const secret = process.env.CONVEX_SERVICE_SECRET;
-  if (secret) headers.authorization = `Bearer ${secret}`;
+  if (secret) {
+    headers.authorization = `Bearer ${secret}`;
+  }
   const res = await fetch(`${baseUrl()}/machine`, {
     method: "POST",
     headers,
@@ -48,8 +56,14 @@ async function call<T>(fn: string, args: Record<string, unknown> = {}): Promise<
     const detail = await res.text().catch(() => "");
     throw new Error(`Convex /machine ${fn} failed: ${res.status} ${detail}`);
   }
-  const json = (await res.json()) as { ok: boolean; result?: T; error?: string };
-  if (!json.ok) throw new Error(json.error ?? `Convex ${fn} failed`);
+  const json = (await res.json()) as {
+    ok: boolean;
+    result?: T;
+    error?: string;
+  };
+  if (!json.ok) {
+    throw new Error(json.error ?? `Convex ${fn} failed`);
+  }
   return json.result as T;
 }
 
@@ -72,7 +86,7 @@ export function listItinerary(patientId: string): Promise<ItineraryEvent[]> {
 }
 export function listCareInstructions(
   patientId: string,
-  phase?: CarePhase,
+  phase?: CarePhase
 ): Promise<CareInstruction[]> {
   return call("listCareInstructions", { patientId, phase });
 }
@@ -83,7 +97,7 @@ export function getConversationById(id: string): Promise<Conversation | null> {
   return call("getConversationById", { id });
 }
 export function getConversationBySpace(
-  spaceId: string,
+  spaceId: string
 ): Promise<Conversation | null> {
   return call("getConversationBySpace", { spaceId });
 }
@@ -101,19 +115,19 @@ export const ensureConversation = getOrCreateConversation;
 
 export function setAutomationState(
   conversationId: string,
-  state: AutomationState,
+  state: AutomationState
 ): Promise<void> {
   return call("setAutomationState", { conversationId, state });
 }
 
 export function saveEveSession(
   conversationId: string,
-  session: PersistedEveSession,
+  session: PersistedEveSession
 ): Promise<void> {
   return call("saveEveSession", { conversationId, session });
 }
 export function getEveSession(
-  conversationId: string,
+  conversationId: string
 ): Promise<PersistedEveSession | null> {
   return call("getEveSession", { conversationId });
 }
@@ -138,7 +152,7 @@ export const appendMessage = addMessage;
 export function hasMessageWithMetaKind(
   conversationId: string,
   kind: string,
-  since?: string | null,
+  since?: string | null
 ): Promise<boolean> {
   return call("hasMessageWithMetaKind", { conversationId, kind, since });
 }
@@ -153,19 +167,19 @@ export function markOutboundDelivered(messageId: string): Promise<void> {
 // --------------------------- Escalations / handoff ---------------------------
 
 export function listOpenEscalationsForConversation(
-  conversationId: string,
+  conversationId: string
 ): Promise<Escalation[]> {
   return call("listOpenEscalationsForConversation", { conversationId });
 }
 export function markConciergeTakeover(
   conversationId: string,
-  assignee: string,
+  assignee: string
 ): Promise<void> {
   return call("markConciergeTakeover", { conversationId, assignee });
 }
 export function resumeAutomation(
   conversationId: string,
-  actor: string,
+  actor: string
 ): Promise<void> {
   return call("resumeAutomation", { conversationId, actor });
 }
@@ -217,10 +231,12 @@ export function recordAgentTurn(args: {
 
 /** Parse the JSON array on escalations.suggested_reply_sources. */
 export function parseSuggestedReplySources(
-  escalation: { suggested_reply_sources?: string | null } | null | undefined,
+  escalation: { suggested_reply_sources?: string | null } | null | undefined
 ): string[] {
   const raw = escalation?.suggested_reply_sources;
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const parsed = JSON.parse(raw) as unknown;
     return Array.isArray(parsed)

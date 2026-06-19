@@ -1,13 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { reduceEveEvents, splitNdjson, type EveEvent } from "./eveClient.js";
+import { type EveEvent, reduceEveEvents, splitNdjson } from "./eveClient.js";
 
 test("reduceEveEvents: multi-step tool-calls then a final answer", () => {
   const events: EveEvent[] = [
     { type: "turn.started" },
-    { type: "message.completed", data: { message: "", finishReason: "tool-calls" } },
+    {
+      type: "message.completed",
+      data: { message: "", finishReason: "tool-calls" },
+    },
     { type: "message.appended", data: { messageSoFar: "Your reservation " } },
-    { type: "message.appended", data: { messageSoFar: "Your reservation is HM-4471." } },
+    {
+      type: "message.appended",
+      data: { messageSoFar: "Your reservation is HM-4471." },
+    },
     {
       type: "message.completed",
       data: { message: "Your reservation is HM-4471.", finishReason: "stop" },
@@ -22,7 +28,10 @@ test("reduceEveEvents: multi-step tool-calls then a final answer", () => {
 
 test("reduceEveEvents: falls back to cumulative text when no clean final message", () => {
   const events: EveEvent[] = [
-    { type: "message.appended", data: { messageSoFar: "partial answer so far" } },
+    {
+      type: "message.appended",
+      data: { messageSoFar: "partial answer so far" },
+    },
     { type: "turn.completed" },
   ];
   const result = reduceEveEvents(events);
@@ -51,7 +60,10 @@ test("reduceEveEvents: a silent turn is distinguishable from a parse miss", () =
   assert.equal(silent.sawMessage, false);
 
   const toolOnly = reduceEveEvents([
-    { type: "message.completed", data: { message: "", finishReason: "tool-calls" } },
+    {
+      type: "message.completed",
+      data: { message: "", finishReason: "tool-calls" },
+    },
     { type: "turn.completed" },
   ]);
   assert.equal(toolOnly.text, "");
@@ -63,7 +75,7 @@ test("splitNdjson: keeps a trailing partial line in the buffer", () => {
   assert.equal(first.rest, '{"type":"c"');
 
   // Feeding the next chunk completes the partial line.
-  const second = splitNdjson(first.rest + '}\n');
+  const second = splitNdjson(`${first.rest}}\n`);
   assert.deepEqual(second.lines, ['{"type":"c"}']);
   assert.equal(second.rest, "");
 });

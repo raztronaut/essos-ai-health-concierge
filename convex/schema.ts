@@ -17,32 +17,32 @@ import { v } from "convex/values";
 const procedure = v.union(
   v.literal("rhinoplasty"),
   v.literal("hair_transplant"),
-  v.literal("other"),
+  v.literal("other")
 );
 
 const carePhase = v.union(
   v.literal("preop"),
   v.literal("postop"),
-  v.literal("general"),
+  v.literal("general")
 );
 
 const careSourceType = v.union(
   v.literal("clinic_packet"),
   v.literal("essos_summary"),
   v.literal("generated_notional"),
-  v.literal("missing"),
+  v.literal("missing")
 );
 
 const careSourceStatus = v.union(
   v.literal("verified"),
   v.literal("demo_notional"),
   v.literal("missing"),
-  v.literal("personalized_pending"),
+  v.literal("personalized_pending")
 );
 
 const careAnswerPolicy = v.union(
   v.literal("answer_reference"),
-  v.literal("escalate_only"),
+  v.literal("escalate_only")
 );
 
 const sourceDocumentKind = v.union(
@@ -51,7 +51,7 @@ const sourceDocumentKind = v.union(
   v.literal("care_note"),
   v.literal("logistics_handoff"),
   v.literal("guide"),
-  v.literal("runbook"),
+  v.literal("runbook")
 );
 
 const itineraryKind = v.union(
@@ -60,14 +60,14 @@ const itineraryKind = v.union(
   v.literal("hotel"),
   v.literal("transport"),
   v.literal("followup"),
-  v.literal("preop"),
+  v.literal("preop")
 );
 
 const messageRole = v.union(
   v.literal("patient"),
   v.literal("agent"),
   v.literal("concierge"),
-  v.literal("system"),
+  v.literal("system")
 );
 
 const channel = v.union(v.literal("terminal"), v.literal("imessage"));
@@ -76,13 +76,13 @@ const automationState = v.union(
   v.literal("active"),
   v.literal("paused_for_review"),
   v.literal("taken_over"),
-  v.literal("resolved"),
+  v.literal("resolved")
 );
 
 const escalationStatus = v.union(
   v.literal("open"),
   v.literal("taken_over"),
-  v.literal("resolved"),
+  v.literal("resolved")
 );
 
 const escalationLevel = v.union(v.literal("High"), v.literal("Med"));
@@ -96,7 +96,7 @@ const activityEvent = v.union(
   v.literal("taken_over"),
   v.literal("resolved"),
   v.literal("resumed"),
-  v.literal("reminder"),
+  v.literal("reminder")
 );
 
 export default defineSchema({
