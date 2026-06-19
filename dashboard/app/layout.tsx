@@ -73,12 +73,14 @@ export default function RootLayout({
         <ConvexClientProvider>
           <DemoIdentityProvider>
             <CommandPaletteProvider>
-              <ConvexConnectionBanner />
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 md:px-10">
-                  <div className="mx-auto w-full max-w-content">{children}</div>
-                </main>
+              <div className="flex h-screen flex-col overflow-hidden">
+                <ConvexConnectionBanner />
+                <div className="flex flex-1 overflow-hidden">
+                  <Sidebar />
+                  <main className="min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-10">
+                    <div className="mx-auto w-full max-w-content">{children}</div>
+                  </main>
+                </div>
               </div>
               <Toaster
                 position="bottom-right"
