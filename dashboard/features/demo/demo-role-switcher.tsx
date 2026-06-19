@@ -1,6 +1,5 @@
 "use client";
 
-import { TextMorph } from "torph/react";
 import { Select } from "@/components/ui";
 import { stripOrgPrefix } from "@/lib/format";
 import { demoEnabled, useDemoIdentity } from "./demo-identity";
@@ -39,10 +38,9 @@ export function DemoRoleSwitcher() {
         ))}
       </Select>
       {selected ? (
-        <p className="mt-1 text-[10px] text-secondary">
-          <TextMorph>
-            {`Viewing as ${selected.name}. Reads + actions are scoped to this concierge.`}
-          </TextMorph>
+        <p className="mt-1 text-[10px] text-secondary leading-normal">
+          Viewing as <span className="font-medium">{selected.name}</span>. Reads
+          + actions are scoped to this concierge.
         </p>
       ) : null}
     </div>
