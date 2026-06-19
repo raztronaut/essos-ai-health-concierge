@@ -90,18 +90,18 @@ export function PatientDetailView({ id }: { id: string }) {
 
       <PatientProfileCard docs={docs ?? []} patient={patient} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="min-w-0">
-          <ItineraryTimeline
-            itinerary={itinerary ?? []}
-            patientId={patient.id}
-          />
-        </div>
-        <aside className="space-y-6">
           <CareInstructions
             care={care ?? []}
             patientId={patient.id}
             patientProcedure={patient.procedure}
+          />
+        </div>
+        <aside className="space-y-6">
+          <ItineraryTimeline
+            itinerary={itinerary ?? []}
+            patientId={patient.id}
           />
         </aside>
       </div>

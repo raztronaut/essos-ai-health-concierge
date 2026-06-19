@@ -45,18 +45,20 @@ export function CareInstructionDialog({
   patientId,
   patientProcedure,
   care,
+  defaultPhase,
 }: {
   open: boolean;
   onClose: () => void;
   patientId: string;
   patientProcedure: Procedure;
   care?: CareInstruction | null;
+  defaultPhase?: CarePhase;
 }) {
   const { viewAs } = useDemoIdentity();
   const upsert = useMutation(api.mutations.upsertCareInstruction);
 
   const [form, setForm] = useState<CareFormState>({
-    phase: care?.phase ?? "preop",
+    phase: care?.phase ?? defaultPhase ?? "preop",
     procedure: care?.procedure ?? patientProcedure,
     title: care?.title ?? "",
     body: care?.body ?? "",

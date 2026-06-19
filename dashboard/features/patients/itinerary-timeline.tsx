@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { ItineraryEvent } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Button, Card, ConfirmDialog, FoldTrigger } from "@/components/ui";
+import { Button, Card, ConfirmDialog, Dialog } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { formatDateTime } from "@/lib/format";
 import { ItineraryEventDialog } from "./itinerary-event-dialog";
@@ -21,7 +21,7 @@ export function ItineraryTimeline({
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<ItineraryEvent | null>(null);
   const [deleting, setDeleting] = useState<ItineraryEvent | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [viewingAll, setViewingAll] = useState(false);
 
   const sorted = [...itinerary].sort(
     (a, b) =>
@@ -29,8 +29,8 @@ export function ItineraryTimeline({
       (a.starts_at ?? "").localeCompare(b.starts_at ?? "")
   );
 
-  const hasMore = sorted.length > 5;
-  const visibleEvents = expanded ? sorted : sorted.slice(0, 5);
+  const hasMore = sorted.length > 4;
+  const visibleEvents = sorted.slice(0, 4);
 
   return (
     <section className="space-y-3">
@@ -112,17 +112,119 @@ export function ItineraryTimeline({
             </ol>
 
             {hasMore ? (
-              <FoldTrigger
-                count={sorted.length - 5}
-                expanded={expanded}
-                labelPlural="events"
-                labelSingular="event"
-                onToggle={() => setExpanded(!expanded)}
-              />
+              <div className="mt-4 flex justify-center border-border/40 border-t pt-3.5">
+                <Button
+                  className="flex items-center gap-1.5 rounded-control px-3 py-1.5 font-semibold text-muted text-xs hover:text-ink"
+                  onClick={() => setViewingAll(true)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <span>Show all {sorted.length} events</span>
+                  <svg
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 text-muted/80"
+                    fill="none"
+                    role="presentation"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                  </svg>
+                </Button>
+              </div>
             ) : null}
           </div>
         )}
       </Card>
+
+      {viewingAll ? (
+        <Dialog
+          onClose={() => setViewingAll(false)}
+          open={true}
+          title="Full Itinerary"
+        >
+          <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <div className="relative">
+              {/* Continuous vertical timeline line */}
+              <div className="absolute top-2 bottom-2 left-[106px] w-px bg-border/80" />
+
+              <ol className="relative space-y-6">
+                {sorted.map((event) => (
+                  <li className="group relative flex gap-4" key={event.id}>
+                    {/* Left: Starts At Timestamp */}
+                    <div className="w-20 shrink-0 pt-1 text-right text-meta tabular-nums">
+                      {formatDateTime(event.starts_at)}
+                    </div>
+
+                    {/* Middle: Timeline Dot */}
+                    <div className="relative z-10 flex w-5 shrink-0 justify-center pt-2">
+                      <div className="size-2 rounded-full border-2 border-stone-90 bg-card" />
+                    </div>
+
+                    {/* Right: Event Content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center rounded bg-surface px-1.5 py-0.5 font-medium text-[10px] text-muted uppercase tracking-wide">
+                            {event.kind}
+                          </span>
+                          <span className="font-medium text-ink text-sm">
+                            {event.title}
+                          </span>
+                        </div>
+                        <div className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-fast group-hover:opacity-100">
+                          <Button
+                            onClick={() => {
+                              setEditing(event);
+                              setViewingAll(false);
+                            }}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setDeleting(event);
+                              setViewingAll(false);
+                            }}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                      {event.detail ? (
+                        <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">
+                          {event.detail}
+                        </p>
+                      ) : null}
+                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-meta">
+                        {event.location ? <span>{event.location}</span> : null}
+                        {event.confirmation_number ? (
+                          <span>Conf# {event.confirmation_number}</span>
+                        ) : null}
+                        {event.driver_name ? (
+                          <span>
+                            Driver: {event.driver_name}
+                            {event.driver_phone
+                              ? ` (${event.driver_phone})`
+                              : ""}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </Dialog>
+      ) : null}
 
       {adding ? (
         <ItineraryEventDialog
