@@ -40,6 +40,11 @@ export function FlagsPanel({
               </div>
               <div className="mt-1.5 text-xs font-medium">{humanize(esc.reason)}</div>
               <p className="mt-1 text-sm">{esc.summary}</p>
+              {esc.status === "open" && esc.suggested_reply && esc.suggested_reply.trim() ? (
+                <p className="mt-2 inline-block rounded-control bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  AI draft ready — review in the reply box below
+                </p>
+              ) : null}
               <div className="mt-2">
                 <EscalationActions
                   escalationId={esc.id}

@@ -8,7 +8,7 @@ import {
 } from "@essos/shared";
 import { debug } from "./debug.js";
 
-type SpectrumApp = Awaited<ReturnType<typeof Spectrum>>;
+export type SpectrumApp = Awaited<ReturnType<typeof Spectrum>>;
 
 /** How often the transport drains concierge replies queued by the dashboard. */
 const POLL_INTERVAL_MS = 3000;
@@ -65,6 +65,24 @@ async function resolveSpace(app: SpectrumApp, spaceId: string, handle: string | 
   if (!handle) return null;
   const user = await im.user(handle);
   return im.space.create(user);
+}
+
+/**
+ * Resolve a patient's iMessage space and send `text`, returning whether it was
+ * delivered. Shared by the concierge-reply bridge and the proactive reminder
+ * sweep so the Spectrum send path lives in one place (and its internal space
+ * type never leaks across module boundaries).
+ */
+export async function sendToPatientSpace(
+  app: SpectrumApp,
+  spaceId: string,
+  handle: string | null,
+  text: string,
+): Promise<boolean> {
+  const space = await resolveSpace(app, spaceId, handle);
+  if (!space) return false;
+  await space.send(text);
+  return true;
 }
 
 /**

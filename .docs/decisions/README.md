@@ -16,10 +16,11 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 | [008](008-transport-eve-streaming-contract.md) | Transport / Eve streaming contract | The Eve session HTTP API, ndjson event schema, reply assembly, and patient-binding/takeover in the transport. |
 | [009](009-agent-hardening-and-transport-auth.md) | Agent hardening and transport auth | Disabling dangerous built-in tools, replacing `placeholderAuth()` with a transport shared-secret, PII-minimized tool output, the constrained escalation enum, and the eval suite. |
 | [010](010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge | Keeping the patient informed during escalation (acknowledgment + one-time holding notice) and letting the concierge reply to the patient from the dashboard; the multi-turn stream-replay fix. |
+| [011](011-concierge-ai-assist-and-proactive-care.md) | Concierge AI-assist + proactive care | Eve drafts a source-grounded suggested reply the concierge approves/sends, a one-time AI disclosure, clarifying questions, proactive pre-op reminders, and durable holding-notice + Eve-session state. |
 
 ## Grouping
 
-- **Product / safety policy:** 001, 002, 003, 010
-- **Transport:** 004, 008, 010
-- **Agent + model:** 005, 006, 009
-- **Dashboard:** 007, 010
+- **Product / safety policy:** 001, 002, 003, 010, 011
+- **Transport:** 004, 008, 010, 011
+- **Agent + model:** 005, 006, 009, 011
+- **Dashboard:** 007, 010, 011

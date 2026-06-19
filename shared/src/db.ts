@@ -72,7 +72,8 @@ create table if not exists conversations (
   channel text not null,
   automation_state text not null default 'active',
   created_at text not null,
-  updated_at text not null
+  updated_at text not null,
+  eve_session text
 );
 
 create table if not exists messages (
@@ -97,7 +98,9 @@ create table if not exists escalations (
   status text not null default 'open',
   assignee text,
   created_at text not null,
-  resolved_at text
+  resolved_at text,
+  suggested_reply text,
+  suggested_reply_sources text
 );
 
 create table if not exists activity_log (

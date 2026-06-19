@@ -7,6 +7,7 @@ import {
   listActivity,
   listEscalationsForConversation,
   listMessages,
+  parseSuggestedReplySources,
 } from "@essos/shared";
 import { PageHeader } from "@/components/ui";
 import { AutomationBadge } from "@/components/badges";
@@ -55,6 +56,11 @@ export default async function ConversationPage({
     .slice(lastRepliedIndex + 1)
     .filter((m) => m.role === "patient").length;
 
+  // The most recent open escalation's AI draft prefills the reply box so the
+  // concierge can review and send in one tap (escalations are newest-first).
+  const openEscalation = escalations.find((e) => e.status === "open") ?? null;
+  const draftSources = openEscalation ? parseSuggestedReplySources(openEscalation) : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -75,7 +81,11 @@ export default async function ConversationPage({
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
           <MessageThread messages={messages} />
-          <ConciergeReplyBox conversationId={conversation.id} />
+          <ConciergeReplyBox
+            conversationId={conversation.id}
+            suggestedReply={openEscalation?.suggested_reply ?? null}
+            sources={draftSources}
+          />
         </div>
         <aside className="space-y-4">
           {patient ? <PatientSummaryCard patient={patient} /> : null}

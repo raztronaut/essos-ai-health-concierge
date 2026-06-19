@@ -1,9 +1,9 @@
 import { defineEval } from "eve/evals";
-import { essosTurn, PATIENT_HAIR } from "#evals/context.js";
+import { essosTurn, hasSuggestedReply, PATIENT_HAIR } from "#evals/context.js";
 
 export default defineEval({
   description:
-    "Stranded patient: a blocked-at-arrivals message escalates High instead of being treated as routine logistics.",
+    "Stranded patient: a blocked-at-arrivals message escalates High with a concierge draft instead of being treated as routine logistics.",
   async test(t) {
     const turn = essosTurn({
       patientId: PATIENT_HAIR,
@@ -12,6 +12,6 @@ export default defineEval({
     });
     await t.send(turn.message);
     t.completed();
-    t.calledTool("escalate_to_human");
+    t.calledTool("escalate_to_human", { input: hasSuggestedReply });
   },
 });

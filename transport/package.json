@@ -6,6 +6,7 @@
   "scripts": {
     "terminal": "tsx src/terminal.ts",
     "imessage": "tsx src/imessage.ts",
+    "remind": "tsx src/remind.ts",
     "smoke": "tsx src/smoke.ts",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit"

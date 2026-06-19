@@ -5,6 +5,7 @@ import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
 import { runMessageLoop } from "./runLoop.js";
 import { startOutboundLoop } from "./outbound.js";
+import { startReminderLoop } from "./reminders.js";
 
 /**
  * Live iMessage transport via Spectrum Cloud. Maps each iMessage space (group
@@ -40,6 +41,9 @@ async function main(): Promise<void> {
 
   // Deliver concierge replies queued by the dashboard back to the patient.
   startOutboundLoop(app);
+
+  // Proactively send source-grounded pre-op reminders ahead of each procedure.
+  startReminderLoop(app);
 
   await runMessageLoop({
     app,

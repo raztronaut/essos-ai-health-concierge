@@ -69,3 +69,12 @@ export function essosTurn(args: {
 
   return { message, conversationId: conversation.id, patientId: patient.id };
 }
+
+/**
+ * `t.calledTool` input matcher: the escalation carried a non-empty
+ * `suggested_reply` for the concierge (the AI-assist draft). See ADR 011.
+ */
+export function hasSuggestedReply(input: unknown): boolean {
+  const reply = (input as { suggested_reply?: unknown } | null)?.suggested_reply;
+  return typeof reply === "string" && reply.trim().length > 0;
+}

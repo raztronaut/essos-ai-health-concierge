@@ -81,7 +81,7 @@ pnpm transport:imessage     # live: Spectrum Cloud iMessage group chat
 pnpm dashboard:dev          # http://localhost:4000
 ```
 
-Useful root scripts: `pnpm seed` / `pnpm seed:reset`, `pnpm eve:build`, `pnpm assets:generate` (regenerate PDFs), `pnpm typecheck` (all packages + the agent).
+Useful root scripts: `pnpm seed` / `pnpm seed:reset`, `pnpm eve:build`, `pnpm assets:generate` (regenerate PDFs), `pnpm transport:remind` (send a proactive pre-op reminder on demand), `pnpm typecheck` (all packages + the agent).
 
 ## Demo scenarios
 
@@ -99,6 +99,8 @@ Drive these as the patient (terminal, or iMessage in the group):
 Open flags surface on the dashboard Overview, where you can take over, resolve, and resume Eve.
 
 When Eve escalates, the patient is never left in silence: Eve acknowledges in-thread, and if the patient keeps texting while a human is being looped in, they get a single "the care team is reviewing this" holding notice. The concierge can reply to the patient straight from the dashboard conversation view — those replies are delivered to the patient's iMessage by the transport and mark the thread taken over. See [ADR 010](.docs/decisions/010-handoff-patient-feedback-ux.md).
+
+On top of that handoff, the concierge gets an **AI-assist**: every escalation arrives with a source-grounded draft reply Eve prepared (from the itinerary and verified packets, never medical advice), prefilled into the reply box so a human can review, edit, and send in one tap. Eve also introduces itself as an AI on its first message (with the human team on the thread), asks a clarifying question for ambiguous logistics instead of guessing, and sends proactive pre-op reminders before a procedure (`pnpm transport:remind` to fire one on demand). See [ADR 011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md).
 
 ## Live iMessage runbook
 
@@ -137,6 +139,7 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [008](.docs/decisions/008-transport-eve-streaming-contract.md) | Transport / Eve streaming contract |
 | [009](.docs/decisions/009-agent-hardening-and-transport-auth.md) | Agent hardening and transport auth |
 | [010](.docs/decisions/010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge |
+| [011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md) | Concierge AI-assist + proactive care |
 
 ## Package docs
 

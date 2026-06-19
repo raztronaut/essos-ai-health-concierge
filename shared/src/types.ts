@@ -50,10 +50,12 @@ export type ActivityEvent =
   | "message"
   | "logistics"
   | "escalated"
+  | "drafted"
   | "paused"
   | "taken_over"
   | "resolved"
-  | "resumed";
+  | "resumed"
+  | "reminder";
 
 export interface Patient {
   id: string;
@@ -151,6 +153,13 @@ export interface Escalation {
   assignee: string | null;
   created_at: string;
   resolved_at: string | null;
+  /**
+   * A source-grounded reply Eve drafts for the concierge to review, edit, and
+   * send to the patient (never auto-sent). Null when no draft was produced.
+   */
+  suggested_reply: string | null;
+  /** JSON array of short source labels Eve used for the draft (e.g. itinerary, pre-op packet). */
+  suggested_reply_sources: string | null;
 }
 
 export interface ActivityLogEntry {

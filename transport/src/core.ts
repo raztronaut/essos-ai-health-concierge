@@ -3,11 +3,15 @@ import {
   ensureConversation,
   getConversationById,
   getConversationBySpace,
+  getEveSession,
   getPatientById,
   getPatientByHandle,
+  hasMessageWithMetaKind,
   listOpenEscalationsForConversation,
   markConciergeTakeover,
+  saveEveSession,
   type Channel,
+  type Patient,
 } from "@essos/shared";
 import { buildContextMessage } from "./context.js";
 import { askEve, type EveSession } from "./eveClient.js";
@@ -28,17 +32,28 @@ export type EveResponder = (
 // In-memory map of conversation -> durable Eve session, for multi-turn threads.
 const sessions = new Map<string, EveSession>();
 
-// Conversations we've already sent a "care team is reviewing" holding notice to
-// during the current pause. Cleared when the conversation goes active again so a
-// later re-escalation notifies afresh. See decision 010.
-const holdingNotified = new Set<string>();
-
 const HOLDING_NOTICE_MED =
   "Thanks for your message. I've shared this with the Essos care team and someone " +
   "will follow up with you right here shortly. I'll step back so they can take it from here.";
 const HOLDING_NOTICE_HIGH =
   "I've flagged this to the Essos care team as a priority and someone is reviewing it now — " +
   "they'll reply right here. If this is a medical emergency, please call your local emergency number.";
+
+/**
+ * One-time AI disclosure prepended to Eve's first reply in a conversation. The
+ * patient should know they're talking to an AI, with the human care team also on
+ * the thread — required for a health context. See ADR 011 and the eve disclosure
+ * duty. Gated durably via a `meta.kind = "disclosure"` message so it survives a
+ * transport restart and only ever fires once per conversation.
+ */
+function buildDisclosure(patient: Patient): string {
+  const firstName = patient.name.split(/\s+/)[0] ?? patient.name;
+  return (
+    `Hi ${firstName} — this is Essos's AI concierge assistant. I can help with your ` +
+    "itinerary, logistics, and travel questions any time, and our human care team is " +
+    "on this thread too. For anything medical, a person always steps in."
+  );
+}
 
 export interface InboundResult {
   reply: string | null;
@@ -121,13 +136,19 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   //    their replies reach the patient via the dashboard bridge). See decision 010.
   const fresh = getConversationById(conversation.id)!;
   if (fresh.automation_state === "paused_for_review") {
-    if (holdingNotified.has(conversation.id)) {
+    const open = listOpenEscalationsForConversation(conversation.id);
+    // Durable one-time latch: anchor on the current escalation's open time so
+    // we send exactly one holding notice per pause. Reading it from the DB (not
+    // an in-memory set) means a transport restart won't re-send it, and a later
+    // re-escalation (a newer `created_at`) notifies afresh. See decision 010.
+    const since = open[0]?.created_at;
+    const alreadyNotified = since
+      ? hasMessageWithMetaKind(conversation.id, "handoff_holding", since)
+      : hasMessageWithMetaKind(conversation.id, "handoff_holding");
+    if (alreadyNotified) {
       return { reply: null, reason: "paused_for_review" };
     }
-    holdingNotified.add(conversation.id);
-    const isHigh = listOpenEscalationsForConversation(conversation.id).some(
-      (e) => e.level === "High",
-    );
+    const isHigh = open.some((e) => e.level === "High");
     const notice = isHigh ? HOLDING_NOTICE_HIGH : HOLDING_NOTICE_MED;
     appendMessage({
       conversationId: conversation.id,
@@ -141,16 +162,16 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     return { reply: null, reason: "taken_over" };
   }
 
-  // 5) Automation is active — clear any prior holding-notice latch so a future
-  //    re-escalation notifies again, then ask the agent.
-  holdingNotified.delete(conversation.id);
+  // 5) Automation is active — ask the agent.
   const contextMessage = buildContextMessage({
     patient,
     conversation: fresh,
     sourceMessageId: inbound.id,
     text: args.text,
   });
-  const prior = sessions.get(conversation.id) ?? null;
+  // Prefer the in-memory cache, falling back to the persisted session so a
+  // transport restart resumes the same multi-turn Eve session. See ADR 010/011.
+  const prior = sessions.get(conversation.id) ?? getEveSession(conversation.id);
 
   let text = "";
   try {
@@ -161,6 +182,7 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   try {
     const result = await respond(contextMessage, prior);
     sessions.set(conversation.id, result.session);
+    saveEveSession(conversation.id, result.session);
     text = result.text;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -174,11 +196,25 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
     return { reply: null, reason: "empty" };
   }
 
-  // 6) Record the agent's reply (escalation rows/pause are written by tools).
+  // 6) On Eve's very first reply, prepend a one-time AI disclosure (durably
+  //    gated, so it survives restarts and never repeats). See ADR 011.
+  let reply = text;
+  if (!hasMessageWithMetaKind(conversation.id, "disclosure")) {
+    const disclosure = buildDisclosure(patient);
+    appendMessage({
+      conversationId: conversation.id,
+      role: "agent",
+      text: disclosure,
+      meta: { kind: "disclosure" },
+    });
+    reply = `${disclosure}\n\n${text}`;
+  }
+
+  // 7) Record the agent's reply (escalation rows/pause are written by tools).
   appendMessage({
     conversationId: conversation.id,
     role: "agent",
     text,
   });
-  return { reply: text, reason: "answered" };
+  return { reply, reason: "answered" };
 }

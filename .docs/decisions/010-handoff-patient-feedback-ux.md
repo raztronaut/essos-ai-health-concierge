@@ -38,7 +38,7 @@ flowchart TD
   cx --> took[state -> taken_over]
 ```
 
-- **Holding-notice dedup** is an in-memory latch per conversation, cleared when the conversation returns to `active`, so a later re-escalation notifies again. A transport restart re-arms it (at most one extra notice) — acceptable for the cost of zero added persistence.
+- **Holding-notice dedup** is durable (updated in [ADR 011](011-concierge-ai-assist-and-proactive-care.md)): the notice is recorded as an `agent` message tagged `meta.kind = "handoff_holding"`, and the transport sends one only if none exists since the current escalation's `created_at`. This survives a transport restart (no duplicate notice) and a later re-escalation — anchored on a newer `created_at` — notifies afresh. (The original implementation used an in-memory latch that re-armed on restart; that is no longer the case.)
 - **The bridge reuses the existing `messages.meta_json` column** (no schema migration): dashboard-authored concierge replies are stored with `{ outbound: "pending" }`, the transport drains them via `listPendingOutbound` and `markOutboundDelivered`, and re-acquires the patient DM with `im.space.get(chatGuid)` (the stored `space_id` minus the `imessage:` prefix), falling back to `im.space.create(user)`.
 
 ## Consequences / trade-offs
@@ -47,8 +47,11 @@ flowchart TD
 - **Shared-pool single-line constraint.** On the Free/Pro plan each end user is routed through a different shared-pool number and group creation is unavailable ([ADR 004](004-spectrum-imessage-transport.md)), so the patient and concierge can't share one iMessage group via separate DMs. The dashboard bridge is what makes the concierge reachable to the patient regardless.
 - **`taken_over` stays silent from Eve** because the human's replies now reach the patient directly through the bridge.
 
+## Follow-on
+
+[ADR 011](011-concierge-ai-assist-and-proactive-care.md) builds on this handoff: Eve now drafts a source-grounded suggested reply that prefills the dashboard reply box (concierge AI-assist), the holding-notice latch was made durable, Eve's multi-turn session is persisted so a restart resumes it, and proactive pre-op reminders reuse the outbound send path.
+
 ## Future / production hardening (out of scope)
 
 - The five-stage debounce/batch/cancel/retry inbound pipeline from the Spectrum best-practices skill (durable queue, idempotent sends, carry-forward).
-- Proactive outbound on resume (an automatic "we're all set" message) — the bridge already lets a human send this manually.
 - Fixing Maya's shared-pool line enrollment (a Spectrum-account task, tracked separately).

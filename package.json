@@ -15,6 +15,7 @@
     "eve:build": "pnpm -C eve-concierge run build",
     "transport:terminal": "pnpm --filter @essos/transport run terminal",
     "transport:imessage": "pnpm --filter @essos/transport run imessage",
+    "transport:remind": "pnpm --filter @essos/transport run remind",
     "dashboard:dev": "pnpm --filter @essos/dashboard run dev",
     "typecheck": "pnpm -r run typecheck && pnpm -C eve-concierge run typecheck"
   }

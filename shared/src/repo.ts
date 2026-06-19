@@ -349,6 +349,44 @@ function touchConversation(conversationId: string): void {
     .run(nowIso(), conversationId);
 }
 
+/**
+ * Durable Eve session continuity for a conversation. The transport keeps an
+ * in-memory cache for speed, but persisting `{ sessionId, continuationToken,
+ * turns }` here means a transport restart resumes the same multi-turn Eve
+ * session instead of starting a fresh one. See ADR 010/011.
+ */
+export interface PersistedEveSession {
+  sessionId: string;
+  continuationToken: string;
+  turns: number;
+}
+
+export function getEveSession(conversationId: string): PersistedEveSession | null {
+  const row = getDb()
+    .prepare("select eve_session from conversations where id = ?")
+    .get(conversationId) as { eve_session: string | null } | undefined;
+  if (!row?.eve_session) return null;
+  try {
+    const parsed = JSON.parse(row.eve_session) as Partial<PersistedEveSession>;
+    if (
+      typeof parsed.sessionId === "string" &&
+      typeof parsed.continuationToken === "string" &&
+      typeof parsed.turns === "number"
+    ) {
+      return { sessionId: parsed.sessionId, continuationToken: parsed.continuationToken, turns: parsed.turns };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveEveSession(conversationId: string, session: PersistedEveSession): void {
+  getDb()
+    .prepare("update conversations set eve_session = ? where id = ?")
+    .run(JSON.stringify(session), conversationId);
+}
+
 // ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------
@@ -399,6 +437,41 @@ export function countMessagesByRole(role: MessageRole): number {
     .prepare("select count(*) as n from messages where role = ?")
     .get(role) as { n: number };
   return row.n;
+}
+
+/**
+ * Whether a message tagged `meta_json.kind = <kind>` exists for a conversation,
+ * optionally only counting ones created at or after `sinceIso`. This is the
+ * durable signal behind the one-time AI disclosure and the holding-notice latch
+ * (both survive a transport restart, unlike an in-memory set). See ADR 010/011.
+ */
+export function hasMessageWithMetaKind(
+  conversationId: string,
+  kind: string,
+  sinceIso?: string,
+): boolean {
+  const db = getDb();
+  if (sinceIso) {
+    const row = db
+      .prepare(
+        `select 1 from messages
+         where conversation_id = ?
+           and json_extract(meta_json, '$.kind') = ?
+           and created_at >= ?
+         limit 1`,
+      )
+      .get(conversationId, kind, sinceIso);
+    return row !== undefined;
+  }
+  const row = db
+    .prepare(
+      `select 1 from messages
+       where conversation_id = ?
+         and json_extract(meta_json, '$.kind') = ?
+       limit 1`,
+    )
+    .get(conversationId, kind);
+  return row !== undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +530,10 @@ export function createEscalation(args: {
   reason: EscalationCategory;
   summary: string;
   sourceMessageId?: string | null;
+  /** Optional source-grounded reply Eve drafted for the concierge to review/send. */
+  suggestedReply?: string | null;
+  /** Optional short source labels backing the draft (stored as a JSON array). */
+  suggestedReplySources?: string[] | null;
 }): Escalation {
   const escalation: Escalation = {
     id: newId("esc"),
@@ -470,18 +547,36 @@ export function createEscalation(args: {
     assignee: null,
     created_at: nowIso(),
     resolved_at: null,
+    suggested_reply: args.suggestedReply ?? null,
+    suggested_reply_sources:
+      args.suggestedReplySources && args.suggestedReplySources.length > 0
+        ? JSON.stringify(args.suggestedReplySources)
+        : null,
   };
   getDb()
     .prepare(
       `insert into escalations
         (id, conversation_id, patient_id, level, reason, summary,
-         source_message_id, status, assignee, created_at, resolved_at)
+         source_message_id, status, assignee, created_at, resolved_at,
+         suggested_reply, suggested_reply_sources)
        values
         (@id, @conversation_id, @patient_id, @level, @reason, @summary,
-         @source_message_id, @status, @assignee, @created_at, @resolved_at)`,
+         @source_message_id, @status, @assignee, @created_at, @resolved_at,
+         @suggested_reply, @suggested_reply_sources)`,
     )
     .run(bind(escalation));
   return escalation;
+}
+
+/** Parse the stored JSON `suggested_reply_sources` into a string array (empty when absent). */
+export function parseSuggestedReplySources(escalation: Escalation): string[] {
+  if (!escalation.suggested_reply_sources) return [];
+  try {
+    const parsed = JSON.parse(escalation.suggested_reply_sources) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 export function listEscalations(status?: EscalationStatus): Escalation[] {
