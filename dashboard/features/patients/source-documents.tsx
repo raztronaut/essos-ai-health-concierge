@@ -42,23 +42,31 @@ export function SourceDocuments({
             </TextLink>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="text-right text-[10px] text-meta transition-all duration-200">
+            <span
+              className="text-right text-[10px] text-meta duration-300 ease-out group-hover:-translate-x-2 group-hover:opacity-0 group-hover:blur-[2px]"
+              style={{ transitionProperty: "transform, opacity, filter" }}
+            >
               {humanize(doc.source_status)}
             </span>
-            <div className="pointer-events-none flex max-w-0 items-center gap-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:max-w-[120px] group-hover:opacity-100">
+            <div
+              className="pointer-events-none flex max-w-0 items-center gap-1 overflow-hidden whitespace-nowrap opacity-0 duration-300 ease-out group-hover:pointer-events-auto group-hover:max-w-[120px] group-hover:opacity-100"
+              style={{ transitionProperty: "max-width, opacity" }}
+            >
               <Link
-                className="focus-ring inline-flex items-center justify-center rounded-control border border-border bg-card px-1.5 py-0.5 font-semibold text-[10px] text-ink transition-colors hover:border-secondary/70 hover:bg-surface"
+                className="focus-ring inline-flex scale-90 items-center justify-center rounded-control border border-border bg-card px-1.5 py-0.5 font-semibold text-[10px] text-ink opacity-0 blur-[2px] duration-300 ease-out hover:border-secondary/70 hover:bg-surface group-hover:scale-100 group-hover:opacity-100 group-hover:blur-0"
                 href={`/source-docs/${doc.id}`}
                 rel="noreferrer"
+                style={{ transitionProperty: "transform, opacity, filter" }}
                 target="_blank"
               >
                 Open
               </Link>
               {doc.patient_id ? (
                 <Button
-                  className="px-1.5 py-0.5 text-[10px]"
+                  className="scale-90 px-1.5 py-0.5 text-[10px] opacity-0 blur-[2px] duration-300 ease-out group-hover:scale-100 group-hover:opacity-100 group-hover:blur-0"
                   onClick={() => setDeleting(doc)}
                   size="sm"
+                  style={{ transitionProperty: "transform, opacity, filter" }}
                   variant="ghost"
                 >
                   Remove
@@ -142,22 +150,33 @@ export function SourceDocuments({
                 </TextLink>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-right text-meta transition-all duration-200">
+                <span
+                  className="text-right text-meta duration-300 ease-out group-hover:-translate-x-2 group-hover:opacity-0 group-hover:blur-[2px]"
+                  style={{ transitionProperty: "transform, opacity, filter" }}
+                >
                   {humanize(doc.source_status)}
                 </span>
-                <div className="pointer-events-none flex max-w-0 items-center gap-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:max-w-[140px] group-hover:opacity-100">
+                <div
+                  className="pointer-events-none flex max-w-0 items-center gap-1 overflow-hidden whitespace-nowrap opacity-0 duration-300 ease-out group-hover:pointer-events-auto group-hover:max-w-[140px] group-hover:opacity-100"
+                  style={{ transitionProperty: "max-width, opacity" }}
+                >
                   <Link
-                    className="focus-ring inline-flex items-center justify-center rounded-control border border-border bg-card px-2 py-1 font-semibold text-ink text-xs transition-colors hover:border-secondary/70 hover:bg-surface"
+                    className="focus-ring inline-flex scale-90 items-center justify-center rounded-control border border-border bg-card px-2 py-1 font-semibold text-ink text-xs opacity-0 blur-[2px] duration-300 ease-out hover:border-secondary/70 hover:bg-surface group-hover:scale-100 group-hover:opacity-100 group-hover:blur-0"
                     href={`/source-docs/${doc.id}`}
                     rel="noreferrer"
+                    style={{ transitionProperty: "transform, opacity, filter" }}
                     target="_blank"
                   >
                     Open
                   </Link>
                   {doc.patient_id ? (
                     <Button
+                      className="scale-90 opacity-0 blur-[2px] duration-300 ease-out group-hover:scale-100 group-hover:opacity-100 group-hover:blur-0"
                       onClick={() => setDeleting(doc)}
                       size="sm"
+                      style={{
+                        transitionProperty: "transform, opacity, filter",
+                      }}
                       variant="ghost"
                     >
                       Remove
