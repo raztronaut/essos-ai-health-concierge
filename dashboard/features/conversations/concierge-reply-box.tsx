@@ -8,7 +8,6 @@ import { TextMorph } from "torph/react";
 import { DocIcon } from "@/components/icons";
 import { BorderBeam } from "@/components/motion/border-beam";
 import { Button } from "@/components/ui";
-import { cn } from "@/lib/cn";
 import { useConciergeSignature } from "./use-concierge-signature";
 
 /**
@@ -40,7 +39,6 @@ export function ConciergeReplyBox({
   const [name, setName] = useState(defaultName);
   const nameTouched = useRef(false);
   const [sending, setSending] = useState(false);
-  const [textareaFocused, setTextareaFocused] = useState(false);
   const sendReply = useMutation(api.mutations.sendConciergeReply);
 
   // Prefill the name once the Clerk user resolves, unless the concierge typed.
@@ -77,11 +75,7 @@ export function ConciergeReplyBox({
 
   return (
     <form
-      className={cn(
-        "relative overflow-hidden rounded-card bg-card shadow-border transition-all duration-fast ease-out",
-        textareaFocused &&
-          "shadow-[0_0_0_1px_var(--color-stone-50),0_4px_12px_rgba(0,0,0,0.05)]"
-      )}
+      className="relative overflow-hidden rounded-card bg-card shadow-border transition-all duration-fast ease-out focus-within:shadow-[0_0_0_1px_var(--color-stone-50),0_4px_12px_rgba(0,0,0,0.05)]"
       onSubmit={onSubmit}
     >
       {hasDraft ? (
@@ -121,9 +115,7 @@ export function ConciergeReplyBox({
         className="mt-1.5 w-full resize-y bg-transparent px-4 py-2 text-ink text-sm leading-relaxed outline-none placeholder:text-muted"
         id="concierge-reply"
         name="text"
-        onBlur={() => setTextareaFocused(false)}
         onChange={(event) => setText(event.target.value)}
-        onFocus={() => setTextareaFocused(true)}
         placeholder="Type a message — it's delivered to the patient's iMessage and takes over the thread."
         required
         rows={hasDraft ? 5 : 3}

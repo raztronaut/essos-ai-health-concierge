@@ -46,6 +46,10 @@ body {
   transition: box-shadow var(--duration-fast) var(--ease-out);
 }
 
+.focus-ring:focus {
+  outline: none;
+}
+
 .focus-ring:focus-visible {
   outline: none;
   box-shadow: var(--ring);
