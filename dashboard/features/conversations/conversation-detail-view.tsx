@@ -61,6 +61,14 @@ export function ConversationDetailView({ id }: { id: string }) {
         actions={
           <>
             <AutomationBadge state={conversation.automation_state} />
+            {patient ? (
+              <Link
+                className="focus-ring inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-control border border-border px-3 py-1.5 font-semibold text-ink text-xs transition-colors hover:border-secondary/70 hover:bg-surface"
+                href={`/patients/${patient.id}`}
+              >
+                View profile
+              </Link>
+            ) : null}
             {canResume ? (
               <ResumeAutomationButton conversationId={conversation.id} />
             ) : null}
