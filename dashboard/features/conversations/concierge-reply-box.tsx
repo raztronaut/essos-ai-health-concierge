@@ -6,6 +6,7 @@ import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { clerkEnabled } from "@/app/ConvexClientProvider";
 import { Button, Card } from "@/components/ui";
+import { useDemoIdentity } from "@/features/demo/demo-identity";
 
 /**
  * Lets a concierge reply to the patient directly from the dashboard. The message
@@ -28,7 +29,7 @@ export function ConciergeReplyBox(props: {
   return clerkEnabled ? (
     <ClerkReplyBox {...props} />
   ) : (
-    <ConciergeReplyBoxInner {...props} defaultName="" />
+    <DemoReplyBox {...props} clerkName="" />
   );
 }
 
@@ -38,10 +39,27 @@ function ClerkReplyBox(props: {
   sources?: string[];
 }) {
   const { user } = useUser();
+  return <DemoReplyBox {...props} clerkName={user?.firstName ?? ""} />;
+}
+
+/** Resolves the demo "view as" identity (name + viewAs) on top of the real user. */
+function DemoReplyBox(props: {
+  conversationId: string;
+  suggestedReply?: string | null;
+  sources?: string[];
+  clerkName: string;
+}) {
+  const { viewAs, selected } = useDemoIdentity();
+  const defaultName = selected
+    ? (selected.name.split(" ")[0] ?? props.clerkName)
+    : props.clerkName;
   return (
     <ConciergeReplyBoxInner
-      {...props}
-      defaultName={user?.firstName ?? ""}
+      conversationId={props.conversationId}
+      defaultName={defaultName}
+      sources={props.sources}
+      suggestedReply={props.suggestedReply}
+      viewAs={viewAs}
     />
   );
 }
@@ -51,11 +69,13 @@ function ConciergeReplyBoxInner({
   suggestedReply,
   sources = [],
   defaultName,
+  viewAs,
 }: {
   conversationId: string;
   suggestedReply?: string | null;
   sources?: string[];
   defaultName: string;
+  viewAs: string | null;
 }) {
   const draft = suggestedReply?.trim() ?? "";
   const hasDraft = draft.length > 0;
@@ -80,7 +100,12 @@ function ConciergeReplyBoxInner({
     }
     setSending(true);
     try {
-      await sendReply({ conversationId, text: trimmed, agentName: name.trim() });
+      await sendReply({
+        conversationId,
+        text: trimmed,
+        agentName: name.trim(),
+        viewAs,
+      });
       setText("");
     } finally {
       setSending(false);

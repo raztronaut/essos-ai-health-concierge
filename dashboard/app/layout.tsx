@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ConvexConnectionBanner } from "@/components/layout/convex-connection-banner";
 import { Sidebar } from "@/components/layout/sidebar";
+import { DemoIdentityProvider } from "@/features/demo/demo-identity";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import "./globals.css";
 
@@ -26,14 +28,17 @@ export default function RootLayout({
     <html className={inter.variable} lang="en">
       <body>
         <ConvexClientProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 md:px-10">
-              <div className="mx-auto w-full max-w-[var(--w-content)]">
-                {children}
-              </div>
-            </main>
-          </div>
+          <DemoIdentityProvider>
+            <ConvexConnectionBanner />
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 md:px-10">
+                <div className="mx-auto w-full max-w-[var(--w-content)]">
+                  {children}
+                </div>
+              </main>
+            </div>
+          </DemoIdentityProvider>
         </ConvexClientProvider>
       </body>
     </html>

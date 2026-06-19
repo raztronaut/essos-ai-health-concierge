@@ -1,5 +1,16 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
+import {
+  activityLogDoc,
+  careInstructionDoc,
+  conversationDoc,
+  escalationDoc,
+  escalationLevel,
+  eveSessionValidator,
+  itineraryEventDoc,
+  messageDoc,
+  patientDoc,
+} from "./lib/validators.js";
 import * as Activity from "./model/activity.js";
 import * as Conversations from "./model/conversations.js";
 import * as Escalations from "./model/escalations.js";
@@ -18,42 +29,50 @@ import * as Telemetry from "./model/telemetry.js";
 
 export const getConversationBySpace = internalQuery({
   args: { spaceId: v.string() },
+  returns: v.union(conversationDoc, v.null()),
   handler: async (ctx, { spaceId }) => Conversations.getBySpace(ctx, spaceId),
 });
 
 export const getConversationById = internalQuery({
   args: { id: v.string() },
+  returns: v.union(conversationDoc, v.null()),
   handler: async (ctx, { id }) => Conversations.getByExternalId(ctx, id),
 });
 
 export const listConversations = internalQuery({
   args: {},
+  returns: v.array(conversationDoc),
   handler: async (ctx) => Conversations.list(ctx),
 });
 
 export const getEveSession = internalQuery({
   args: { conversationId: v.string() },
+  returns: v.union(eveSessionValidator, v.null()),
   handler: async (ctx, { conversationId }) =>
     Conversations.getEveSession(ctx, conversationId),
 });
 
 export const getPatientById = internalQuery({
   args: { id: v.string() },
+  returns: v.union(patientDoc, v.null()),
   handler: async (ctx, { id }) => Patients.getByExternalId(ctx, id),
 });
 
 export const getPatientByHandle = internalQuery({
   args: { handle: v.string() },
+  returns: v.union(patientDoc, v.null()),
   handler: async (ctx, { handle }) => Patients.getByHandle(ctx, handle),
 });
 
 export const listPatients = internalQuery({
   args: {},
+  returns: v.array(patientDoc),
   handler: async (ctx) => Patients.list(ctx),
 });
 
 export const listItinerary = internalQuery({
   args: { patientId: v.string() },
+  returns: v.array(itineraryEventDoc),
   handler: async (ctx, { patientId }) => Patients.listItinerary(ctx, patientId),
 });
 
@@ -64,18 +83,21 @@ export const listCareInstructions = internalQuery({
       v.union(v.literal("preop"), v.literal("postop"), v.literal("general"))
     ),
   },
+  returns: v.array(careInstructionDoc),
   handler: async (ctx, { patientId, phase }) =>
     Patients.listCareInstructions(ctx, patientId, phase),
 });
 
 export const listMessages = internalQuery({
   args: { conversationId: v.string() },
+  returns: v.array(messageDoc),
   handler: async (ctx, { conversationId }) =>
     Messages.list(ctx, conversationId),
 });
 
 export const listOpenEscalationsForConversation = internalQuery({
   args: { conversationId: v.string() },
+  returns: v.array(escalationDoc),
   handler: async (ctx, { conversationId }) =>
     Escalations.listOpenForConversation(ctx, conversationId),
 });
@@ -86,12 +108,14 @@ export const hasMessageWithMetaKind = internalQuery({
     kind: v.string(),
     since: v.optional(v.union(v.string(), v.null())),
   },
+  returns: v.boolean(),
   handler: async (ctx, { conversationId, kind, since }) =>
     Messages.hasMessageWithMetaKind(ctx, conversationId, kind, since ?? null),
 });
 
 export const listPendingOutbound = internalQuery({
   args: {},
+  returns: v.array(messageDoc),
   handler: async (ctx) => Messages.listPendingOutbound(ctx),
 });
 
@@ -103,6 +127,7 @@ export const ensureConversation = internalMutation({
     patientId: v.string(),
     channel: v.union(v.literal("terminal"), v.literal("imessage")),
   },
+  returns: conversationDoc,
   handler: async (ctx, args) =>
     Conversations.ensure(ctx, {
       spaceId: args.spaceId,
@@ -125,6 +150,7 @@ export const appendMessage = internalMutation({
     category: v.optional(v.union(v.string(), v.null())),
     meta: v.optional(v.union(v.any(), v.null())),
   },
+  returns: messageDoc,
   handler: async (ctx, args) =>
     Messages.add(ctx, {
       conversationId: args.conversationId,
@@ -146,18 +172,21 @@ export const setAutomationState = internalMutation({
       v.literal("resolved")
     ),
   },
+  returns: v.null(),
   handler: async (ctx, { conversationId, state }) =>
     Conversations.setAutomationState(ctx, conversationId, state),
 });
 
 export const markConciergeTakeover = internalMutation({
   args: { conversationId: v.string(), assignee: v.string() },
+  returns: v.null(),
   handler: async (ctx, { conversationId, assignee }) =>
     Escalations.markConciergeTakeover(ctx, conversationId, assignee),
 });
 
 export const resumeAutomation = internalMutation({
   args: { conversationId: v.string(), actor: v.string() },
+  returns: v.null(),
   handler: async (ctx, { conversationId, actor }) =>
     Escalations.resumeAutomation(ctx, conversationId, actor),
 });
@@ -165,6 +194,7 @@ export const resumeAutomation = internalMutation({
 /** Dev/test cleanup: delete a conversation by space id and its child rows. */
 export const deleteConversationBySpace = internalMutation({
   args: { spaceId: v.string() },
+  returns: v.null(),
   handler: async (ctx, { spaceId }) => {
     const conv = await Conversations.getBySpace(ctx, spaceId);
     if (!conv) {
@@ -200,6 +230,7 @@ export const logActivity = internalMutation({
     actor: v.string(),
     detail: v.optional(v.union(v.string(), v.null())),
   },
+  returns: activityLogDoc,
   handler: async (ctx, args) =>
     Activity.log(ctx, {
       conversationId: args.conversationId,
@@ -221,6 +252,7 @@ export const escalateToHuman = internalMutation({
     suggestedReply: v.optional(v.union(v.string(), v.null())),
     suggestedReplySources: v.optional(v.array(v.string())),
   },
+  returns: v.object({ escalationId: v.string(), level: escalationLevel }),
   handler: async (ctx, args) => {
     const escalation = await Escalations.create(ctx, {
       conversationId: args.conversationId,
@@ -270,14 +302,48 @@ export const saveEveSession = internalMutation({
       turns: v.number(),
     }),
   },
+  returns: v.null(),
   handler: async (ctx, { conversationId, session }) =>
     Conversations.saveEveSession(ctx, conversationId, session),
 });
 
 export const markOutboundDelivered = internalMutation({
   args: { messageId: v.string() },
+  returns: v.null(),
   handler: async (ctx, { messageId }) =>
     Messages.markOutboundDelivered(ctx, messageId),
+});
+
+/** Assign a patient to a concierge (Clerk user id). Used by the team seeder. */
+export const assignPatient = internalMutation({
+  args: {
+    patientId: v.string(),
+    assigneeUserId: v.union(v.string(), v.null()),
+  },
+  returns: v.null(),
+  handler: async (ctx, { patientId, assigneeUserId }) => {
+    await Patients.assign(ctx, patientId, assigneeUserId);
+    return null;
+  },
+});
+
+/**
+ * Find or create a guest patient bound to an iMessage handle (cloned from a
+ * template patient). Lets an unknown sender start chatting with Eve immediately.
+ */
+export const ensureGuestPatient = internalMutation({
+  args: {
+    handle: v.string(),
+    name: v.optional(v.union(v.string(), v.null())),
+    templateId: v.optional(v.string()),
+  },
+  returns: patientDoc,
+  handler: async (ctx, { handle, name, templateId }) =>
+    Patients.ensureGuest(ctx, {
+      handle,
+      name: name ?? null,
+      templateId,
+    }),
 });
 
 export const recordAgentTurn = internalMutation({
@@ -295,6 +361,7 @@ export const recordAgentTurn = internalMutation({
     ok: v.boolean(),
     error: v.optional(v.union(v.string(), v.null())),
   },
+  returns: v.null(),
   handler: async (ctx, args) =>
     Telemetry.record(ctx, {
       conversationId: args.conversationId,

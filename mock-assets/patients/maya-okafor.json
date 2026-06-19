@@ -235,5 +235,48 @@
       "source_status": "verified",
       "answer_policy": "answer_reference"
     }
-  ]
+  ],
+  "seeded_conversation": {
+    "space_id": "demo-space-maya",
+    "channel": "imessage",
+    "automation_state": "paused_for_review",
+    "messages": [
+      {
+        "role": "patient",
+        "author_handle": "+16475719149",
+        "text": "Hi, it's the morning after surgery. There's more swelling under my right eye than I expected and a bit of bruising. Is that normal or should I be worried?",
+        "capture_as": "swelling"
+      },
+      {
+        "role": "agent",
+        "text": "Thank you for letting me know, Maya — I want to make sure you get the right answer on this, so I'm flagging it to the Essos care team now and someone will reply right here shortly. In the meantime, please keep your head elevated and avoid bending forward.",
+        "category": "postop_symptom_or_recovery"
+      }
+    ],
+    "escalation": {
+      "source_message_capture": "swelling",
+      "level": "Med",
+      "reason": "postop_symptom_or_recovery",
+      "summary": "Day-1 post-op rhinoplasty patient reporting swelling and bruising under the right eye; needs clinical confirmation before reassurance.",
+      "suggested_reply": "Hi Maya — thanks for the photo and for flagging this. Some swelling and bruising under the eyes is very common in the first few days after rhinoplasty, but I want the clinic to confirm yours looks as expected, so I've sent your note to your Estetik International care team now. Please keep your head elevated, use the cold compresses as directed, and avoid bending over. I'll follow up here as soon as I hear back — and if anything changes (sudden severe pain, vision changes, or fever), tell me right away.",
+      "suggested_reply_sources": ["maya-okafor-postop-pending-note"]
+    },
+    "activity": [
+      {
+        "event": "escalated",
+        "actor": "eve",
+        "detail": "Med - postop_symptom_or_recovery"
+      },
+      {
+        "event": "drafted",
+        "actor": "eve",
+        "detail": "Eve drafted a suggested reply for the concierge."
+      },
+      {
+        "event": "paused",
+        "actor": "eve",
+        "detail": "Automation paused pending human review."
+      }
+    ]
+  }
 }

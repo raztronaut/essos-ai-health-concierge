@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  OrganizationSwitcher,
   SignedIn,
   SignedOut,
   SignInButton,
@@ -30,25 +31,30 @@ export function ConciergeIdentity() {
 function ClerkIdentity() {
   const { user } = useUser();
   return (
-    <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-2">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-2">
+        <SignedIn>
+          <UserButton afterSignOutUrl="/" />
+          <span className="min-w-0 truncate text-ink text-xs">
+            {user?.fullName ??
+              user?.primaryEmailAddress?.emailAddress ??
+              "Concierge"}
+          </span>
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button
+              className="font-medium text-primary text-xs hover:underline"
+              type="button"
+            >
+              Sign in
+            </button>
+          </SignInButton>
+        </SignedOut>
+      </div>
       <SignedIn>
-        <UserButton afterSignOutUrl="/" />
-        <span className="min-w-0 truncate text-ink text-xs">
-          {user?.fullName ??
-            user?.primaryEmailAddress?.emailAddress ??
-            "Concierge"}
-        </span>
+        <OrganizationSwitcher afterSelectOrganizationUrl="/" hidePersonal />
       </SignedIn>
-      <SignedOut>
-        <SignInButton mode="modal">
-          <button
-            className="font-medium text-primary text-xs hover:underline"
-            type="button"
-          >
-            Sign in
-          </button>
-        </SignInButton>
-      </SignedOut>
     </div>
   );
 }

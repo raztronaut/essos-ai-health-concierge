@@ -1,6 +1,6 @@
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { CONCIERGE_HANDLES } from "./env.js";
+import { CONCIERGE_HANDLES, GUEST_MODE } from "./env.js";
 import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
 import { type TapbackName, toImessageText } from "./imessageText.js";
@@ -69,11 +69,16 @@ async function main(): Promise<void> {
     showTyping: true,
     resolveAuthor: (_space, message, text) => {
       const authorHandle = normalizeHandle(message.sender?.id ?? null);
+      const isConcierge =
+        authorHandle != null && CONCIERGE_HANDLES.includes(authorHandle);
+      const senderName = (message.sender as { name?: string } | null)?.name;
       return {
         authorHandle,
-        isConcierge:
-          authorHandle != null && CONCIERGE_HANDLES.includes(authorHandle),
+        isConcierge,
         text,
+        // Let any unknown sender (not a known concierge) start a guest demo chat.
+        allowGuest: GUEST_MODE && !isConcierge,
+        guestName: senderName ?? null,
       };
     },
     onResult: async (_space, message, result) => {

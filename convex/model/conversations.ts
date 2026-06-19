@@ -45,6 +45,12 @@ export async function ensure(
   }
   const ts = nowIso();
   const id = newId("conv");
+  // Inherit the owning concierge from the patient so a new thread lands in the
+  // right person's queue from the first message.
+  const patient = await ctx.db
+    .query("patients")
+    .withIndex("by_external_id", (q) => q.eq("id", args.patientId))
+    .unique();
   await ctx.db.insert("conversations", {
     id,
     patient_id: args.patientId,
@@ -52,6 +58,7 @@ export async function ensure(
     channel: args.channel,
     automation_state: "active",
     eve_session: null,
+    assignee_user_id: patient?.assignee_user_id ?? null,
     created_at: ts,
     updated_at: ts,
   });

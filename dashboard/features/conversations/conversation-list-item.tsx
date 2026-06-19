@@ -7,8 +7,10 @@ import { ROLE_LABEL } from "@/lib/labels";
 
 export function ConversationListItem({
   conversation,
+  ownerName,
 }: {
   conversation: ConversationSummary;
+  ownerName?: string | null;
 }) {
   const c = conversation;
   return (
@@ -47,8 +49,11 @@ export function ConversationListItem({
               </p>
             ) : null}
           </div>
-          <div className="shrink-0 text-muted text-xs">
-            {formatDateTime(c.updated_at)}
+          <div className="flex shrink-0 flex-col items-end gap-1 text-muted text-xs">
+            <span>{formatDateTime(c.updated_at)}</span>
+            <Badge className={ownerName ? "" : "bg-high-soft text-high"}>
+              {ownerName ?? "Unassigned"}
+            </Badge>
           </div>
         </div>
       </Card>

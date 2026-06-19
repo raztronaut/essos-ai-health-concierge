@@ -127,13 +127,20 @@
       "source_message_capture": "stranded",
       "level": "High",
       "reason": "travel_logistics",
-      "summary": "Patient stranded at IST arrivals; driver not located and not answering phone after 25 minutes."
+      "summary": "Patient stranded at IST arrivals; driver not located and not answering phone after 25 minutes.",
+      "suggested_reply": "Hi Sofia — so sorry for the wait. I'm calling your driver Kerem (+90 532 999 0071) right now and confirming his exact location. Please stay just inside international arrivals near the meeting point with the name boards; I'll text you his position in the next few minutes. If you'd feel more comfortable, grab a seat at the café by exit and I'll bring him to you.",
+      "suggested_reply_sources": ["sofia-lindqvist-airport-pickup-handoff"]
     },
     "activity": [
       {
         "event": "escalated",
         "actor": "eve",
         "detail": "High - travel_logistics"
+      },
+      {
+        "event": "drafted",
+        "actor": "eve",
+        "detail": "Eve drafted a suggested reply for the concierge."
       },
       {
         "event": "paused",

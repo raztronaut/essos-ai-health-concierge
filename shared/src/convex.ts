@@ -78,6 +78,14 @@ export function getPatientByHandle(handle: string): Promise<Patient | null> {
 export function listPatients(): Promise<Patient[]> {
   return call("listPatients");
 }
+/** Find or create a guest patient bound to an iMessage handle (demo onboarding). */
+export function ensureGuestPatient(args: {
+  handle: string;
+  name?: string | null;
+  templateId?: string;
+}): Promise<Patient> {
+  return call("ensureGuestPatient", args);
+}
 
 // --------------------------- Itinerary / care ---------------------------
 
@@ -186,6 +194,14 @@ export function resumeAutomation(
 /** Dev/test cleanup helper. */
 export function deleteConversationBySpace(spaceId: string): Promise<void> {
   return call("deleteConversationBySpace", { spaceId });
+}
+
+/** Assign a patient to a concierge (Clerk user id). Used by the team seeder. */
+export function assignPatient(
+  patientId: string,
+  assigneeUserId: string | null
+): Promise<void> {
+  return call("assignPatient", { patientId, assigneeUserId });
 }
 
 export function escalateToHuman(args: {

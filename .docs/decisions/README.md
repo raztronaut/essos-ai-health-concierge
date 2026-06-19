@@ -21,11 +21,13 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 | [013](013-convex-backend.md) | Convex backend | Reactive Convex store replaces local SQLite; two-path access (Clerk public functions vs service-secret HTTP actions). |
 | [014](014-clerk-auth-and-identity.md) | Clerk auth + identity | Dashboard auth, Organizations-as-team RBAC, real concierge identity, webhook sync. |
 | [015](015-agent-telemetry-and-analytics.md) | Agent telemetry + analytics | Per-turn telemetry capture, `agent_turns`, AI-performance + team views. |
+| [016](016-concierge-ownership-and-rbac.md) | Concierge patient ownership + RBAC | Per-patient owning concierge, role-scoped reads (lead vs member), assignment + self-claim, single-org now / multi-tenant later. |
+| [017](017-guest-onboarding-and-deployment.md) | Guest iMessage onboarding + deployment | Unknown senders auto-provisioned a cloned demo patient; Convex Cloud + Vercel (dashboard, Eve) + persistent transport host. |
 
 ## Grouping
 
 - **Product / safety policy:** 001, 002, 003, 010, 011
-- **Transport:** 004, 008, 010, 011, 012
+- **Transport:** 004, 008, 010, 011, 012, 017
 - **Agent + model:** 005, 006, 009, 011, 012
-- **Dashboard:** 007, 010, 011, 014, 015
-- **Platform (backend / auth / observability):** 013, 014, 015
+- **Dashboard:** 007, 010, 011, 014, 015, 016
+- **Platform (backend / auth / observability):** 013, 014, 015, 016, 017

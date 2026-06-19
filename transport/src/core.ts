@@ -2,6 +2,7 @@ import {
   appendMessage,
   type Channel,
   ensureConversation,
+  ensureGuestPatient,
   getConversationById,
   getConversationBySpace,
   getEveSession,
@@ -70,10 +71,14 @@ export interface InboundResult {
 }
 
 export interface InboundArgs {
+  /** When true, an unknown handle is auto-provisioned a guest demo patient. */
+  allowGuest?: boolean;
   authorHandle: string | null;
   channel: Channel;
   /** Injectable for tests; defaults to the live Eve HTTP client. */
   eveRespond?: EveResponder;
+  /** Display name to seed a new guest patient with (e.g. the sender's name). */
+  guestName?: string | null;
   /** True when the author is a human concierge (their msgs never auto-reply). */
   isConcierge?: boolean;
   /** Patient to bind a brand-new conversation to (terminal demo / fallback). */
@@ -91,9 +96,17 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   const authorHandle = normalizeHandle(args.authorHandle);
   let conversation = await getConversationBySpace(args.spaceId);
   if (!conversation) {
-    const patient =
+    let patient =
       (args.patientId ? await getPatientById(args.patientId) : null) ??
       (authorHandle ? await getPatientByHandle(authorHandle) : null);
+    // Guest onboarding: an unknown sender gets a demo patient cloned from a
+    // template so they can chat with Eve right away. See ADR 017.
+    if (!patient && args.allowGuest && authorHandle && !args.isConcierge) {
+      patient = await ensureGuestPatient({
+        handle: authorHandle,
+        name: args.guestName ?? null,
+      });
+    }
     if (!patient) {
       return { reply: null, reason: "unknown_patient" };
     }

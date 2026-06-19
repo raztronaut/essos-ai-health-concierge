@@ -6,7 +6,11 @@ import { debug } from "./debug.js";
 
 /** Per-inbound author resolution; return `null` to skip the message entirely. */
 export interface ResolvedAuthor {
+  /** When true, an unknown handle is auto-provisioned a guest demo patient. */
+  allowGuest?: boolean;
   authorHandle: string | null;
+  /** Display name to seed a new guest patient with. */
+  guestName?: string | null;
   isConcierge: boolean;
   /** Patient to bind a brand-new conversation to (terminal demo / fallback). */
   patientId?: string;
@@ -68,6 +72,8 @@ export async function runMessageLoop(opts: MessageLoopOptions): Promise<void> {
       text: resolved.text,
       isConcierge: resolved.isConcierge,
       patientId: resolved.patientId,
+      allowGuest: resolved.allowGuest,
+      guestName: resolved.guestName,
       typing: opts.showTyping
         ? { start: () => space.startTyping(), stop: () => space.stopTyping() }
         : undefined,

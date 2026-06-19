@@ -20,10 +20,17 @@ import { nowIso } from "./util.js";
  */
 export interface Concierge {
   clerkId: string | null;
+  /** Team lead (Clerk org:admin): sees all patients and can assign anyone. */
+  isLead: boolean;
   label: string;
   orgId: string | null;
+  role: string;
 }
 
+/**
+ * In the dev fallback (no Clerk identity, `ESSOS_REQUIRE_AUTH` unset) the local
+ * operator is treated as a lead so the full demo dataset is visible.
+ */
 async function resolveConcierge(
   ctx: QueryCtx | MutationCtx
 ): Promise<Concierge> {
@@ -32,7 +39,13 @@ async function resolveConcierge(
     if (process.env.ESSOS_REQUIRE_AUTH) {
       throw new Error("Not authenticated");
     }
-    return { label: "dashboard", clerkId: null, orgId: null };
+    return {
+      label: "dashboard",
+      clerkId: null,
+      orgId: null,
+      role: "org:admin",
+      isLead: true,
+    };
   }
   const label =
     identity.name ?? identity.nickname ?? identity.email ?? identity.subject;
@@ -40,7 +53,59 @@ async function resolveConcierge(
     (identity.orgId as string | undefined) ??
     (identity.org_id as string | undefined) ??
     null;
-  return { label, clerkId: identity.subject, orgId };
+  const role =
+    (identity.orgRole as string | undefined) ??
+    (identity.org_role as string | undefined) ??
+    "org:member";
+  // In demo mode, a signed-in user who hasn't joined an org yet is treated as a
+  // lead so a reviewer who just created an account lands on a populated, full
+  // dashboard (and can use the "view as" switcher to explore each role).
+  const demoLead = Boolean(process.env.ESSOS_DEMO_MODE) && !orgId;
+  return {
+    label,
+    clerkId: identity.subject,
+    orgId,
+    role,
+    isLead: role === "org:admin" || demoLead,
+  };
+}
+
+/** A concierge identity narrowed to what ownership scoping + attribution need. */
+export interface Scope {
+  clerkId: string | null;
+  isLead: boolean;
+  /** Display label stamped on assignee/actor for writes. */
+  label: string;
+}
+
+/**
+ * The scope a read/write should run under. Normally the signed-in concierge,
+ * but in demo mode (`ESSOS_DEMO_MODE`) an optional `viewAsUserId` lets the
+ * dashboard preview (and act) as another concierge — role + name are looked up
+ * from the synced `users` table. Ignored entirely when demo mode is off, so it
+ * can never be used to bypass authorization in production.
+ */
+export async function effectiveScope(
+  ctx: QueryCtx | MutationCtx,
+  concierge: Concierge,
+  viewAsUserId?: string | null
+): Promise<Scope> {
+  if (process.env.ESSOS_DEMO_MODE && viewAsUserId) {
+    const target = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", viewAsUserId))
+      .unique();
+    return {
+      clerkId: viewAsUserId,
+      isLead: target?.role === "org:admin",
+      label: target?.name ?? viewAsUserId,
+    };
+  }
+  return {
+    clerkId: concierge.clerkId,
+    isLead: concierge.isLead,
+    label: concierge.label,
+  };
 }
 
 /** Upsert the signed-in Clerk user into the `users` table (no-op in dev fallback). */

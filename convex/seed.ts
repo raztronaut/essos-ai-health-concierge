@@ -25,21 +25,39 @@ const TABLES = [
   "agent_turns",
 ] as const;
 
+/**
+ * Seeding is destructive and unauthenticated, so it is gated behind
+ * `ESSOS_ALLOW_SEED` on the deployment. Local dev sets it; a hardened
+ * deployment leaves it unset and these mutations refuse to run.
+ */
+function assertSeedAllowed(): void {
+  if (!process.env.ESSOS_ALLOW_SEED) {
+    throw new Error(
+      "Seeding is disabled. Set ESSOS_ALLOW_SEED=1 on the Convex deployment to enable."
+    );
+  }
+}
+
 export const clearAll = mutation({
   args: {},
+  returns: v.null(),
   handler: async (ctx) => {
+    assertSeedAllowed();
     for (const table of TABLES) {
       const rows = await ctx.db.query(table).collect();
       for (const row of rows) {
         await ctx.db.delete(row._id);
       }
     }
+    return null;
   },
 });
 
 export const importAll = mutation({
   args: { data: v.any() },
+  returns: v.object({ ok: v.boolean() }),
   handler: async (ctx, { data }) => {
+    assertSeedAllowed();
     const payload = data as ImportPayload;
 
     for (const patient of payload.patients) {

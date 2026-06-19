@@ -23,6 +23,14 @@ export const TRANSPORT_SECRET =
 
 export const DEMO_PATIENT = process.env.ESSOS_DEMO_PATIENT ?? "pat_maya";
 
+/**
+ * Guest mode: an unknown iMessage sender is auto-provisioned a demo patient
+ * (cloned from `ESSOS_GUEST_TEMPLATE`, default pat_maya) so anyone can text the
+ * line and start chatting with Eve. Off by default; enable for the public demo.
+ */
+export const GUEST_MODE = Boolean(process.env.ESSOS_GUEST_MODE);
+export const GUEST_TEMPLATE = process.env.ESSOS_GUEST_TEMPLATE || undefined;
+
 /** Concierge handles, normalized so detection survives formatting differences. */
 export const CONCIERGE_HANDLES = (process.env.ESSOS_CONCIERGE_HANDLES ?? "")
   .split(",")

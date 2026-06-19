@@ -60,6 +60,26 @@ export async function add(
   return created;
 }
 
+/**
+ * The most recent `limit` messages in a conversation, returned chronologically.
+ * Bounds the reactive dashboard read so a long-lived thread can't grow the
+ * payload without limit (the agent's machine-path `list` stays full).
+ */
+export async function listRecent(
+  ctx: QueryCtx | MutationCtx,
+  conversationId: string,
+  limit = 300
+): Promise<Message[]> {
+  const newestFirst = await ctx.db
+    .query("messages")
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
+    .order("desc")
+    .take(limit);
+  return newestFirst.reverse();
+}
+
 /** The most recent message in a conversation (index-backed, single row). */
 export async function last(
   ctx: QueryCtx | MutationCtx,

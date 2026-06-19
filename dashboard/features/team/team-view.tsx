@@ -36,9 +36,9 @@ export function TeamView() {
     );
   }
 
-  const rows = team.byAssignee
-    .filter((r) => r.assignee !== "unassigned" || r.resolved + r.takenOver > 0)
-    .sort((a, b) => b.resolved - a.resolved);
+  const rows = [...team.members].sort(
+    (a, b) => b.resolved + b.takenOver - (a.resolved + a.takenOver)
+  );
 
   return (
     <div className="space-y-8">
@@ -47,9 +47,13 @@ export function TeamView() {
         title="Team"
       />
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Stat label="Open flags" value={team.totals.open} />
-        <Stat label="Resolved" value={team.totals.resolved} />
+        <Stat label="Unassigned" value={team.totals.unassignedOpen} />
+        <Stat
+          label="Avg first response"
+          value={fmtDuration(team.totals.avgFirstResponseMs)}
+        />
         <Stat
           label="Avg resolution"
           value={fmtDuration(team.totals.avgResolutionMs)}
@@ -63,15 +67,20 @@ export function TeamView() {
       <Card>
         <h2 className="font-semibold text-sm">By concierge</h2>
         {rows.length === 0 ? (
-          <p className="mt-2 text-muted text-sm">No handled escalations yet.</p>
+          <p className="mt-2 text-muted text-sm">
+            No concierge accounts synced yet. With Clerk configured, team
+            members appear here as they sign in (and via the org webhook).
+          </p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-border border-b text-left text-muted text-xs">
                   <th className="py-2 pr-4 font-medium">Concierge</th>
+                  <th className="py-2 pr-4 font-medium">Role</th>
                   <th className="py-2 pr-4 font-medium">Resolved</th>
                   <th className="py-2 pr-4 font-medium">Taken over</th>
+                  <th className="py-2 pr-4 font-medium">First response</th>
                   <th className="py-2 font-medium">Avg resolution</th>
                 </tr>
               </thead>
@@ -79,11 +88,20 @@ export function TeamView() {
                 {rows.map((r) => (
                   <tr
                     className="border-border/60 border-b last:border-0"
-                    key={r.assignee}
+                    key={r.clerkId}
                   >
-                    <td className="py-2 pr-4 text-ink">{r.assignee}</td>
+                    <td className="py-2 pr-4">
+                      <div className="text-ink">{r.name}</div>
+                      <div className="text-muted text-xs">{r.email}</div>
+                    </td>
+                    <td className="py-2 pr-4 text-muted">
+                      {r.role.replace(/^org:/, "")}
+                    </td>
                     <td className="py-2 pr-4">{r.resolved}</td>
                     <td className="py-2 pr-4">{r.takenOver}</td>
+                    <td className="py-2 pr-4">
+                      {fmtDuration(r.avgFirstResponseMs)}
+                    </td>
                     <td className="py-2">{fmtDuration(r.avgResolutionMs)}</td>
                   </tr>
                 ))}
@@ -92,36 +110,6 @@ export function TeamView() {
           </div>
         )}
       </Card>
-
-      {team.members.length > 0 ? (
-        <Card>
-          <h2 className="font-semibold text-sm">Members</h2>
-          <div className="mt-3 space-y-2">
-            {team.members.map((m) => (
-              <div
-                className="flex items-center justify-between border-border/60 border-b py-2 text-sm last:border-0"
-                key={m.clerkId}
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-ink">{m.name}</div>
-                  <div className="truncate text-muted text-xs">{m.email}</div>
-                </div>
-                <div className="flex items-center gap-4 text-muted text-xs">
-                  <span>{m.role.replace(/^org:/, "")}</span>
-                  <span className="text-ink">{m.resolved} resolved</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : (
-        <Card>
-          <p className="text-muted text-sm">
-            No concierge accounts synced yet. With Clerk configured, team
-            members appear here as they sign in (and via the org webhook).
-          </p>
-        </Card>
-      )}
     </div>
   );
 }

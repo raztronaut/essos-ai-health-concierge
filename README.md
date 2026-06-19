@@ -61,9 +61,13 @@ cp .env.example .env
 pnpm setup
 ```
 
-`pnpm setup` runs `pnpm install` + the eve sub-project install + `convex dev --once` (writes `CONVEX_*` to `.env.local`) + builds `@essos/shared` + `pnpm seed:reset` (3 patients, source docs, itineraries, care docs, and a pre-seeded "stranded at arrivals" escalation).
+`pnpm setup` runs `pnpm install` + the eve sub-project install + builds `@essos/shared` + `convex dev --once` (writes `CONVEX_*` to `.env.local`) + `convex env set ESSOS_ALLOW_SEED 1` (seeding is destructive, so it's env-gated) + `pnpm seed:reset` (3 patients, source docs, itineraries, care docs, and a pre-seeded "stranded at arrivals" escalation) + `pnpm seed:team` (a demo concierge team and patient assignments).
 
-**Dashboard auth (optional).** The dashboard runs as a "demo concierge" with no keys. To enable real Clerk auth, put `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` in `dashboard/.env.local` (Next reads env from the dashboard dir), set `CLERK_JWT_ISSUER_DOMAIN` on the Convex deployment (`npx convex env set …`), and add a Clerk JWT template named `convex`. See [ADR 014](.docs/decisions/014-clerk-auth-and-identity.md).
+**Dashboard auth (optional).** The dashboard runs as a "demo concierge" (treated as a team lead) with no keys. To enable real Clerk auth, put `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` in `dashboard/.env.local` (Next reads env from the dashboard dir), set `CLERK_JWT_ISSUER_DOMAIN` on the Convex deployment (`npx convex env set …`), enable Organizations, and add a Clerk JWT template named `convex` that includes org claims (`org_id`, `org_role`). See [ADR 014](.docs/decisions/014-clerk-auth-and-identity.md).
+
+**Demo / test accounts.** Use Clerk's **test instance** (`pk_test_*`/`sk_test_*`). Clerk's built-in test identifiers need no real inbox — sign up/in with an email like `you+clerk_test@example.com` (or phone `+15555550100`), verification code `424242`. `pnpm seed:team` provisions a demo org with a lead + two concierges (`lead+clerk_test@essos.dev`, `ada+clerk_test@essos.dev`, `ben+clerk_test@essos.dev`) and assigns patients to them — when `CLERK_SECRET_KEY` is set it creates the real Clerk users + org via the Backend API, otherwise it populates Convex only. Harden the backend with `npx convex env set ESSOS_REQUIRE_AUTH true` once you've verified a real signed-in session.
+
+**Concierge ownership & roles.** Patients have an owning concierge. A **team lead** (`org:admin`) sees all patients and can (re)assign anyone; a **concierge** (`org:member`) sees their assigned patients plus the unassigned queue and can claim unassigned patients. The escalation queue is shared so anyone can triage. See [ADR 016](.docs/decisions/016-concierge-ownership-and-rbac.md).
 
 ## Run
 
@@ -109,6 +113,22 @@ On top of that handoff, the concierge gets an **AI-assist**: every escalation ar
 
 Eve is tuned to read like a person texting, not a bot. iMessage has no rich text, so the transport runs every outbound message through a Markdown→plaintext normalizer (no stray `**bold**` or `# headers` ever reach a patient), and the agent instructions add a poke-inspired texting voice: match the patient's length, drop robotic filler, mirror emoji, and use native tapbacks for light acknowledgements. See [ADR 012](.docs/decisions/012-imessage-plaintext-and-voice.md).
 
+## Demo guide — accounts & roles
+
+The dashboard ships in **demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1` for the UI, `ESSOS_DEMO_MODE=1` on the Convex deployment), which makes showing off roles effortless:
+
+- **"View as" switcher** (sidebar): flip between **You / Team lead (Tess) / Ada / Ben** and the whole dashboard instantly re-scopes — a lead sees every patient and the full team view; a concierge sees only their assigned patients + the shared unassigned queue, and gets a "Claim" button instead of the lead's assignment dropdown. No sign-out needed; reads *and* actions are attributed to the selected concierge.
+- **One account is enough.** A reviewer signs up (see below), lands as a lead on the fully-seeded dashboard, and uses the switcher to walk through every role.
+
+**For the Essos reviewers — create an account:**
+
+1. Open the dashboard and click **Sign in → Sign up**. The Clerk **test** instance accepts test identifiers with no real inbox: use an email like `you+clerk_test@example.com` (or phone `+15555550100`), verification code **`424242`**. A real email works too.
+2. You'll land on the populated dashboard as a **team lead** (demo mode treats new sign-ups as leads). Explore Overview, Conversations, AI performance, and Team, then use the **View as** switcher to see what a concierge sees.
+
+**Seeded demo team** (created by `pnpm seed:team`): `lead+clerk_test@essos.dev` (lead), `ada+clerk_test@essos.dev` and `ben+clerk_test@essos.dev` (concierges); Maya → Ada, Diego → Ben, Sofia left unassigned so the queue is visible. When `CLERK_SECRET_KEY` is set the seeder also creates these as real Clerk accounts + an org; otherwise they exist in Convex for the switcher.
+
+> **`ESSOS_REQUIRE_AUTH`** is unrelated to the demo — it's the production "fail-closed" switch that makes the Convex backend *reject* any unauthenticated request. Leave it **off** for the demo (sign-in is still enforced by the dashboard middleware); only set it once you're hardening for production.
+
 ## Live iMessage runbook
 
 1. Provision a Spectrum Cloud iMessage line (app.photon.codes); set `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET` in `.env`.
@@ -120,6 +140,29 @@ Eve is tuned to read like a person texting, not a bot. iMessage has no rich text
 Eve and the transport here run on the same host, so Eve's `localDev()` route auth admits the transport with no extra config. If you deploy Eve to a non-loopback host, set the same `ESSOS_TRANSPORT_SECRET` on both so the transport authenticates ([ADR 009](.docs/decisions/009-agent-hardening-and-transport-auth.md)).
 
 See [ADR 008](.docs/decisions/008-transport-eve-streaming-contract.md) for the transport/streaming details.
+
+## Let reviewers chat with Eve (guest mode)
+
+So anyone can test the live agent without you binding their phone number to a patient, the transport supports **guest onboarding**: set `ESSOS_GUEST_MODE=1` and the first time an unknown handle texts the Spectrum line, a demo patient is auto-created for them (cloned from a template patient — `ESSOS_GUEST_TEMPLATE`, default `pat_maya` — so Eve has a real itinerary + care plan to answer from). Each guest is an isolated conversation in the dashboard; disclosure, grounded answers, escalation, and handoff all work. Just share the number: "text +1XXX to try the Essos concierge." Clear guests later with `pnpm seed:reset` (dev) or by pruning `pat_guest_*` ids. See [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md).
+
+## Deploy (Convex Cloud + Vercel)
+
+Four pieces: **Convex** (data/functions), **Eve** and the **dashboard** on Vercel, and the **Spectrum transport** on a persistent host (it holds a live connection + delivery loops, so it can't be serverless). See [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md) for the topology.
+
+1. **Convex Cloud.** `npx convex deploy` (creates/uses a prod deployment). Set its env:
+   ```bash
+   npx convex env set CLERK_JWT_ISSUER_DOMAIN https://<app>.clerk.accounts.dev
+   npx convex env set CONVEX_SERVICE_SECRET <strong-random>   # machine-path guard
+   npx convex env set ESSOS_DEMO_MODE 1                        # demo switcher + lead onboarding
+   npx convex env set ESSOS_GUEST_MODE 1                       # allow guest provisioning
+   npx convex env set ESSOS_ALLOW_SEED 1 && pnpm seed:reset && pnpm seed:team && npx convex env set ESSOS_ALLOW_SEED ""   # seed once, then lock
+   ```
+   Note the prod `CONVEX_URL` (`https://<name>.convex.cloud`) and `CONVEX_SITE_URL` (`https://<name>.convex.site`).
+2. **Eve on Vercel** (separate project, root `eve-concierge/`). Build with the eve Vercel target; set `ANTHROPIC_API_KEY`, `ESSOS_AGENT_MODEL`, and `ESSOS_TRANSPORT_SECRET`. Note its URL → `EVE_BASE_URL`.
+3. **Dashboard on Vercel** (root directory `dashboard/`). Because `@essos/shared` is a workspace package, the build must compile it first — set the Build Command to `pnpm --filter @essos/shared build && pnpm --filter @essos/dashboard build` (Install Command `pnpm install` at the repo root). Env: `NEXT_PUBLIC_CONVEX_URL` (prod `.convex.cloud`), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_ISSUER_DOMAIN`, `NEXT_PUBLIC_ESSOS_DEMO_MODE=1`, and (for the org webhook) `CONVEX_SITE_URL`, `CONVEX_SERVICE_SECRET`, `CLERK_WEBHOOK_SIGNING_SECRET`. Point the Clerk webhook at `https://<dashboard>/api/webhooks`.
+4. **Transport on a persistent host** (Railway / Render / Fly / a small VM): run `pnpm --filter @essos/transport run imessage`. Env: `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`, `ESSOS_GUEST_MODE=1`, and `ESSOS_CONCIERGE_HANDLES`.
+
+Once live, harden with `npx convex env set ESSOS_REQUIRE_AUTH true` after confirming a real signed-in dashboard session.
 
 ## Assumptions
 
@@ -151,6 +194,8 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [013](.docs/decisions/013-convex-backend.md) | Convex backend (supersedes local SQLite) |
 | [014](.docs/decisions/014-clerk-auth-and-identity.md) | Clerk auth + concierge identity |
 | [015](.docs/decisions/015-agent-telemetry-and-analytics.md) | Agent telemetry + analytics |
+| [016](.docs/decisions/016-concierge-ownership-and-rbac.md) | Concierge patient ownership + RBAC |
+| [017](.docs/decisions/017-guest-onboarding-and-deployment.md) | Guest iMessage onboarding + deployment topology |
 
 ## Package docs
 

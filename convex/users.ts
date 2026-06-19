@@ -2,12 +2,21 @@ import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import { conciergeQuery } from "./lib/functions.js";
 import { nowIso } from "./lib/util.js";
+import { userDoc } from "./lib/validators.js";
 
-/** List concierge profiles (optionally scoped to an org) for team views. */
+/**
+ * List concierge profiles for team views, scoped to the caller's own Clerk org
+ * (never a client-supplied org). In the local demo (no org on the identity) all
+ * synced users are returned.
+ */
 export const listConcierges = conciergeQuery({
-  args: { orgId: v.optional(v.union(v.string(), v.null())) },
-  handler: async (ctx, { orgId }) => {
-    if (orgId) {
+  args: {},
+  returns: v.array(userDoc),
+  handler: async (ctx) => {
+    // Demo mode shows the whole seeded team so the "view as" switcher is always
+    // populated, even for a reviewer who hasn't joined the demo org.
+    const orgId = ctx.concierge.orgId;
+    if (orgId && !process.env.ESSOS_DEMO_MODE) {
       return await ctx.db
         .query("users")
         .withIndex("by_org", (q) => q.eq("orgId", orgId))
@@ -28,6 +37,7 @@ export const upsertClerkUser = internalMutation({
     orgId: v.optional(v.union(v.string(), v.null())),
     role: v.optional(v.string()),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")
@@ -66,6 +76,7 @@ export const setClerkMembership = internalMutation({
     orgId: v.union(v.string(), v.null()),
     role: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { clerkId, orgId, role }) => {
     const existing = await ctx.db
       .query("users")
@@ -80,6 +91,7 @@ export const setClerkMembership = internalMutation({
 
 export const deleteClerkUser = internalMutation({
   args: { clerkId: v.string() },
+  returns: v.null(),
   handler: async (ctx, { clerkId }) => {
     const existing = await ctx.db
       .query("users")

@@ -14,7 +14,6 @@ body {
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
   /*
    * System-wide defense against unbreakable tokens (user IDs, URLs, emails,
    * hashes) overflowing their container. `overflow-wrap` is inherited, so this
@@ -25,6 +24,7 @@ body {
    * overflow). Opt out per element with `white-space: nowrap` or `truncate`.
    */
   overflow-wrap: anywhere;
+  text-rendering: optimizeLegibility;
 }
 
 /* Serif display face for headings; tightened tracking for a sharper masthead. */

@@ -32,6 +32,7 @@ export async function create(
     source_message_id: args.sourceMessageId ?? null,
     status: "open",
     assignee: null,
+    assignee_user_id: null,
     created_at: nowIso(),
     resolved_at: null,
     suggested_reply: args.suggestedReply ?? null,
@@ -48,6 +49,16 @@ export async function create(
     throw new Error("Failed to create escalation");
   }
   return created;
+}
+
+export async function getByExternalId(
+  ctx: QueryCtx | MutationCtx,
+  id: string
+): Promise<Escalation | null> {
+  return await ctx.db
+    .query("escalations")
+    .withIndex("by_external_id", (q) => q.eq("id", id))
+    .unique();
 }
 
 export async function listByStatus(
@@ -88,7 +99,8 @@ export async function listOpenForConversation(
 export async function takeOver(
   ctx: MutationCtx,
   id: string,
-  assignee: string
+  assignee: string,
+  assigneeUserId?: string | null
 ): Promise<void> {
   const esc = await ctx.db
     .query("escalations")
@@ -97,13 +109,18 @@ export async function takeOver(
   if (!esc) {
     return;
   }
-  await ctx.db.patch(esc._id, { status: "taken_over", assignee });
+  await ctx.db.patch(esc._id, {
+    status: "taken_over",
+    assignee,
+    assignee_user_id: assigneeUserId ?? esc.assignee_user_id ?? null,
+  });
 }
 
 export async function resolve(
   ctx: MutationCtx,
   id: string,
-  assignee?: string
+  assignee?: string,
+  assigneeUserId?: string | null
 ): Promise<void> {
   const esc = await ctx.db
     .query("escalations")
@@ -116,6 +133,7 @@ export async function resolve(
     status: "resolved",
     resolved_at: nowIso(),
     assignee: assignee ?? esc.assignee,
+    assignee_user_id: assigneeUserId ?? esc.assignee_user_id ?? null,
   });
 }
 
@@ -123,11 +141,12 @@ export async function resolve(
 export async function markConciergeTakeover(
   ctx: MutationCtx,
   conversationId: string,
-  assignee: string
+  assignee: string,
+  assigneeUserId?: string | null
 ): Promise<void> {
   const open = await listOpenForConversation(ctx, conversationId);
   for (const escalation of open) {
-    await takeOver(ctx, escalation.id, assignee);
+    await takeOver(ctx, escalation.id, assignee, assigneeUserId);
   }
   await Conversations.setAutomationState(ctx, conversationId, "taken_over");
   await Activity.log(ctx, {

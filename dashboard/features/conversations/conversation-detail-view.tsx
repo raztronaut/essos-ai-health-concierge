@@ -6,6 +6,7 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { AutomationBadge } from "@/components/badges";
 import { Card, PageHeader } from "@/components/ui";
+import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { ActivityLog } from "./activity-log";
 import { ConciergeReplyBox } from "./concierge-reply-box";
 import { ResumeAutomationButton } from "./escalation-actions";
@@ -14,16 +15,24 @@ import { MessageThread } from "./message-thread";
 import { PatientSummaryCard } from "./patient-summary-card";
 
 export function ConversationDetailView({ id }: { id: string }) {
-  const conversation = useQuery(api.queries.getConversation, { id });
+  const { viewAs } = useDemoIdentity();
+  const conversation = useQuery(api.queries.getConversation, { id, viewAs });
   const patient = useQuery(
     api.queries.getPatient,
-    conversation ? { id: conversation.patient_id } : "skip"
+    conversation ? { id: conversation.patient_id, viewAs } : "skip"
   );
-  const messages = useQuery(api.queries.listMessages, { conversationId: id });
+  const messages = useQuery(api.queries.listMessages, {
+    conversationId: id,
+    viewAs,
+  });
   const escalations = useQuery(api.queries.listEscalationsForConversation, {
     conversationId: id,
+    viewAs,
   });
-  const activity = useQuery(api.queries.listActivity, { conversationId: id });
+  const activity = useQuery(api.queries.listActivity, {
+    conversationId: id,
+    viewAs,
+  });
 
   if (conversation === undefined) {
     return <p className="text-muted text-sm">Loading conversation…</p>;

@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { EscalationStatus } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { Button } from "@/components/ui";
+import { useDemoIdentity } from "@/features/demo/demo-identity";
 
 /** Take-over / resolve actions for a single escalation (queue + thread). */
 export function EscalationActions({
@@ -15,20 +16,24 @@ export function EscalationActions({
   conversationId: string;
   status: EscalationStatus;
 }) {
+  const { viewAs } = useDemoIdentity();
   const takeOver = useMutation(api.mutations.takeOverConversation);
   const resolve = useMutation(api.mutations.resolveEscalation);
   return (
     <div className="flex shrink-0 items-center gap-2">
       {status === "open" ? (
         <Button
-          onClick={() => void takeOver({ conversationId })}
+          onClick={() => void takeOver({ conversationId, viewAs })}
           variant="ghost"
         >
           Take over
         </Button>
       ) : null}
       {status === "resolved" ? null : (
-        <Button onClick={() => void resolve({ escalationId })} variant="ok">
+        <Button
+          onClick={() => void resolve({ escalationId, viewAs })}
+          variant="ok"
+        >
           Resolve
         </Button>
       )}
@@ -42,9 +47,13 @@ export function ResumeAutomationButton({
 }: {
   conversationId: string;
 }) {
+  const { viewAs } = useDemoIdentity();
   const resume = useMutation(api.mutations.resumeAutomation);
   return (
-    <Button onClick={() => void resume({ conversationId })} variant="primary">
+    <Button
+      onClick={() => void resume({ conversationId, viewAs })}
+      variant="primary"
+    >
       Resume Eve
     </Button>
   );

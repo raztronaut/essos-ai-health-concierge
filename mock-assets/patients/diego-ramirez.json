@@ -120,5 +120,58 @@
       "source_status": "personalized_pending",
       "answer_policy": "escalate_only"
     }
-  ]
+  ],
+  "seeded_conversation": {
+    "space_id": "demo-space-diego",
+    "channel": "imessage",
+    "automation_state": "taken_over",
+    "messages": [
+      {
+        "role": "patient",
+        "author_handle": "+16472215381",
+        "text": "Quick question before I fly out — I usually take a low-dose aspirin every morning for my heart. Should I keep taking it before the transplant or stop?",
+        "capture_as": "aspirin"
+      },
+      {
+        "role": "agent",
+        "text": "Great that you checked, Diego — because that's a medication decision tied to your heart, I don't want to guess. I've flagged it to the Essos care team so they can confirm the right plan with your clinic, and someone will reply right here shortly.",
+        "category": "medication_decision"
+      },
+      {
+        "role": "concierge",
+        "author_handle": "Ben Okafor",
+        "text": "Hi Diego, this is Ben from the Essos care team. I checked with Clinica Capilar Pacifico: please pause the daily low-dose aspirin starting today (7 days before is ideal, but as many days as you can get matters) since it can increase bleeding during graft extraction. Don't change anything else, and if you have any cardiac concerns about pausing it, let me know and we'll loop in your prescribing doctor. You're all set otherwise — safe travels tomorrow!"
+      }
+    ],
+    "escalation": {
+      "source_message_capture": "aspirin",
+      "level": "High",
+      "reason": "medication_decision",
+      "summary": "Patient on daily low-dose aspirin (cardiac) asking whether to continue before FUE transplant; requires clinical confirmation.",
+      "suggested_reply": "Hi Diego — thanks for checking before traveling. Because this involves your heart medication, I've confirmed the plan with your clinic rather than guessing: they generally ask patients to pause low-dose aspirin about 7 days before the procedure to reduce bleeding during graft extraction. Please don't make any changes until we confirm with your prescribing doctor as well — I'm coordinating that now and will come right back to you here.",
+      "suggested_reply_sources": ["diego-ramirez-hair-transplant-preop-packet"]
+    },
+    "activity": [
+      {
+        "event": "escalated",
+        "actor": "eve",
+        "detail": "High - medication_decision"
+      },
+      {
+        "event": "drafted",
+        "actor": "eve",
+        "detail": "Eve drafted a suggested reply for the concierge."
+      },
+      {
+        "event": "paused",
+        "actor": "eve",
+        "detail": "Automation paused pending human review."
+      },
+      {
+        "event": "taken_over",
+        "actor": "Ben Okafor",
+        "detail": "Human concierge replied during an open escalation."
+      }
+    ]
+  }
 }

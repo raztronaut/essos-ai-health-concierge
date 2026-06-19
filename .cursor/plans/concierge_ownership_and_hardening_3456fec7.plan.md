@@ -4,28 +4,28 @@ overview: "Finish and harden the Convex+Clerk replatform: close the convex-revie
 todos:
   - id: convex-correctness
     content: Add returns validators to all Convex functions; bound listMessages with pagination; fix overviewStats to query open escalations directly; reduce instead of Math.max spread in teamPerformance
-    status: pending
+    status: completed
   - id: ownership-schema
     content: Add assignee_user_id (+ by_assignee index) to patients/conversations/escalations; extend Concierge ctx with clerkId/role/isLead
-    status: pending
+    status: completed
   - id: ownership-scoping
     content: Scope public list/detail reads by assignee+unassigned for members (all for leads); add assignPatient mutation + self-claim; stamp assignee_user_id on takeover/resolve; keep machine path unscoped
-    status: pending
+    status: completed
   - id: rbac-ui
     content: Enable Clerk Orgs; add OrganizationSwitcher, has()/<Show> gating, My-patients/All toggle, lead-only controls; ensure org claims in convex JWT template; flip ESSOS_REQUIRE_AUTH after verifying real sign-in
-    status: pending
+    status: completed
   - id: team-metrics
     content: Rekey teamPerformance on escalations.assignee_user_id joined to users; add time-to-first-response; surface owner/load on cards
-    status: pending
+    status: completed
   - id: test-dev-accounts
     content: Seed demo Org + 2-3 concierge members via Backend API and assign sample patients (pnpm seed:team); env-guard seed mutations; document Clerk test identifiers and dev/prod Convex split; add CLERK_TESTING_TOKEN slot
-    status: pending
+    status: completed
   - id: clean-startup
     content: Make pnpm dev wait for Convex :3210, add dev-preflight script + dashboard connection banner, and a single documented entrypoint in README
-    status: pending
+    status: completed
   - id: docs-review
     content: Update README + finish ADRs 012-014 (assigned-ownership + single-org); re-run convex-reviewer; keep typecheck/build green
-    status: pending
+    status: completed
 isProject: false
 ---
 

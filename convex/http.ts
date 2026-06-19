@@ -48,6 +48,8 @@ const MUTATIONS: Record<string, AnyRef> = {
   saveEveSession: internal.machine.saveEveSession,
   markOutboundDelivered: internal.machine.markOutboundDelivered,
   recordAgentTurn: internal.machine.recordAgentTurn,
+  assignPatient: internal.machine.assignPatient,
+  ensureGuestPatient: internal.machine.ensureGuestPatient,
   upsertClerkUser: internal.users.upsertClerkUser,
   setClerkMembership: internal.users.setClerkMembership,
   deleteClerkUser: internal.users.deleteClerkUser,
