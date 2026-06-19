@@ -1,6 +1,6 @@
 # Essos AI Health Tourism Concierge
 
-A text-based AI concierge for health-tourism patients. **Eve** (the agent brain) joins the patient and concierge in their iMessage group chat, answers low-severity questions autonomously at any hour, and escalates anything higher-stakes to a human — with a Next.js admin dashboard as the single pane of glass over every conversation, escalation, and bit of agent telemetry.
+A text-based AI concierge for health-tourism patients. **Eve** (the agent brain) joins the patient and concierge in their iMessage group chat, answers low-severity questions autonomously at any hour, and escalates anything higher-stakes to a human — with a Next.js admin dashboard as the single pane of glass over every conversation, escalation, patient record, and bit of agent telemetry.
 
 Beachhead: rhinoplasty and hair-transplant patients in Turkey and Mexico.
 
@@ -26,7 +26,7 @@ flowchart LR
 ```
 
 - **Eve = brain**, **Spectrum = transport**, connected over Eve's HTTP session API so the transport stays swappable (terminal for dev, iMessage for the live demo).
-- **Convex** is the reactive source of truth ([ADR 013](.docs/decisions/013-convex-backend.md)). The dashboard subscribes with `useQuery` so escalations and telemetry update live; the agent + transport reach Convex through a service-secret HTTP action (no Clerk identity), while the dashboard uses Clerk-authenticated functions ([ADR 014](.docs/decisions/014-clerk-auth-and-identity.md)).
+- **Convex** is the reactive source of truth ([ADR 013](.docs/decisions/013-convex-backend.md)). The dashboard subscribes with `useQuery` so escalations and telemetry update live; concierges also manage patient records (roster + profile/itinerary/care/doc CRUD) from the dashboard ([ADR 020](.docs/decisions/020-patient-management-crud.md)). The agent + transport reach Convex through a service-secret HTTP action (no Clerk identity), while the dashboard uses Clerk-authenticated functions ([ADR 014](.docs/decisions/014-clerk-auth-and-identity.md)).
 - Eve answers low-severity messages in-thread and, on escalation, pings the human team and raises a flag in the dashboard while pausing automation for that conversation. Every turn is logged as telemetry for the AI-performance and team views ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
 - The **Slack bridge** brings escalations and the handoff actions (reply, take over, resolve, `/essos` lookups, App Home) into where the concierge team already works — reducing cognitive switching to address team workload/burnout, while every action still flows through the same Convex state ([ADR 019](.docs/decisions/019-slack-concierge-bridge.md)).
 
@@ -37,7 +37,7 @@ AI Health Tourism Concierge/
 ├── convex/          Convex backend — schema, functions (public + machine path), seed, http (workspace root)
 ├── shared/          @essos/shared — types, taxonomy, places, Convex machine-path client (workspace)
 ├── transport/       @essos/transport — Spectrum bridge (terminal + iMessage) (workspace)
-├── dashboard/       @essos/dashboard — Next.js admin dashboard (Convex + Clerk) (workspace)
+├── dashboard/       @essos/dashboard — Next.js admin dashboard (Convex + Clerk; conversations, patient records, telemetry) (workspace)
 ├── slack/           @essos/slack — Slack concierge bridge (Socket Mode) (workspace)
 ├── eve-concierge/   Eve agent app (isolated sub-project; authored surface in agent/)
 ├── scripts/         seed runner (parses mock-assets/ -> Convex import mutation)
@@ -161,16 +161,17 @@ So anyone can test the live agent without you binding their phone number to a pa
 
 ## Deploy (live)
 
-The trial is deployed across **Convex Cloud** (data), **Vercel** (dashboard), and **Railway** (Eve agent + Spectrum transport). Topology and rationale: [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md).
+The trial is deployed across **Convex Cloud** (data), **Vercel** (dashboard), and **Railway** (Eve agent + Spectrum transport + Slack bridge). Topology and rationale: [ADR 017](.docs/decisions/017-guest-onboarding-and-deployment.md). Pushes to `main` auto-deploy all three platforms via [GitHub Actions](.github/workflows/deploy.yml) ([ADR 018](.docs/decisions/018-deploy-pipeline-cicd.md)); the manual steps below still work as a fallback.
 
 | Piece | Where | URL |
 | --- | --- | --- |
 | Dashboard | Vercel | https://essos-dashboard.vercel.app |
 | Eve agent | Railway (web) | https://eve-production-0971.up.railway.app |
 | Spectrum transport | Railway (worker) | — (connects out to Spectrum, Eve, Convex) |
+| Slack bridge | Railway (worker) | — (Socket Mode; opt-in via `SLACK_ENABLED`, [ADR 019](.docs/decisions/019-slack-concierge-bridge.md)) |
 | Data / functions | Convex Cloud | `intent-hare-36` (`.convex.cloud` reactive, `.convex.site` machine) |
 
-Eve + the transport live on Railway because both are long-running Node services that share the repo and the `@essos/shared` build (the transport also holds a live Spectrum connection, so it can't be serverless). The dashboard is a natural Vercel fit.
+Eve, the transport, and the Slack bridge live on Railway because all three are long-running Node services that share the repo and the `@essos/shared` build (the transport holds a live Spectrum connection and Slack holds a Socket Mode websocket, so neither can be serverless). The dashboard is a natural Vercel fit.
 
 ### Reproduce
 
@@ -186,7 +187,7 @@ Eve + the transport live on Railway because both are long-running Node services 
    CONVEX_SITE_URL=https://<name>.convex.site CONVEX_SERVICE_SECRET=<same> pnpm seed:team
    npx convex env remove ESSOS_ALLOW_SEED
    ```
-2. **Railway (Eve + transport)** — `railway init`, then two services. Because the build needs the whole monorepo (Eve links `@essos/shared`), each service is built from a Dockerfile selected with the `RAILWAY_DOCKERFILE_PATH` variable (`deploy/eve.Dockerfile`, `deploy/transport.Dockerfile`) rather than Railpack auto-detection.
+2. **Railway (Eve + transport + Slack)** — `railway init`, then one service per worker. Because the build needs the whole monorepo (Eve links `@essos/shared`), each service is built from a Dockerfile selected with the `RAILWAY_DOCKERFILE_PATH` variable (`deploy/eve.Dockerfile`, `deploy/transport.Dockerfile`, `deploy/slack.Dockerfile`) rather than Railpack auto-detection. The Slack worker is opt-in: it needs `SLACK_ENABLED=1`, `SLACK_APP_TOKEN`, `SLACK_BOT_TOKEN`, `SLACK_ESCALATION_CHANNEL_ID` (plus the shared `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`), and `SLACK_ENABLED=1` on the Convex deployment so the backend enqueues. See [slack/README.md](slack/README.md) for the Slack app scopes.
    - `eve` (web): `railway domain` for a public URL; vars `ANTHROPIC_API_KEY`, `ESSOS_AGENT_MODEL`, `ESSOS_TRANSPORT_SECRET`. Eve binds `$PORT`; the public URL is protected by the transport bearer.
    - `transport` (worker, no domain): `CONVEX_SITE_URL` (prod `.convex.site`) + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` (the eve public URL) + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`, `ESSOS_GUEST_MODE=1`, `ESSOS_CONCIERGE_HANDLES`.
 3. **Dashboard (Vercel)** — link the project at the **repo root** with **Root Directory = `dashboard`** (so the whole monorepo uploads); [dashboard/vercel.json](dashboard/vercel.json) sets the build to compile `@essos/shared` first. Env: `NEXT_PUBLIC_CONVEX_URL` (prod `.convex.cloud`), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_ISSUER_DOMAIN`, `NEXT_PUBLIC_ESSOS_DEMO_MODE=1`, plus `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET` (and `CLERK_WEBHOOK_SIGNING_SECRET` if you wire the webhook). `vercel deploy --prod` from the repo root.
@@ -232,6 +233,7 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [017](.docs/decisions/017-guest-onboarding-and-deployment.md) | Guest iMessage onboarding + deployment topology |
 | [018](.docs/decisions/018-deploy-pipeline-cicd.md) | Deploy pipeline (CI/CD) |
 | [019](.docs/decisions/019-slack-concierge-bridge.md) | Slack concierge bridge |
+| [020](.docs/decisions/020-patient-management-crud.md) | Patient management CRUD |
 
 ## Package docs
 

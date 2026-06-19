@@ -1,6 +1,6 @@
 # @essos/dashboard
 
-The admin dashboard — the single pane of glass over every conversation, escalation, and bit of agent telemetry. Next.js (App Router) + React + Tailwind v4. It is **reactive**: it subscribes to Convex queries with `useQuery`, so escalations, messages, and telemetry update live with no reload. Auth is **Clerk** (optional for local demos). See [ADR 013](../.docs/decisions/013-convex-backend.md), [ADR 014](../.docs/decisions/014-clerk-auth-and-identity.md), and [ADR 015](../.docs/decisions/015-agent-telemetry-and-analytics.md).
+The admin dashboard — the single pane of glass over every conversation, escalation, patient record, and bit of agent telemetry. Next.js (App Router) + React + Tailwind v4. It is **reactive**: it subscribes to Convex queries with `useQuery`, so escalations, messages, and telemetry update live with no reload. Auth is **Clerk** (optional for local demos). See [ADR 013](../.docs/decisions/013-convex-backend.md), [ADR 014](../.docs/decisions/014-clerk-auth-and-identity.md), [ADR 015](../.docs/decisions/015-agent-telemetry-and-analytics.md), and [ADR 020](../.docs/decisions/020-patient-management-crud.md).
 
 ## Views
 
@@ -9,16 +9,17 @@ The admin dashboard — the single pane of glass over every conversation, escala
 | `/` | Overview: live telemetry tiles + the live open-escalation queue. |
 | `/conversations` | All conversations, most-recent first, with automation-state and open-flag badges. |
 | `/conversations/[id]` | Thread view: messages, patient summary, per-thread flags + actions, AI-draft reply box, activity log. |
-| `/patients/[id]` | Itinerary timeline, care instructions, and source documents. |
+| `/patients` | Patient roster: sortable, filterable list with search, procedure/assignee filters, lead assign / member claim, and create-patient flow. |
+| `/patients/[id]` | Editable patient profile: itinerary timeline, care instructions, and source documents (add/edit/delete via dialog forms; document upload). |
 | `/performance` | AI observability: autonomy rate, latency p50/p95, tool usage, tokens, draft quality, daily volume. |
 | `/team` | Concierge performance: resolution time, queue age, per-rep workload (scoped to the active Clerk org). |
-| `/source-docs/[id]` | Route handler serving the seeded PDF inline (Markdown fallback, then 404). |
+| `/source-docs/[id]` | Route handler serving seeded PDFs and uploaded documents from Convex storage inline (Markdown fallback for fixture docs, then 404). |
 | `/api/webhooks` | Clerk → Convex user/org sync webhook (svix-verified). |
 
 ## Data + auth
 
 - **Reads** are `useQuery(api.queries.*)` in client view components (e.g. `features/overview/overview-view.tsx`), so the UI is reactive. Server page files stay thin (metadata + render the client view).
-- **Writes** are `useMutation(api.mutations.*)` — `resolveEscalation`, `takeOverConversation`, `resumeAutomation`, `sendConciergeReply`. The signed-in concierge is resolved server-side by Convex and stamped as the actor (no more hardcoded `ASSIGNEE`).
+- **Writes** are `useMutation(api.mutations.*)` — handoff: `resolveEscalation`, `takeOverConversation`, `resumeAutomation`, `sendConciergeReply`; ownership: `assignPatient`; patient records: `upsertPatient`, `deletePatient`, `upsertItineraryEvent`, `deleteItineraryEvent`, `upsertCareInstruction`, `deleteCareInstruction`; documents: `generateUploadUrl`, `createSourceDocument`, `deleteSourceDocument`. The signed-in concierge is resolved server-side by Convex and stamped as the actor (no more hardcoded `ASSIGNEE`). Eve reads the same patient tables via the machine path, so dashboard edits are reflected on its next tool call. See [ADR 020](../.docs/decisions/020-patient-management-crud.md).
 - **Auth**: `app/ConvexClientProvider.tsx` wires `ConvexProviderWithClerk` when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set, otherwise a plain `ConvexProvider` (dev "demo concierge"). `proxy.ts` (Next 16's middleware) is a **passthrough** that attaches Clerk context without walling the app; server-side `ESSOS_REQUIRE_AUTH` on Convex is the fail-closed control. See [ADR 014](../.docs/decisions/014-clerk-auth-and-identity.md).
 - **Demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1`): adds the sidebar "view as" role switcher and treats org-less sign-ins as leads, so reviewers land on a populated dashboard. See [ADR 016](../.docs/decisions/016-concierge-ownership-and-rbac.md).
 

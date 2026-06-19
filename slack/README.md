@@ -22,7 +22,7 @@ The [dashboard](../dashboard/README.md) is the deep console; Slack is the low-fr
 
 ## Flows
 
-**Convex → Slack (alerts/progress).** `escalateToHuman`, key `Activity.log` events (`taken_over`/`resolved`/`resumed`/`reminder`), and patient replies enqueue rows in `slack_outbox` (no-op unless `SLACK_ENABLED`). The poll loop drains them: an `escalation` row posts a card and creates the thread; `activity`/`patient_message` rows post into the existing thread.
+**Convex → Slack (alerts/progress).** `escalateToHuman`, key `Activity.log` events (`taken_over`/`resolved`/`resumed`/`reminder`), and patient replies enqueue rows in `slack_outbox` (no-op unless `SLACK_ENABLED`). The poll loop drains them: an `escalation` row posts a card and creates the thread; `activity`/`patient_message` rows post into the existing escalation thread. When `SLACK_ACTIVITY_CHANNEL_ID` is set, `activity` rows are also mirrored to that channel as a compact operational feed (with a dashboard deep link); patient messages stay in the escalation thread only.
 
 **Slack → Convex (reply/actions/commands).** Thread replies and buttons map back to a conversation via `slack_links`, resolve the Slack user to a concierge, and call machine mutations. A reply is signed, enqueued as a `pending` outbound `concierge` message, and the thread is marked taken over — so the transport's existing loop delivers it to the patient (same path as a dashboard reply). Slash commands and App Home call read functions and render Block Kit.
 
@@ -55,7 +55,7 @@ Create an app at api.slack.com:
 
 ## Env
 
-Repo-root `.env` (never commit secrets): `SLACK_APP_TOKEN`, `SLACK_BOT_TOKEN`, `SLACK_ESCALATION_CHANNEL_ID`, and `SLACK_ENABLED=1` (also set it on the Convex deployment — `npx convex env set SLACK_ENABLED 1` — so the backend enqueues). Optional: `ESSOS_DASHBOARD_URL` (default `http://localhost:4000`) for "Open in dashboard" links, `SLACK_SLASH_COMMAND` (default `/essos`).
+Repo-root `.env` (never commit secrets): `SLACK_APP_TOKEN`, `SLACK_BOT_TOKEN`, `SLACK_ESCALATION_CHANNEL_ID`, and `SLACK_ENABLED=1` (also set it on the Convex deployment — `npx convex env set SLACK_ENABLED 1` — so the backend enqueues). Optional: `SLACK_ACTIVITY_CHANNEL_ID` (e.g. `#activity`) for a compact lifecycle feed separate from the escalation channel; `ESSOS_DASHBOARD_URL` (default `http://localhost:4000`) for "Open in dashboard" links, `SLACK_SLASH_COMMAND` (default `/essos`).
 
 ## Deploy
 

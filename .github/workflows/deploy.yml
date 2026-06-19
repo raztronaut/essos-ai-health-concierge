@@ -19,6 +19,7 @@
 # (e.g. if Railway already auto-deploys from GitHub):
 #   RAILWAY_EVE_SERVICE        the Railway service name for the Eve agent
 #   RAILWAY_TRANSPORT_SERVICE  the Railway service name for the Spectrum transport
+#   RAILWAY_SLACK_SERVICE      the Railway service name for the Slack bridge (optional)
 
 name: Deploy (production)
 
@@ -91,5 +92,12 @@ jobs:
 
       - name: Redeploy Spectrum transport
         run: railway up --service "${{ vars.RAILWAY_TRANSPORT_SERVICE }}" --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Optional Slack concierge bridge; only runs once RAILWAY_SLACK_SERVICE is set.
+      - name: Redeploy Slack bridge
+        if: ${{ vars.RAILWAY_SLACK_SERVICE != '' }}
+        run: railway up --service "${{ vars.RAILWAY_SLACK_SERVICE }}" --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
