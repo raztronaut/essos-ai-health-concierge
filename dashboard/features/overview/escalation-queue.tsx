@@ -25,10 +25,10 @@ export function EscalationQueue({
 
   return (
     <section className="space-y-3">
-      <h2 className="font-semibold text-lg">Escalation queue</h2>
+      <h2 className="text-balance font-semibold text-lg">Escalation queue</h2>
       {queue.length === 0 ? (
         <Card>
-          <p className="text-muted text-sm">
+          <p className="text-pretty text-muted text-sm">
             No open flags. Eve is handling everything autonomously right now.
           </p>
         </Card>

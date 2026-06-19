@@ -24,7 +24,7 @@ export function ConversationListItem({
               </span>
               <AutomationBadge state={c.automation_state} />
               {c.open_flags > 0 ? (
-                <Badge className="bg-high-soft text-high" dot>
+                <Badge className="bg-high-soft text-high tabular-nums" dot>
                   {c.open_flags} open flag{c.open_flags > 1 ? "s" : ""}
                 </Badge>
               ) : null}

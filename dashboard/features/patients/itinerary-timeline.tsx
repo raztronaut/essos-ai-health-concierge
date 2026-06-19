@@ -88,7 +88,7 @@ export function ItineraryTimeline({
                       </div>
                     </div>
                     {event.detail ? (
-                      <p className="mt-1 text-ink/80 text-sm leading-relaxed">{event.detail}</p>
+                      <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">{event.detail}</p>
                     ) : null}
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-meta">
                       {event.location ? <span>{event.location}</span> : null}

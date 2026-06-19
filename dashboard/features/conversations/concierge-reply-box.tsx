@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { TextMorph } from "torph/react";
 import { Button } from "@/components/ui";
 import { DocIcon } from "@/components/icons";
+import { BorderBeam } from "@/components/motion/border-beam";
 import { useConciergeSignature } from "./use-concierge-signature";
 
 /**
@@ -76,9 +77,12 @@ export function ConciergeReplyBox({
 
   return (
     <form
-      className="overflow-hidden rounded-card border border-border bg-card shadow-card transition-shadow duration-fast ease-out focus-within:border-transparent focus-within:[box-shadow:var(--ring)]"
+      className="relative overflow-hidden rounded-card border border-border bg-card shadow-card transition-shadow duration-fast ease-out focus-within:border-transparent focus-within:[box-shadow:var(--ring)]"
       onSubmit={onSubmit}
     >
+      {hasDraft ? (
+        <BorderBeam radius={12} size={220} strength={0.5} tone="colorful" />
+      ) : null}
       <div className="flex items-center justify-between gap-2 px-4 pt-3.5">
         <label
           className="block font-semibold text-ink text-sm"

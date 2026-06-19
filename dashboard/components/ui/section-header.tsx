@@ -21,7 +21,7 @@ export function SectionHeader({
         className
       )}
     >
-      <h2 className="font-semibold text-lg text-ink">{title}</h2>
+      <h2 className="text-balance font-semibold text-lg text-ink">{title}</h2>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );

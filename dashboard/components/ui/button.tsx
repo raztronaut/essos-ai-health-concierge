@@ -21,16 +21,20 @@ export function Button({
   variant = "ghost",
   size = "md",
   type = "button",
+  static: isStatic = false,
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** Disable the tactile scale-on-press when the motion would be distracting. */
+  static?: boolean;
 }) {
   return (
     <button
       className={cn(
-        "focus-ring inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-control font-semibold transition-[transform,background-color,opacity,box-shadow] duration-fast ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
+        "focus-ring inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-control font-semibold transition-[transform,background-color,opacity,box-shadow] duration-fast ease-out disabled:pointer-events-none disabled:opacity-50",
+        !isStatic && "active:not-disabled:scale-[0.96]",
         BUTTON_SIZES[size],
         BUTTON_VARIANTS[variant],
         className

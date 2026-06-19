@@ -18,7 +18,7 @@ export function PatientRow({ row }: { row: Row }) {
                 {patient.name}
               </span>
               {openFlags > 0 ? (
-                <Badge className="bg-high-soft text-high" dot>
+                <Badge className="bg-high-soft text-high tabular-nums" dot>
                   {openFlags} open
                 </Badge>
               ) : null}
@@ -32,7 +32,7 @@ export function PatientRow({ row }: { row: Row }) {
             <div className="font-medium text-ink text-sm">
               {assignee?.name ?? "Unassigned"}
             </div>
-            <div className="text-muted text-xs">
+            <div className="text-muted text-xs tabular-nums">
               {conversationCount} conv ·{" "}
               {lastActivity ? formatRelativeTime(lastActivity) : "no activity"}
             </div>

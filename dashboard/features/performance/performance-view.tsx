@@ -99,7 +99,9 @@ export function PerformanceView() {
         </Card>
 
         <Card>
-          <h2 className="font-semibold text-sm">Concierge AI-assist drafts</h2>
+          <h2 className="text-balance font-semibold text-sm">
+            Concierge AI-assist drafts
+          </h2>
           <div className="mt-3 grid grid-cols-2 gap-4">
             <Stat label="Escalations" value={perf.drafts.escalations} />
             <Stat
@@ -108,7 +110,7 @@ export function PerformanceView() {
               value={perf.drafts.withDraft}
             />
           </div>
-          <p className="mt-3 text-muted text-xs">
+          <p className="mt-3 text-pretty text-muted text-xs">
             Eve drafts a source-grounded reply on escalation; the concierge
             reviews and sends it. A higher draft rate means less cold-start
             typing for the team.
@@ -135,7 +137,7 @@ export function PerformanceView() {
                     value={t.turns}
                   />
                 </div>
-                <span className="truncate text-meta">
+                <span className="truncate text-meta tabular-nums">
                   {t.day.slice(5)}
                 </span>
               </div>

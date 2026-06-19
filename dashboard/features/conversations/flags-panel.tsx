@@ -18,7 +18,7 @@ export function FlagsPanel({
     <Card>
       <h2 className="font-semibold text-sm">Flags</h2>
       {unansweredCount > 0 ? (
-        <p className="mt-2 rounded-control bg-high-soft px-2 py-1 font-medium text-high text-xs">
+        <p className="mt-2 text-pretty rounded-control bg-high-soft px-2 py-1 font-medium text-high text-xs tabular-nums">
           {unansweredCount} patient message{unansweredCount > 1 ? "s" : ""}{" "}
           awaiting a reply
         </p>

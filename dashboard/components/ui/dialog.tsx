@@ -135,9 +135,9 @@ export function Dialog({
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
           >
             <div className="mb-4">
-              <h2 className="serif text-2xl" id={titleId}>{title}</h2>
+              <h2 className="serif text-balance text-2xl" id={titleId}>{title}</h2>
               {description ? (
-                <p className="mt-1 text-muted text-sm" id={descId}>{description}</p>
+                <p className="mt-1 text-pretty text-muted text-sm" id={descId}>{description}</p>
               ) : null}
             </div>
             {children}

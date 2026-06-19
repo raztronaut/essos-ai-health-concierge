@@ -19,7 +19,7 @@ export function EmptyState({
         className
       )}
     >
-      <p className="text-muted text-sm leading-relaxed">{message}</p>
+      <p className="text-pretty text-muted text-sm leading-relaxed">{message}</p>
     </Card>
   );
 }

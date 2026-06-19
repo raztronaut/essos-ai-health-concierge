@@ -121,6 +121,12 @@
       "skillPath": "SKILL.md",
       "computedHash": "4c40274c0ef6ea2d77a9cc5b8fa4c7abd8442b3fb93917b7a8ccc46fcc517c48"
     },
+    "make-interfaces-feel-better": {
+      "source": "jakubkrehel/make-interfaces-feel-better",
+      "sourceType": "github",
+      "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
+      "computedHash": "54b6e221bbe4e2d1a8461c3f9ecabe69daf891f964e9ee5e699c323daa018f2e"
+    },
     "review-animations": {
       "source": "emilkowalski/skill",
       "sourceType": "github",

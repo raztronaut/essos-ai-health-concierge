@@ -83,12 +83,14 @@ export function TeamView() {
                     <td className="py-2 pr-4 text-muted">
                       {stripOrgPrefix(r.role)}
                     </td>
-                    <td className="py-2 pr-4">{r.resolved}</td>
-                    <td className="py-2 pr-4">{r.takenOver}</td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-4 tabular-nums">{r.resolved}</td>
+                    <td className="py-2 pr-4 tabular-nums">{r.takenOver}</td>
+                    <td className="py-2 pr-4 tabular-nums">
                       {formatDuration(r.avgFirstResponseMs)}
                     </td>
-                    <td className="py-2">{formatDuration(r.avgResolutionMs)}</td>
+                    <td className="py-2 tabular-nums">
+                      {formatDuration(r.avgResolutionMs)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

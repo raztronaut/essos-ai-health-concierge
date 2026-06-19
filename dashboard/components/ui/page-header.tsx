@@ -18,9 +18,9 @@ export function PageHeader({
     <header className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
       <div className="min-w-0">
         {eyebrow ? <div className="mb-1">{eyebrow}</div> : null}
-        <h1 className="serif text-4xl">{title}</h1>
+        <h1 className="serif text-balance text-4xl">{title}</h1>
         {subtitle ? (
-          <p className="mt-1 text-muted text-sm">{subtitle}</p>
+          <p className="mt-1 text-pretty text-muted text-sm">{subtitle}</p>
         ) : null}
       </div>
       {actions ? (

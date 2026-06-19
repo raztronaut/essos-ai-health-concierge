@@ -29,7 +29,7 @@ export function CareRow({
           </Button>
         </div>
       </div>
-      <p className="mt-1 text-ink/80 text-sm leading-relaxed">{doc.body}</p>
+      <p className="mt-1 text-pretty text-ink/80 text-sm leading-relaxed">{doc.body}</p>
       <div className="mt-1 text-meta">
         {humanize(doc.source_status)}
       </div>

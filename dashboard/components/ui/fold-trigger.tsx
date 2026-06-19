@@ -27,7 +27,7 @@ export function FoldTrigger({
         onClick={onToggle}
         variant="ghost"
         size="sm"
-        className="text-muted hover:text-ink font-semibold flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-control transition-all"
+          className="text-muted hover:text-ink font-semibold flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-control"
       >
         <span>
           {expanded ? "Show less" : `Show ${count} more ${label}`}

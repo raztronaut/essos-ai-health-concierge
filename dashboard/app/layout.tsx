@@ -51,7 +51,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      className={`${repro.variable} ${reproMono.variable} ${psTimes.variable}`}
+      className={`${repro.variable} ${reproMono.variable} ${psTimes.variable} antialiased`}
       lang="en"
     >
       <body>

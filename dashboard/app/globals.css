@@ -144,3 +144,28 @@ body {
   outline: none;
   box-shadow: none;
 }
+
+/*
+ * Cross-browser, GPU-accelerated border mask for BorderBeam.
+ * Uses a double-gradient mask with xor/exclude compositing to clip
+ * the moving glow strictly to the border width, preventing any center bleed.
+ */
+.border-beam-mask {
+  position: absolute;
+  inset: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: inherit;
+  pointer-events: none;
+
+  /* Standard mask (Chrome/Firefox/Edge) */
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-clip: padding-box, border-box;
+  mask-composite: exclude;
+
+  /* WebKit mask (Safari & WebKit-based iOS/macOS browsers) */
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-clip: padding-box, border-box;
+  -webkit-mask-composite: xor;
+}
+

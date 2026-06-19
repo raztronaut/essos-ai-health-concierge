@@ -21,7 +21,9 @@ export function Stat({
         <TextMorph>{String(value)}</TextMorph>
       </div>
       <div className="mt-1 font-medium text-ink/80 text-sm">{label}</div>
-      {hint ? <div className="mt-0.5 text-muted text-xs">{hint}</div> : null}
+      {hint ? (
+        <div className="mt-0.5 text-muted text-xs tabular-nums">{hint}</div>
+      ) : null}
     </Card>
   );
 }
