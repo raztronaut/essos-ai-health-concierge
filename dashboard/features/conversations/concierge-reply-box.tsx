@@ -126,7 +126,7 @@ export function ConciergeReplyBox({
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <input
             aria-label="Your name"
-            className="focus-ring min-w-0 max-w-[12rem] flex-1 rounded-control border border-border bg-card px-2.5 py-1 text-ink text-xs transition-colors duration-fast ease-out placeholder:text-muted hover:border-secondary/70"
+            className="focus-ring min-w-0 max-w-[12rem] flex-1 rounded-control border border-border bg-card px-2.5 py-1 text-ink text-xs outline-none transition-colors duration-fast ease-out placeholder:text-muted hover:border-secondary/70 focus:border-secondary/70"
             id="signature-name"
             name="agentName"
             onChange={(event) => {
