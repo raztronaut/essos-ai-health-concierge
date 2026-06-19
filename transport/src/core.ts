@@ -48,12 +48,11 @@ const HOLDING_NOTICE_HIGH =
  * duty. Gated durably via a `meta.kind = "disclosure"` message so it survives a
  * transport restart and only ever fires once per conversation.
  */
-function buildDisclosure(patient: Patient): string {
-  const firstName = patient.name.split(/\s+/)[0] ?? patient.name;
+function buildDisclosure(_patient: Patient): string {
   return (
-    `Hi ${firstName} — this is Essos's AI concierge assistant. I can help with your ` +
-    "itinerary, logistics, and travel questions any time, and our human care team is " +
-    "on this thread too. For anything medical, a person always steps in."
+    "Just so you know — you're chatting with Essos's AI concierge assistant. I can help " +
+    "with your itinerary, logistics, and travel questions any time, and our human care " +
+    "team is on this thread too. For anything medical, a person always steps in."
   );
 }
 
