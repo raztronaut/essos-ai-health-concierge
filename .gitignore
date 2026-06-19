@@ -18,6 +18,17 @@ build/
 .turbo/
 *.tsbuildinfo
 
+# Eve agent build/runtime artifacts
+.eve/
+.output/
+
+# Local SQLite data store
+.data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # IDE (keep .cursor/plans; ignore local editor state)
 .idea/
 *.swp

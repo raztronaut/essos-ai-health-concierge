@@ -1,0 +1,21 @@
+{
+  "name": "essos-concierge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Essos AI Health Tourism Concierge — work trial MVP (Eve agent + Spectrum iMessage transport + Next.js admin dashboard)",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "assets:generate": "node mock-assets/scripts/run_generate_pdfs.mjs",
+    "seed": "pnpm --filter @essos/shared run seed",
+    "seed:reset": "pnpm --filter @essos/shared run seed:reset",
+    "eve:dev": "pnpm -C eve-concierge run dev",
+    "eve:build": "pnpm -C eve-concierge run build",
+    "transport:terminal": "pnpm --filter @essos/transport run terminal",
+    "transport:imessage": "pnpm --filter @essos/transport run imessage",
+    "dashboard:dev": "pnpm --filter @essos/dashboard run dev",
+    "typecheck": "pnpm -r run typecheck && pnpm -C eve-concierge run typecheck"
+  }
+}

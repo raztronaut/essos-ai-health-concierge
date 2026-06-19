@@ -1,0 +1,7 @@
+# Note: `agent/` is an isolated Eve sub-project with its own lockfile and
+# pinned beta deps (ai, nitro). It is intentionally NOT part of this workspace
+# to avoid hoisting conflicts; it depends on @essos/shared via a file: link.
+packages:
+  - shared
+  - transport
+  - dashboard
