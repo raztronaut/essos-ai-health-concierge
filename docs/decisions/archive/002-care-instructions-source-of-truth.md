@@ -29,7 +29,7 @@ create table care_instructions (
 );
 ```
 
-`source_document_id` links an instruction back to the `source_documents` row it was derived from (the PDF/Markdown packet surfaced in the dashboard); see the live schema in [shared/src/db.ts](../../shared/src/db.ts).
+`source_document_id` links an instruction back to the `source_documents` row it was derived from (the PDF/Markdown packet surfaced in the dashboard); see the live schema in [shared/src/db.ts](../../../shared/src/db.ts).
 
 ## Answer Policy
 

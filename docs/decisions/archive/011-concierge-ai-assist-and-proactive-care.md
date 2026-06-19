@@ -18,21 +18,21 @@ This is a product-led pass: the brief asks for a single pane of glass with trip 
 
 ### AI-assist draft
 
-- Schema: two nullable columns on `escalations` — `suggested_reply` and `suggested_reply_sources` (a JSON array of short labels) — added to [shared/src/db.ts](../../shared/src/db.ts), [shared/src/types.ts](../../shared/src/types.ts), and `createEscalation` ([shared/src/repo.ts](../../shared/src/repo.ts)), with a `parseSuggestedReplySources` helper. Typed columns (not `messages.meta_json`) because the draft belongs to the escalation and maps 1:1 onto a future Convex `escalations` document.
-- Tool: `escalate_to_human` ([eve-concierge/agent/tools/escalate_to_human.ts](../../eve-concierge/agent/tools/escalate_to_human.ts)) gains optional `suggested_reply` + `suggested_reply_sources` inputs and logs a `drafted` activity event. [instructions.md](../../eve-concierge/agent/instructions.md) tells Eve to ground the draft only in profile/itinerary/`answer_reference` care docs and never to put medical advice in it.
-- UI: [concierge-reply-box.tsx](../../dashboard/features/conversations/concierge-reply-box.tsx) (now a small client component) prefills the textarea with the draft, shows the source chips and an "AI-suggested — review before sending" badge, and offers a Clear. Sending is unchanged: it composes the signature, enqueues outbound, and marks `taken_over`. The flags panel and overview queue show an "AI draft ready" hint.
+- Schema: two nullable columns on `escalations` — `suggested_reply` and `suggested_reply_sources` (a JSON array of short labels) — added to [shared/src/db.ts](../../../shared/src/db.ts), [shared/src/types.ts](../../../shared/src/types.ts), and `createEscalation` ([shared/src/repo.ts](../../../shared/src/repo.ts)), with a `parseSuggestedReplySources` helper. Typed columns (not `messages.meta_json`) because the draft belongs to the escalation and maps 1:1 onto a future Convex `escalations` document.
+- Tool: `escalate_to_human` ([eve-concierge/agent/tools/escalate_to_human.ts](../../../eve-concierge/agent/tools/escalate_to_human.ts)) gains optional `suggested_reply` + `suggested_reply_sources` inputs and logs a `drafted` activity event. [instructions.md](../../../eve-concierge/agent/instructions.md) tells Eve to ground the draft only in profile/itinerary/`answer_reference` care docs and never to put medical advice in it.
+- UI: [concierge-reply-box.tsx](../../../dashboard/features/conversations/concierge-reply-box.tsx) (now a small client component) prefills the textarea with the draft, shows the source chips and an "AI-suggested — review before sending" badge, and offers a Clear. Sending is unchanged: it composes the signature, enqueues outbound, and marks `taken_over`. The flags panel and overview queue show an "AI draft ready" hint.
 
 ### Disclosure, clarifying questions, reminders
 
-- Disclosure is emitted in [transport/src/core.ts](../../transport/src/core.ts) on Eve's first reply, gated durably by a `meta.kind = "disclosure"` message so it fires exactly once and survives restarts.
+- Disclosure is emitted in [transport/src/core.ts](../../../transport/src/core.ts) on Eve's first reply, gated durably by a `meta.kind = "disclosure"` message so it fires exactly once and survives restarts.
 - Clarifying questions are an instruction-level allowance (a brief natural-text question fits this turn-based iMessage transport, with the built-in `ask_question` tool also available) — no code change in the tool surface.
-- Reminders live in [transport/src/reminders.ts](../../transport/src/reminders.ts): an hourly sweep (`startReminderLoop`, wired into [transport/src/imessage.ts](../../transport/src/imessage.ts)) finds a procedure within ~18h and sends a reminder quoting the verified pre-op packet, deduped via a `meta.kind = "reminder"` message and delivered through the existing `resolveSpace`/`space.send` path. A one-shot `pnpm transport:remind` (`--patient <id>`) fires it on demand for demos.
+- Reminders live in [transport/src/reminders.ts](../../../transport/src/reminders.ts): an hourly sweep (`startReminderLoop`, wired into [transport/src/imessage.ts](../../../transport/src/imessage.ts)) finds a procedure within ~18h and sends a reminder quoting the verified pre-op packet, deduped via a `meta.kind = "reminder"` message and delivered through the existing `resolveSpace`/`space.send` path. A one-shot `pnpm transport:remind` (`--patient <id>`) fires it on demand for demos.
 
 eve `schedules` are root-only and hand off to an eve channel, but patient delivery lives in the transport/Spectrum layer, so the scheduler lives there too. The reminder text is deterministic and source-grounded (not free-LLM) so a proactive health message can never drift off-policy.
 
 ### Durable reliability
 
-- The holding-notice latch reads `hasMessageWithMetaKind(conversationId, "handoff_holding", sinceEscalationCreatedAt)` instead of an in-memory `Set` ([transport/src/core.ts](../../transport/src/core.ts)).
+- The holding-notice latch reads `hasMessageWithMetaKind(conversationId, "handoff_holding", sinceEscalationCreatedAt)` instead of an in-memory `Set` ([transport/src/core.ts](../../../transport/src/core.ts)).
 - Eve's session `{ sessionId, continuationToken, turns }` is persisted to a new `conversations.eve_session` column via `saveEveSession` / `getEveSession`, with the in-memory map kept as a fast read-through.
 
 ## Forward note (Clerk + Convex)

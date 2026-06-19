@@ -1,44 +1,36 @@
 # @essos/transport
 
-The Spectrum transport bridge. It connects an iMessage (or terminal) group chat to the Eve agent: it consumes inbound messages, resolves the patient/conversation, calls Eve's HTTP session API, and posts Eve's reply back into the thread. Eve and Spectrum stay decoupled over HTTP so the transport is swappable. See [ADR 004](../.docs/decisions/004-spectrum-imessage-transport.md) and [ADR 008](../.docs/decisions/008-transport-eve-streaming-contract.md).
+The Spectrum transport bridge. It connects an iMessage (or terminal) group chat to the Eve agent: it consumes inbound messages, resolves the patient/conversation, calls Eve's HTTP session API, and posts Eve's reply back into the thread. Eve and Spectrum stay decoupled over HTTP so the transport is swappable. See [ADR 004](../docs/decisions/archive/004-spectrum-imessage-transport.md) and [ADR 008](../docs/decisions/archive/008-transport-eve-streaming-contract.md).
 
 ## Files
 
 | File | Role |
 | --- | --- |
-| `src/core.ts` | `handleInbound` — provider-agnostic inbound state machine (resolve patient, handoff rules, call Eve, record reply). |
-| `src/runLoop.ts` | `runMessageLoop` — the shared inbound loop both entrypoints use (skip outbound/non-text, dispatch, typing). |
+| `src/pipeline.ts` | The five-stage inbound orchestrator: debounce → flush → mark-read/typing → generate → paced, crash-safe send (in-process timers + `AbortController`, durable in Convex). See [ADR 023](../docs/decisions/archive/023-spectrum-inbound-pipeline.md). |
+| `src/core.ts` | `generateTurn`/`handleInbound` — provider-agnostic turn logic (resolve patient, handoff rules, disclosure latch, call Eve, telemetry). |
 | `src/eveClient.ts` | Eve HTTP client: create/continue session + parse the ndjson stream. Pure `reduceEveEvents`/`splitNdjson` are unit-tested. |
-| `src/context.ts` | Builds the trusted `<<ESSOS_CONTEXT>>` block prepended to each turn. |
+| `src/context.ts` | Builds the trusted `<<ESSOS_CONTEXT>>` block (incl. policy overrides + per-patient memory) prepended to each turn. |
+| `src/outbound.ts` | Drains pending dashboard/Slack concierge replies + reminders to the patient space. |
+| `src/imessageText.ts` | `toImessageText` — strips Markdown to iMessage-safe plaintext on every outbound send; extracts `[[react: …]]` tapbacks. Unit-tested. |
 | `src/handles.ts` | `normalizeHandle` — canonicalize phone/email handles for patient + concierge matching. |
-| `src/terminal.ts` | Terminal provider entrypoint (play the patient locally). |
-| `src/imessage.ts` | Spectrum Cloud iMessage provider entrypoint. |
-| `src/contentText.ts` | Normalizes inbound Spectrum message content to text. |
-| `src/imessageText.ts` | `toImessageText` — strips Markdown to iMessage-safe plaintext on every outbound send and extracts `[[react: ...]]` tapback tokens. Unit-tested. |
-| `src/debug.ts` | `ESSOS_DEBUG`-gated logging. |
-| `src/env.ts` | Loads the repo-root `.env`; exposes `EVE_BASE_URL`, `TRANSPORT_SECRET`, `DEMO_PATIENT`, `CONCIERGE_HANDLES`. |
-| `src/smoke.ts` | Deterministic end-to-end test of the core + DB + handoff rules (no live model); cleans up its rows. |
-| `src/eveClient.test.ts` | Fixture tests for the ndjson reducer + line-splitter (`pnpm --filter @essos/transport test`). |
+| `src/terminal.ts` / `src/imessage.ts` | Provider entrypoints (local TUI / Spectrum Cloud iMessage). |
+| `src/health.ts` | Stream watchdog + optional `GET /healthz` so a dead connection is loud, not silent. |
+| `src/reminders.ts` | Hourly proactive pre-op reminder sweep (deduped, source-grounded). |
+| `src/env.ts` / `src/debug.ts` | Repo-root `.env` loader; `ESSOS_DEBUG`-gated logging. |
 
-## Inbound flow (`handleInbound`)
+## Inbound flow
 
-1. Resolve the conversation by Spectrum `space` id; if new, resolve the patient by `handle` (or explicit `patientId` in the terminal demo) and create it.
-2. **Concierge messages** are logged and never auto-answered; during an open escalation they trigger takeover (`markConciergeTakeover`).
-3. **Patient messages** are logged; if automation is `active`, the context block + message go to Eve, and the reply is recorded and returned. If `paused_for_review`/`taken_over`, Eve stays silent.
-
-See [ADR 003](../.docs/decisions/003-human-handoff-and-takeover.md) for the handoff states.
+1. Resolve the conversation by Spectrum `space` id; if new, resolve the patient by `handle` (or explicit `patientId` in the terminal demo) and create it. Unknown handles are auto-provisioned a guest patient when `ESSOS_GUEST_MODE=1` ([ADR 017](../docs/decisions/archive/017-guest-onboarding-and-deployment.md)).
+2. **Concierge messages** are logged and never auto-answered; during an open escalation they trigger takeover and cancel any in-flight chain.
+3. **Patient messages** are debounced into one turn; if automation is `active`, the context block + combined text go to Eve and the reply is sent as paced bubbles. If `paused_for_review`/`taken_over`, Eve stays silent (one holding notice, then quiet). See [ADR 003](../docs/decisions/archive/003-human-handoff-and-takeover.md) and [ADR 010](../docs/decisions/archive/010-handoff-patient-feedback-ux.md).
 
 ## Outbound formatting
 
-iMessage has no rich text, so every outbound send (auto-reply in `imessage.ts`, dashboard concierge replies and reminders in `outbound.ts`) is passed through `toImessageText` ([src/imessageText.ts](src/imessageText.ts)), which strips Markdown (`**bold**`, headers, bullets, links, code) to clean plaintext. It also extracts a `[[react: ...]]` token Eve may emit and turns it into a native iMessage tapback (`like`/`love`/`laugh`/`emphasize`/`question`/`dislike`), sending a reaction instead of a bubble when the reply is react-only. The terminal provider is left raw. See [ADR 012](../.docs/decisions/012-imessage-plaintext-and-voice.md).
+iMessage has no rich text, so every outbound send (auto-reply, dashboard/Slack concierge replies, reminders) passes through `toImessageText`, which strips Markdown to clean plaintext and converts a `[[react: …]]` token into a native iMessage tapback (a react-only reply sends a reaction, no bubble). The terminal provider is left raw. See [ADR 012](../docs/decisions/archive/012-imessage-plaintext-and-voice.md).
 
-## Patient binding
+## Eve streaming
 
-Inbound senders are matched to a patient by `handle` (E.164 phone or Apple ID email), normalized first (`normalizeHandle`: lowercase emails, strip phone formatting) so formatting differences don't cause a miss. Seeded handles are fictional — to test live, set a patient's `handle` in `mock-assets/patients/*.json` and re-seed. Concierge handles come from `ESSOS_CONCIERGE_HANDLES` (comma-separated, real handles not display names), normalized the same way.
-
-## Eve streaming client
-
-Eve sends an ndjson event stream. `reduceEveEvents` (pure, unit-tested) accumulates `message.appended` (`data.messageSoFar`) and takes the final `message.completed` whose `finishReason` is not `tool-calls` (the answer after any tool steps), surfacing `*.failed`/`error` as errors; `collectReply` drives it off the live stream and resolves on `turn.completed`/`session.completed`. The client sends `Authorization: Bearer $ESSOS_TRANSPORT_SECRET` when set ([ADR 009](../.docs/decisions/009-agent-hardening-and-transport-auth.md)). The typing indicator is shown only while Eve is actually composing a reply (not for concierge or paused/taken-over turns). See [ADR 008](../.docs/decisions/008-transport-eve-streaming-contract.md).
+Eve sends an ndjson event stream. `reduceEveEvents` (pure, unit-tested) accumulates `message.appended` and takes the final `message.completed` whose `finishReason` is not `tool-calls` (the answer after any tool steps), surfacing `*.failed`/`error` as errors and scraping tool calls + token usage for telemetry. The client sends `Authorization: Bearer $ESSOS_TRANSPORT_SECRET` when set. See [ADR 008](../docs/decisions/archive/008-transport-eve-streaming-contract.md) and [ADR 015](../docs/decisions/archive/015-agent-telemetry-and-analytics.md).
 
 ## Run
 
@@ -46,22 +38,16 @@ Eve sends an ndjson event stream. `reduceEveEvents` (pure, unit-tested) accumula
 # from repo root (Eve dev server must be running: pnpm eve:dev)
 pnpm transport:terminal     # local demo, plays ESSOS_DEMO_PATIENT (default pat_maya)
 pnpm transport:imessage     # live Spectrum Cloud iMessage
-
-# deterministic core/handoff smoke test (no model needed)
-pnpm --filter @essos/transport run smoke
-
-# unit tests for the ndjson reducer / line-splitter
-pnpm --filter @essos/transport test
+pnpm --filter @essos/transport run smoke   # deterministic core/handoff smoke test (no model)
+pnpm --filter @essos/transport test        # unit tests (ndjson reducer / line-splitter / imessageText)
 ```
 
 In the terminal provider, prefix a line with `/concierge ` to act as the human concierge.
 
 ## Env
 
-`EVE_BASE_URL` (default `http://127.0.0.1:3000`), `ESSOS_DEMO_PATIENT`, `ESSOS_CONCIERGE_HANDLES`, `ESSOS_TRANSPORT_SECRET` (bearer for a non-loopback Eve; optional on localhost), and for iMessage `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET`. The machine path also needs `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`; `ESSOS_GUEST_MODE=1` enables guest onboarding.
-
-Patient mini-app/App Clip cards use `ESSOS_PATIENT_MINIAPP_BASE_URL` (default `http://localhost:8081`), `ESSOS_PATIENT_CARD_TTL_MINUTES` (default `60`), and `ESSOS_MINIAPP_DELIVERY=link|spectrum_app|customized_miniapp`. `spectrum_app` is the reviewer default: it sends Spectrum's Mini App launcher card and falls back to a plain link. `customized_miniapp` first tries an Essos-owned iMessage mini-app card and then falls back to `spectrum_app`; it requires `ESSOS_APPLE_TEAM_ID` plus `ESSOS_IMESSAGE_EXTENSION_BUNDLE_ID` (default `com.essos.raziworktrial.MessagesExtension`) and optional `ESSOS_APP_STORE_ID`.
+`EVE_BASE_URL` (default `http://127.0.0.1:3000`), `ESSOS_DEMO_PATIENT`, `ESSOS_CONCIERGE_HANDLES`, `ESSOS_TRANSPORT_SECRET` (bearer for a non-loopback Eve), and for iMessage `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`. The machine path needs `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`; `ESSOS_GUEST_MODE=1` enables guest onboarding. Mini-app cards use `ESSOS_PATIENT_MINIAPP_BASE_URL`, `ESSOS_PATIENT_CARD_TTL_MINUTES`, and `ESSOS_MINIAPP_DELIVERY=link|spectrum_app|customized_miniapp`. Pipeline tuning: `ESSOS_DEBOUNCE_MS`, `ESSOS_SEND_PACING_MS`.
 
 ## Deploy
 
-Runs as a long-running **Railway worker** (it holds the Spectrum connection + outbound/reminder loops, so it can't be serverless), built from [deploy/transport.Dockerfile](../deploy/transport.Dockerfile). Full runbook in the root [README](../README.md#deploy-live) and [ADR 017](../.docs/decisions/017-guest-onboarding-and-deployment.md).
+A long-running **Railway worker** (it holds the Spectrum connection + outbound/reminder loops), built from [deploy/transport.Dockerfile](../deploy/transport.Dockerfile). See the [deploy runbook](../docs/runbooks/deploy.md) and [live iMessage runbook](../docs/runbooks/live-imessage.md).

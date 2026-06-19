@@ -11,3 +11,7 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
+
+## Project context
+
+Essos is a text-based AI health-tourism concierge (Eve in an iMessage group chat + an admin dashboard). For product/UX/agent/platform rationale, read [docs/decisions/README.md](docs/decisions/README.md) (full ADRs in [docs/decisions/archive/](docs/decisions/archive/)). Setup/run lives in [docs/runbooks/](docs/runbooks/).

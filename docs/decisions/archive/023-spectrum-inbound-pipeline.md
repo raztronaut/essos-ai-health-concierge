@@ -3,7 +3,7 @@
 ## Decision
 
 Replace the "one LLM turn per inbound message" path with Photon's five-stage
-inbound pipeline ([.agents/skills/spectrum/best-practices.md](../../.agents/skills/spectrum/best-practices.md)):
+inbound pipeline ([.agents/skills/spectrum/best-practices.md](../../../.agents/skills/spectrum/best-practices.md)):
 **debounce a burst into one turn, mark-read/typing, generate one reply, send it
 with pacing and crash-safe dedup**, plus a job-failure audit and per-person
 memory. Orchestration is **in-process** (timers + `AbortController`); durability
@@ -20,25 +20,25 @@ durable.
 
 ## Design
 
-- **Tables** ([convex/schema.ts](../../convex/schema.ts)): `batch_queue`
+- **Tables** ([convex/schema.ts](../../../convex/schema.ts)): `batch_queue`
   (messages awaiting the debounce), `carried_messages` (drained-but-unfinished
   rows a cancelled chain carries forward), `inflight_chains` (the single chain
   per conversation: `stage`, `cancelled_at`, `start_index`, `sent_guids`),
   `job_failures` (audit, 30-day retention), `agent_memory` (per-patient working
-  memory). Model files: [convex/model/pipeline.ts](../../convex/model/pipeline.ts),
-  [convex/model/jobFailures.ts](../../convex/model/jobFailures.ts),
-  [convex/model/memory.ts](../../convex/model/memory.ts); exposed through the
-  `/machine` door ([convex/machine.ts](../../convex/machine.ts),
-  [convex/http.ts](../../convex/http.ts)) and
-  [shared/src/convex.ts](../../shared/src/convex.ts).
-- **Orchestrator** ([transport/src/pipeline.ts](../../transport/src/pipeline.ts)):
+  memory). Model files: [convex/model/pipeline.ts](../../../convex/model/pipeline.ts),
+  [convex/model/jobFailures.ts](../../../convex/model/jobFailures.ts),
+  [convex/model/memory.ts](../../../convex/model/memory.ts); exposed through the
+  `/machine` door ([convex/machine.ts](../../../convex/machine.ts),
+  [convex/http.ts](../../../convex/http.ts)) and
+  [shared/src/convex.ts](../../../shared/src/convex.ts).
+- **Orchestrator** ([transport/src/pipeline.ts](../../../transport/src/pipeline.ts)):
   `enqueue` resolves the conversation, logs the patient message once (prompt
   Slack mirror; carry-forward never re-logs), queues it, cancels any in-flight
   chain, and re-arms a per-conversation debounce timer. `runChain` claims the
   chain and runs the stages behind one `AbortController`; a follow-up aborts the
   in-flight model call and carries the batch forward.
 - **Stages**: flush (drain carried + queued, combine text), mark-read/typing,
-  generate (the existing `generateTurn` in [transport/src/core.ts](../../transport/src/core.ts)
+  generate (the existing `generateTurn` in [transport/src/core.ts](../../../transport/src/core.ts)
   — handoff state, disclosure latch, `askEve`, graceful degradation, telemetry),
   send (split into bubbles, pace by `SEND_PACING_MS`, persist `start_index` +
   `sent_guids` after each so a crash resumes without re-sending).
@@ -53,8 +53,8 @@ durable.
   eve fetch so a cancelled turn actually stops.
 - **Memory**: keyed by `patient_id` (per-person, stable across a patient's
   conversations). Injected as `known_about_patient` in
-  [transport/src/context.ts](../../transport/src/context.ts); written by the eve
-  tool [eve-concierge/agent/tools/remember_patient.ts](../../eve-concierge/agent/tools/remember_patient.ts).
+  [transport/src/context.ts](../../../transport/src/context.ts); written by the eve
+  tool [eve-concierge/agent/tools/remember_patient.ts](../../../eve-concierge/agent/tools/remember_patient.ts).
 - **Concierge messages** bypass the queue and cancel any in-flight chain, so Eve
   never speaks after a human takes over.
 
@@ -83,7 +83,7 @@ durable.
 ## Config
 
 `ESSOS_DEBOUNCE_MS` (5000), `ESSOS_SEND_PACING_MS` (800),
-`ESSOS_JOB_FAILURE_RETENTION_DAYS` (30) in [transport/src/env.ts](../../transport/src/env.ts).
+`ESSOS_JOB_FAILURE_RETENTION_DAYS` (30) in [transport/src/env.ts](../../../transport/src/env.ts).
 
 ## Consequences
 

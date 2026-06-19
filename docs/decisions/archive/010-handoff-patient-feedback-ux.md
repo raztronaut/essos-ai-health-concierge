@@ -4,16 +4,16 @@
 
 Escalation must be a real, two-sided handoff rather than a silent dead-end. When Eve escalates, the patient is kept informed, and the concierge can reply to the patient directly from the dashboard. Concretely:
 
-1. **Patient acknowledgment on escalation.** `escalate_to_human` already requires Eve to reply with a brief, warm, non-clinical acknowledgement in the same turn ([eve-concierge/agent/tools/escalate_to_human.ts](../../eve-concierge/agent/tools/escalate_to_human.ts)).
-2. **One-time holding notice while paused.** The first patient message that arrives after automation is paused gets a single, severity-aware "the care team is reviewing this" notice; subsequent messages stay silent until a human engages or Eve resumes ([transport/src/core.ts](../../transport/src/core.ts)).
-3. **Concierge -> patient reply bridge.** A concierge can type a reply in the dashboard; it is queued in SQLite and delivered to the patient's iMessage by the transport, and the thread is marked `taken_over` so Eve stays paused ([dashboard/lib/actions.ts](../../dashboard/lib/actions.ts), [transport/src/outbound.ts](../../transport/src/outbound.ts)).
-4. **Waiting visibility.** The dashboard surfaces how long an escalation has been open and how many patient messages are awaiting a reply, so the concierge has an at-a-glance SLA signal ([dashboard/features/conversations/flags-panel.tsx](../../dashboard/features/conversations/flags-panel.tsx)).
+1. **Patient acknowledgment on escalation.** `escalate_to_human` already requires Eve to reply with a brief, warm, non-clinical acknowledgement in the same turn ([eve-concierge/agent/tools/escalate_to_human.ts](../../../eve-concierge/agent/tools/escalate_to_human.ts)).
+2. **One-time holding notice while paused.** The first patient message that arrives after automation is paused gets a single, severity-aware "the care team is reviewing this" notice; subsequent messages stay silent until a human engages or Eve resumes ([transport/src/core.ts](../../../transport/src/core.ts)).
+3. **Concierge -> patient reply bridge.** A concierge can type a reply in the dashboard; it is queued in SQLite and delivered to the patient's iMessage by the transport, and the thread is marked `taken_over` so Eve stays paused ([dashboard/lib/actions.ts](../../../dashboard/lib/actions.ts), [transport/src/outbound.ts](../../../transport/src/outbound.ts)).
+4. **Waiting visibility.** The dashboard surfaces how long an escalation has been open and how many patient messages are awaiting a reply, so the concierge has an at-a-glance SLA signal ([dashboard/features/conversations/flags-panel.tsx](../../../dashboard/features/conversations/flags-panel.tsx)).
 
 ## The bug that prompted this
 
 During the first live iMessage test the patient appeared to get "no response." Two things were happening:
 
-- **A multi-turn stream-replay bug.** Eve's session stream replays the whole session from `session.started` on every connect. The transport's reader settled on the first `turn.completed` and returned an earlier turn's answer, so the escalation acknowledgment (and every later turn) was clobbered by stale text. Fixed by counting `turn.completed` to the current turn and reducing only that turn's events ([transport/src/eveClient.ts](../../transport/src/eveClient.ts)).
+- **A multi-turn stream-replay bug.** Eve's session stream replays the whole session from `session.started` on every connect. The transport's reader settled on the first `turn.completed` and returned an earlier turn's answer, so the escalation acknowledgment (and every later turn) was clobbered by stale text. Fixed by counting `turn.completed` to the current turn and reducing only that turn's events ([transport/src/eveClient.ts](../../../transport/src/eveClient.ts)).
 - **Silence by design.** Once Eve escalated, `automation_state` became `paused_for_review`, and the transport returned no reply for any follow-up message ([ADR 003](003-human-handoff-and-takeover.md)). Correct for safety, but indistinguishable from a broken bot.
 
 This was not a Spectrum problem; the transport was receiving and resolving messages correctly the whole time.

@@ -2,7 +2,7 @@
 
 ## Decision
 
-The Eve agent routes **directly to Anthropic** via the `@ai-sdk/anthropic` provider rather than through the Vercel AI Gateway. The model is configured in [eve-concierge/agent/agent.ts](../../eve-concierge/agent/agent.ts) as `anthropic(process.env.ESSOS_AGENT_MODEL ?? "claude-sonnet-4-5")`, and the provider reads the work-trial `ANTHROPIC_API_KEY` directly. The provider-managed `web_search` built-in tool is disabled.
+The Eve agent routes **directly to Anthropic** via the `@ai-sdk/anthropic` provider rather than through the Vercel AI Gateway. The model is configured in [eve-concierge/agent/agent.ts](../../../eve-concierge/agent/agent.ts) as `anthropic(process.env.ESSOS_AGENT_MODEL ?? "claude-sonnet-4-5")`, and the provider reads the work-trial `ANTHROPIC_API_KEY` directly. The provider-managed `web_search` built-in tool is disabled.
 
 ## Why direct, not the gateway
 
@@ -26,7 +26,7 @@ Per Eve's `agent.ts` config, passing a provider-authored `LanguageModel` (e.g. `
 
 Eve's default harness offers a provider-managed `web_search` tool. The work-trial Anthropic org does not have web search enabled, so the model call failed with `Web search is not enabled for this organization`. It is also undesirable: the concierge must answer from its own sources of truth (itinerary, documented care instructions, Google Places via `search_local_places`), not free-search the web.
 
-It is disabled by exporting `disableTool()` from a file named for the slug: [eve-concierge/agent/tools/web_search.ts](../../eve-concierge/agent/tools/web_search.ts).
+It is disabled by exporting `disableTool()` from a file named for the slug: [eve-concierge/agent/tools/web_search.ts](../../../eve-concierge/agent/tools/web_search.ts).
 
 ## Known follow-up
 

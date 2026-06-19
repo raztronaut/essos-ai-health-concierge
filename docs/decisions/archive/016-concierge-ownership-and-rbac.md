@@ -18,10 +18,10 @@ Single-org (not multi-clinic) is deliberate for the trial: it delivers real role
 
 ## Design
 
-- **Schema** ([convex/schema.ts](../../convex/schema.ts)): `assignee_user_id` added to `patients`, `conversations`, `escalations` with a `by_assignee` index each. It is `v.optional(...)` so rows written by external/live writers (e.g. the transport before a deploy) never break the schema; new writes always set it.
-- **Identity ctx** ([convex/lib/functions.ts](../../convex/lib/functions.ts)): `conciergeQuery`/`conciergeMutation` resolve `clerkId`, `role`, and `isLead` from the Clerk JWT. The dev fallback (no Clerk) is treated as a lead so the local demo shows everything.
-- **Scoped reads** ([convex/queries.ts](../../convex/queries.ts)): list reads use `Patients.listForConcierge` (index-backed: own + unassigned, or all for leads); detail reads assert access via `Patients.canAccess` and throw otherwise.
-- **Assignment** ([convex/mutations.ts](../../convex/mutations.ts)): `assignPatient` — leads assign anyone; members self-claim only an unassigned patient. Assignment mirrors onto the patient's conversations; takeover/resolve stamp `assignee_user_id` so metrics key off a stable id, not a name string.
+- **Schema** ([convex/schema.ts](../../../convex/schema.ts)): `assignee_user_id` added to `patients`, `conversations`, `escalations` with a `by_assignee` index each. It is `v.optional(...)` so rows written by external/live writers (e.g. the transport before a deploy) never break the schema; new writes always set it.
+- **Identity ctx** ([convex/lib/functions.ts](../../../convex/lib/functions.ts)): `conciergeQuery`/`conciergeMutation` resolve `clerkId`, `role`, and `isLead` from the Clerk JWT. The dev fallback (no Clerk) is treated as a lead so the local demo shows everything.
+- **Scoped reads** ([convex/queries.ts](../../../convex/queries.ts)): list reads use `Patients.listForConcierge` (index-backed: own + unassigned, or all for leads); detail reads assert access via `Patients.canAccess` and throw otherwise.
+- **Assignment** ([convex/mutations.ts](../../../convex/mutations.ts)): `assignPatient` — leads assign anyone; members self-claim only an unassigned patient. Assignment mirrors onto the patient's conversations; takeover/resolve stamp `assignee_user_id` so metrics key off a stable id, not a name string.
 - **UI**: `<OrganizationSwitcher>` + role-gated `AssignControl` (lead dropdown / member "Claim"), a "Mine only" filter and owner badges on the conversation list, and a team view keyed on `assignee_user_id` with time-to-first-response.
 
 ## Consequences

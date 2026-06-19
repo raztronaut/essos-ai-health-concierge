@@ -2,13 +2,13 @@
 
 ## Decision
 
-Deploy all three services from a single GitHub Actions workflow ([.github/workflows/deploy.yml](../../.github/workflows/deploy.yml)) on every push to `main` (plus manual `workflow_dispatch`): **Convex → then Vercel + Railway**. Topology and per-service hosting are unchanged from [ADR 017](017-guest-onboarding-and-deployment.md); this only automates the existing manual runbook.
+Deploy all three services from a single GitHub Actions workflow ([.github/workflows/deploy.yml](../../../.github/workflows/deploy.yml)) on every push to `main` (plus manual `workflow_dispatch`): **Convex → then Vercel + Railway**. Topology and per-service hosting are unchanged from [ADR 017](017-guest-onboarding-and-deployment.md); this only automates the existing manual runbook.
 
 ## Choices
 
 - **Convex deploys first; Vercel + Railway `need` it.** Backend schema/functions should be live before the frontend and agent that call them, so an additive deploy never leaves the UI talking to a missing function.
 - **No concurrent deploys** (`concurrency: deploy-production`, `cancel-in-progress: false`). Two overlapping production pushes to the same Convex deployment / Vercel project can race; we let an in-flight deploy finish rather than cancel it.
-- **Vercel builds remotely** (`vercel deploy --prod`, not `--prebuilt`). This is the exact path proven to work by hand for this monorepo — Vercel applies the project's Root Directory = `dashboard` and [dashboard/vercel.json](../../dashboard/vercel.json) (which compiles `@essos/shared` first). Building prebuilt in CI would re-implement that monorepo wiring for no benefit.
+- **Vercel builds remotely** (`vercel deploy --prod`, not `--prebuilt`). This is the exact path proven to work by hand for this monorepo — Vercel applies the project's Root Directory = `dashboard` and [dashboard/vercel.json](../../../dashboard/vercel.json) (which compiles `@essos/shared` first). Building prebuilt in CI would re-implement that monorepo wiring for no benefit.
 - **Railway job is opt-in** (`if: vars.RAILWAY_EVE_SERVICE != ''`). If Railway's own GitHub auto-deploy is enabled, leave the variable unset and the job is skipped instead of double-deploying.
 
 ## Consequences

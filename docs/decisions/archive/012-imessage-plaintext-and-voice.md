@@ -4,8 +4,8 @@
 
 Make Eve's messages read like a real person texting in iMessage, on two fronts:
 
-1. **Deterministic plaintext normalization at the transport.** Every outbound iMessage send is passed through `toImessageText()` ([transport/src/imessageText.ts](../../transport/src/imessageText.ts)), which strips Markdown to clean plaintext before delivery. iMessage has no rich-text rendering, so model-emitted Markdown (`**bold**`, `# headers`, `- bullets`, `[label](url)`, backticks, fenced code) was reaching patients as literal characters.
-2. **A tightened, poke-inspired texting voice in the agent instructions.** [eve-concierge/agent/instructions.md](../../eve-concierge/agent/instructions.md) gains a `Formatting` section (plaintext only) and a stricter `Tone` section (match the patient's length/energy, no preamble/postamble, banned robotic phrases, mirror emoji, acknowledge naturally) — all within the existing safety guardrails.
+1. **Deterministic plaintext normalization at the transport.** Every outbound iMessage send is passed through `toImessageText()` ([transport/src/imessageText.ts](../../../transport/src/imessageText.ts)), which strips Markdown to clean plaintext before delivery. iMessage has no rich-text rendering, so model-emitted Markdown (`**bold**`, `# headers`, `- bullets`, `[label](url)`, backticks, fenced code) was reaching patients as literal characters.
+2. **A tightened, poke-inspired texting voice in the agent instructions.** [eve-concierge/agent/instructions.md](../../../eve-concierge/agent/instructions.md) gains a `Formatting` section (plaintext only) and a stricter `Tone` section (match the patient's length/energy, no preamble/postamble, banned robotic phrases, mirror emoji, acknowledge naturally) — all within the existing safety guardrails.
 
 We also added an opt-in **tapback** path: Eve can end a reply with a `[[react: ...]]` control token that the transport converts into a native iMessage reaction instead of a text bubble.
 
@@ -31,12 +31,12 @@ The fix is split across the two layers it belongs to. iMessage rendering is a **
 - Collapses 3+ newlines to 2 and trims.
 - Extracts the first valid `[[react: like|love|laugh|emphasize|question|dislike]]` token and strips all such tokens from the text.
 
-Pure and unit-tested ([transport/src/imessageText.test.ts](../../transport/src/imessageText.test.ts)), covering each transform, the "no Markdown passes through unchanged" case, and the react-token cases.
+Pure and unit-tested ([transport/src/imessageText.test.ts](../../../transport/src/imessageText.test.ts)), covering each transform, the "no Markdown passes through unchanged" case, and the react-token cases.
 
 ### Applied at every outbound iMessage send
 
-- Auto-reply: `onResult` in [transport/src/imessage.ts](../../transport/src/imessage.ts).
-- Dashboard concierge replies (including AI-drafted `suggested_reply` Markdown): `drainPendingOutbound` and the shared `sendToPatientSpace` in [transport/src/outbound.ts](../../transport/src/outbound.ts).
+- Auto-reply: `onResult` in [transport/src/imessage.ts](../../../transport/src/imessage.ts).
+- Dashboard concierge replies (including AI-drafted `suggested_reply` Markdown): `drainPendingOutbound` and the shared `sendToPatientSpace` in [transport/src/outbound.ts](../../../transport/src/outbound.ts).
 - Proactive pre-op reminders ride `sendToPatientSpace`, so the quoted pre-op packet body is normalized too.
 
 The terminal transport is intentionally left raw — it is a dev TUI, not a patient surface.

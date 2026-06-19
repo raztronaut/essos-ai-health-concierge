@@ -24,11 +24,11 @@ Each line is `{ type, data, meta }`. The relevant types for assembling a reply:
 
 ### Why "final non-tool-calls message"
 
-A single turn runs as multiple steps. For an itinerary question the model first emits a short pre-tool message (`finishReason: "tool-calls"`, e.g. "I'll look up your reservation..."), calls `get_itinerary`, then emits the real answer in a later step (`finishReason: "stop"`). Naively taking the first completed message returns the filler text; reading top-level fields (rather than `data.*`) returns nothing. `collectReply` in [transport/src/eveClient.ts](../../transport/src/eveClient.ts) therefore tracks the last non-`tool-calls` `data.message`, falls back to the latest `data.messageSoFar`, and resolves at `turn.completed`.
+A single turn runs as multiple steps. For an itinerary question the model first emits a short pre-tool message (`finishReason: "tool-calls"`, e.g. "I'll look up your reservation..."), calls `get_itinerary`, then emits the real answer in a later step (`finishReason: "stop"`). Naively taking the first completed message returns the filler text; reading top-level fields (rather than `data.*`) returns nothing. `collectReply` in [transport/src/eveClient.ts](../../../transport/src/eveClient.ts) therefore tracks the last non-`tool-calls` `data.message`, falls back to the latest `data.messageSoFar`, and resolves at `turn.completed`.
 
 ## Inbound handling
 
-[transport/src/core.ts](../../transport/src/core.ts) (`handleInbound`) is provider-agnostic and shared by the terminal and iMessage providers:
+[transport/src/core.ts](../../../transport/src/core.ts) (`handleInbound`) is provider-agnostic and shared by the terminal and iMessage providers:
 
 1. Resolve the conversation by Spectrum `space` id; if new, resolve the patient by `handle` (or an explicit `patientId` for the terminal demo) and create the conversation.
 2. Concierge-authored messages are logged and never auto-answered; during an open escalation they trigger takeover (see [003-human-handoff-and-takeover.md](003-human-handoff-and-takeover.md)).

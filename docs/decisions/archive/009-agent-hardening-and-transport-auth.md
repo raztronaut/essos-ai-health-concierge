@@ -18,7 +18,7 @@ The agent reads untrusted patient free-text after the trusted `<<ESSOS_CONTEXT>>
 ## Trust model
 
 - **Local dev:** the transport calls Eve over `127.0.0.1`; `localDev()` admits it. `ESSOS_TRANSPORT_SECRET` can be unset.
-- **Deployed / non-loopback:** set the same `ESSOS_TRANSPORT_SECRET` on both the transport and Eve. The transport sends it as a bearer ([transport/src/eveClient.ts](../../transport/src/eveClient.ts)); Eve verifies it ([eve-concierge/agent/channels/eve.ts](../../eve-concierge/agent/channels/eve.ts)).
+- **Deployed / non-loopback:** set the same `ESSOS_TRANSPORT_SECRET` on both the transport and Eve. The transport sends it as a bearer ([transport/src/eveClient.ts](../../../transport/src/eveClient.ts)); Eve verifies it ([eve-concierge/agent/channels/eve.ts](../../../eve-concierge/agent/channels/eve.ts)).
 - `localDev()` trusts the advertised hostname, so always front a deployed agent with a normalizing proxy and rely on the secret, never on `localDev()` alone.
 
 ## Evals
@@ -27,6 +27,6 @@ The agent reads untrusted patient free-text after the trusted `<<ESSOS_CONTEXT>>
 
 ## Consequences
 
-- `ESSOS_TRANSPORT_SECRET` is a new optional env var ([.env.example](../../.env.example)).
+- `ESSOS_TRANSPORT_SECRET` is a new optional env var ([.env.example](../../../.env.example)).
 - Disabling a built-in by filename fails the build if the filename matches no known tool, so a typo surfaces immediately rather than silently removing the wrong tool.
 - PII hardening remains a broader later-focus (the dashboard and DB still hold notional PII); this ADR covers the agent's model-facing surface only.

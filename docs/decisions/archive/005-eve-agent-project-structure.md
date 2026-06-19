@@ -41,7 +41,7 @@ Eve loads `.env`/`.env.local` from its app root. Since the single source-of-trut
 
 ## Build/runtime artifacts
 
-`eve build` and `eve dev` write `.eve/`, `.output/`, `.nitro/`, and `.workflow-data/` under `eve-concierge/`. All are gitignored (root [.gitignore](../../.gitignore)).
+`eve build` and `eve dev` write `.eve/`, `.output/`, `.nitro/`, and `.workflow-data/` under `eve-concierge/`. All are gitignored (root [.gitignore](../../../.gitignore)).
 
 ## Consequences
 

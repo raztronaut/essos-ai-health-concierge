@@ -12,9 +12,9 @@ The trial started with a read-only patient detail view backed by seeded fixtures
 
 ## Design
 
-- **Roster** ([dashboard/features/patients/](../../dashboard/features/patients/)): `/patients` lists every patient the signed-in concierge can see (scoped by [ADR 016](016-concierge-ownership-and-rbac.md)), with search, procedure/assignee filters, sortable columns, optional grouping, lead assign / member claim controls, and a "New patient" flow.
+- **Roster** ([dashboard/features/patients/](../../../dashboard/features/patients/)): `/patients` lists every patient the signed-in concierge can see (scoped by [ADR 016](016-concierge-ownership-and-rbac.md)), with search, procedure/assignee filters, sortable columns, optional grouping, lead assign / member claim controls, and a "New patient" flow.
 - **Detail editing** (`/patients/[id]`): dialog forms for patient profile, itinerary events, and care instructions; inline delete; document upload via `generateUploadUrl` → POST to Convex storage → `createSourceDocument`.
-- **Mutations** ([convex/mutations.ts](../../convex/mutations.ts)): `upsertPatient`, `deletePatient`, `upsertItineraryEvent`, `deleteItineraryEvent`, `upsertCareInstruction`, `deleteCareInstruction`, `assignPatient`, `generateUploadUrl`, `createSourceDocument`, `deleteSourceDocument`. All use `conciergeMutation` (Clerk identity required when `ESSOS_REQUIRE_AUTH` is on).
+- **Mutations** ([convex/mutations.ts](../../../convex/mutations.ts)): `upsertPatient`, `deletePatient`, `upsertItineraryEvent`, `deleteItineraryEvent`, `upsertCareInstruction`, `deleteCareInstruction`, `assignPatient`, `generateUploadUrl`, `createSourceDocument`, `deleteSourceDocument`. All use `conciergeMutation` (Clerk identity required when `ESSOS_REQUIRE_AUTH` is on).
 - **Serving documents**: `/source-docs/[id]` serves seeded fixture PDFs from disk and uploaded documents from Convex storage (Markdown fallback for fixture docs without a PDF).
 - **Agent path unchanged**: the transport and Eve continue to reach patient data through the `/machine` HTTP action with the service secret — they do not use these dashboard mutations.
 

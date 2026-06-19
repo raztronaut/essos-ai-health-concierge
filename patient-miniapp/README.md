@@ -1,6 +1,6 @@
 # @essos/patient-miniapp
 
-Patient-facing mini app surface for Essos itinerary and clinic cards.
+Patient-facing mini app surface for Essos itinerary and clinic cards. Eve sends signed links to these cards from iMessage (Spectrum Mini App card when supported, plain-link fallback); see the [reviewer demo](../docs/reviewer-demo.md).
 
 The app opens the same signed snapshot links that Eve can send from iMessage:
 

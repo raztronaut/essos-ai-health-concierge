@@ -10,7 +10,7 @@ The agent, transport, and dashboard all run locally against one SQLite file, and
 
 ## Key configuration
 
-- **`serverExternalPackages: ["@essos/shared"]`** in [dashboard/next.config.mjs](../../dashboard/next.config.mjs): `@essos/shared` uses the native `node:sqlite` module and `import.meta.url` to locate the repo root + DB file. Keeping it external (not bundled) preserves that path resolution and the native binding.
+- **`serverExternalPackages: ["@essos/shared"]`** in [dashboard/next.config.mjs](../../../dashboard/next.config.mjs): `@essos/shared` uses the native `node:sqlite` module and `import.meta.url` to locate the repo root + DB file. Keeping it external (not bundled) preserves that path resolution and the native binding.
 - **`outputFileTracingRoot`** pinned to the repo root so Next does not mis-infer the workspace root from a stray `package-lock.json` in `$HOME`.
 - Pages that read the DB use `export const dynamic = "force-dynamic"` so every load reflects current data.
 
@@ -23,11 +23,11 @@ The agent, transport, and dashboard all run locally against one SQLite file, and
 
 ## Server actions
 
-`resolveEscalationAction`, `takeOverConversationAction`, and `resumeAutomationAction` in [dashboard/app/actions.ts](../../dashboard/app/actions.ts) call `resolveEscalation`, `markConciergeTakeover`, and `resumeAutomation` from `@essos/shared`, then `revalidatePath` the affected routes. This implements the dashboard actions required by the handoff decision (003).
+`resolveEscalationAction`, `takeOverConversationAction`, and `resumeAutomationAction` in [dashboard/app/actions.ts](../../../dashboard/app/actions.ts) call `resolveEscalation`, `markConciergeTakeover`, and `resumeAutomation` from `@essos/shared`, then `revalidatePath` the affected routes. This implements the dashboard actions required by the handoff decision (003).
 
 ## Styling & shared UI
 
-Tailwind CSS v4 with brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) extracted from `.essos_branding`, declared via `@theme` in `dashboard/app/globals.css`. Reusable primitives (`Card`, `Button`, `Stat`, `Row`, `CareRow`, `PageHeader`, badges, the shared `ROLE_LABEL` map) live in [dashboard/lib/ui.tsx](../../dashboard/lib/ui.tsx); the `rounded-card` radius comes from the `--radius-card` theme token.
+Tailwind CSS v4 with brand tokens (surface `#F5F1E5`, ink `#171715`, primary `#0000EE`, secondary `#BCB6A7`) extracted from `.essos_branding`, declared via `@theme` in `dashboard/app/globals.css`. Reusable primitives (`Card`, `Button`, `Stat`, `Row`, `CareRow`, `PageHeader`, badges, the shared `ROLE_LABEL` map) live in [dashboard/lib/ui.tsx](../../../dashboard/lib/ui.tsx); the `rounded-card` radius comes from the `--radius-card` theme token.
 
 ## Route states
 
