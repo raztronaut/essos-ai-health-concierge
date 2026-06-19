@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import {
@@ -32,6 +32,8 @@ interface DemoIdentity {
   effectiveId: string | null;
   /** Effective lead status for UI gating. */
   isLead: boolean;
+  /** Signed-in concierge's first name (empty when Clerk is not configured). */
+  realFirstName: string;
   /** The currently-selected option when viewing as someone else. */
   selected: ConciergeOption | null;
   setViewAs: (id: string | null) => void;
@@ -44,6 +46,7 @@ const DemoContext = createContext<DemoIdentity>({
   setViewAs: () => undefined,
   effectiveId: null,
   isLead: true,
+  realFirstName: "",
   concierges: [],
   selected: null,
 });
@@ -70,7 +73,7 @@ export function DemoIdentityProvider({ children }: { children: ReactNode }) {
   }
   // Local demo (no Clerk): the operator is a lead.
   return (
-    <Inner realId={null} realRole="org:admin">
+    <Inner realFirstName="" realId={null} realRole="org:admin">
       {children}
     </Inner>
   );
@@ -78,8 +81,13 @@ export function DemoIdentityProvider({ children }: { children: ReactNode }) {
 
 function ClerkAware({ children }: { children: ReactNode }) {
   const { userId, orgRole } = useAuth();
+  const { user } = useUser();
   return (
-    <Inner realId={userId ?? null} realRole={orgRole ?? "org:member"}>
+    <Inner
+      realFirstName={user?.firstName ?? ""}
+      realId={userId ?? null}
+      realRole={orgRole ?? "org:member"}
+    >
       {children}
     </Inner>
   );
@@ -88,10 +96,12 @@ function ClerkAware({ children }: { children: ReactNode }) {
 function Inner({
   realId,
   realRole,
+  realFirstName,
   children,
 }: {
   realId: string | null;
   realRole: string;
+  realFirstName: string;
   children: ReactNode;
 }) {
   const concierges = (useQuery(api.users.listConcierges, {}) ?? []).map(
@@ -135,10 +145,11 @@ function Inner({
       setViewAs,
       effectiveId: activeViewAs ?? realId,
       isLead,
+      realFirstName,
       concierges,
       selected,
     };
-  }, [viewAs, concierges, realId, realRole, setViewAs]);
+  }, [viewAs, concierges, realId, realRole, realFirstName, setViewAs]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }

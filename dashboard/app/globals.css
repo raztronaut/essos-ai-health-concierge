@@ -126,3 +126,21 @@ body {
     transform: none;
   }
 }
+
+/* cmdk focus trap — suppress browser default outlines; selection uses bg tint. */
+.command-palette [cmdk-root],
+.command-palette [cmdk-input],
+.command-palette [cmdk-list],
+.command-palette [cmdk-item] {
+  outline: none;
+}
+
+.command-palette [cmdk-input]:focus,
+.command-palette [cmdk-input]:focus-visible,
+.command-palette [cmdk-root]:focus,
+.command-palette [cmdk-root]:focus-visible,
+.command-palette [cmdk-list]:focus,
+.command-palette [cmdk-list]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}

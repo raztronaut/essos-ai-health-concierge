@@ -3,6 +3,8 @@
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { TextMorph } from "torph/react";
 import { Button } from "@/components/ui";
 import { DocIcon } from "@/components/icons";
 import { useConciergeSignature } from "./use-concierge-signature";
@@ -60,6 +62,13 @@ export function ConciergeReplyBox({
         viewAs,
       });
       setText("");
+      toast.success("Reply delivered to patient");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Reply didn’t send — try again",
+      );
     } finally {
       setSending(false);
     }
@@ -116,6 +125,8 @@ export function ConciergeReplyBox({
           <input
             aria-label="Your name"
             className="focus-ring min-w-0 max-w-[12rem] flex-1 rounded-control border border-border bg-card px-2.5 py-1 text-ink text-xs transition-colors duration-fast ease-out placeholder:text-muted hover:border-secondary/70"
+            id="signature-name"
+            name="agentName"
             onChange={(event) => {
               nameTouched.current = true;
               setName(event.target.value);
@@ -125,9 +136,11 @@ export function ConciergeReplyBox({
             value={name}
           />
           <p className="truncate text-[11px] text-muted">
-            {name.trim()
-              ? `Signs “— ${name.trim()}, Essos Care Team”`
-              : "Signs “— Essos Care Team”"}
+            <TextMorph>
+              {name.trim()
+                ? `Signs “— ${name.trim()}, Essos Care Team”`
+                : "Signs “— Essos Care Team”"}
+            </TextMorph>
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

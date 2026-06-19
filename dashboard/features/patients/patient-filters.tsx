@@ -33,6 +33,7 @@ export function PatientFilters({
         {/* Search Input with Icon */}
         <div className="relative max-w-md flex-1">
           <Input
+            aria-label="Search patients by name or handle"
             className="w-full pl-9"
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search name or handle…"
@@ -57,6 +58,7 @@ export function PatientFilters({
         {/* Filters and Actions */}
         <div className="flex flex-col flex-wrap items-stretch gap-2.5 sm:flex-row sm:items-center">
           <Select
+            aria-label="Filter by assigned member"
             onChange={(e) => onAssigneeFilterChange(e.target.value)}
             value={assigneeFilter}
             wrapperClassName="w-full sm:w-40"
@@ -71,6 +73,7 @@ export function PatientFilters({
           </Select>
 
           <Select
+            aria-label="Filter by procedure"
             onChange={(e) => onProcedureFilterChange(e.target.value)}
             value={procedureFilter}
             wrapperClassName="w-full sm:w-44"
@@ -84,6 +87,7 @@ export function PatientFilters({
           </Select>
 
           <Select
+            aria-label="Sort patients"
             onChange={(e) => onSortKeyChange(e.target.value as SortKey)}
             value={sortKey}
             wrapperClassName="w-full sm:w-48"
