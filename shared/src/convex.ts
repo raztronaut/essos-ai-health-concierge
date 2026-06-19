@@ -175,6 +175,7 @@ export function addMessage(args: {
   authorHandle?: string | null;
   category?: EscalationCategory | null;
   meta?: Record<string, unknown> | null;
+  sourceEventId?: string | null;
 }): Promise<Message> {
   return call("appendMessage", args);
 }
@@ -186,6 +187,13 @@ export function hasMessageWithMetaKind(
   since?: string | null
 ): Promise<boolean> {
   return call("hasMessageWithMetaKind", { conversationId, kind, since });
+}
+
+export function getMessageBySourceEvent(
+  conversationId: string,
+  sourceEventId: string
+): Promise<Message | null> {
+  return call("getMessageBySourceEvent", { conversationId, sourceEventId });
 }
 
 export function listPendingOutbound(): Promise<Message[]> {
@@ -395,6 +403,7 @@ export function enqueueInbound(args: {
   conversationId: string;
   spaceId: string;
   clientGuid: string;
+  sourceEventId?: string | null;
   authorHandle: string | null;
   sourceMessageId: string;
   text: string;

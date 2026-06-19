@@ -227,6 +227,7 @@ export interface Message {
   /** Last delivery error; set when `outbound = "failed"`. */
   outbound_error?: string | null;
   role: MessageRole;
+  source_event_id?: string | null;
   text: string;
 }
 
@@ -235,6 +236,7 @@ export interface PipelineMessage {
   author_handle: string | null;
   client_guid: string;
   created_at: string;
+  source_event_id?: string | null;
   source_message_id: string;
   text: string;
 }

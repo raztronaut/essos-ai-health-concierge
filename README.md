@@ -138,6 +138,8 @@ Drive these as the patient (terminal, or iMessage in the group):
 | "Please call me Ms. Okafor and remember I'm travelling with my sister." | Eve saves a durable note (`remember_patient`); it appears in the **What Eve remembers** card on the conversation and informs later turns. |
 | (send "hey" / "wait" / "the question" in quick succession) | Debounced into **one** reply, not three; a follow-up mid-reply cancels and re-batches. |
 | "pls resume" (while a human has the thread) | Patient self-serve: clears the open flag, resumes Eve, and confirms in-thread. The next message is answered normally. |
+| "Send me my itinerary card" | Sends a signed Essos mini-app card with itinerary, clinic/hotel, transport, confirmation codes, and source documents. |
+| "Can I see my source documents?" | Sends a signed source-data card; document rows can be viewed, shared, copied, or downloaded when a file is available. |
 
 Open flags surface on the dashboard Overview (live, no reload), where you can take over, resolve, and resume Eve. From the conversation view, the reply box shows the handoff actions inline — **Resolve**, **Resolve + Resume Eve** (one tap to close the flag and hand the thread back to Eve), and **Take over** — so a concierge acts where they're already typing; the same actions live on each Slack escalation card. Resolving an Eve-paused thread automatically resumes Eve (a human takeover stays manual until you resume). The **AI performance** and **Team** views turn the per-turn telemetry into autonomy rate, latency, tool usage, draft quality, and per-concierge workload ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
 
@@ -170,10 +172,12 @@ The dashboard ships in **demo mode** (`NEXT_PUBLIC_ESSOS_DEMO_MODE=1` for the UI
 ## Live iMessage runbook
 
 1. Provision a Spectrum Cloud iMessage line (app.photon.codes); set `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET` in `.env`.
-2. **Bind a test number to a patient:** edit a patient `handle` in `mock-assets/patients/*.json` to the patient device's iMessage handle (E.164 phone or Apple ID email), then `pnpm seed:reset`. Inbound senders are matched to patients by exact handle.
-3. Set `ESSOS_CONCIERGE_HANDLES` (comma-separated) to the concierge participants' real handles (not display names) so their messages don't trigger Eve and signal takeover.
-4. Create the group chat containing the patient device, the concierge device, and the Spectrum agent line.
-5. `pnpm demo` (starts convex + eve + dashboard + supervised transport together), then text from the patient device. To run the pieces separately instead: `pnpm eve:dev`, `pnpm transport:imessage`, `pnpm dashboard:dev`.
+2. For reviewer testing, keep `ESSOS_GUEST_MODE=1`: the first message from an unknown reviewer handle creates an isolated demo patient cloned from the guest template, so reviewers do not need phone pre-binding.
+3. If testing with a known patient instead, bind a number by editing a patient `handle` in `mock-assets/patients/*.json` to the patient device's iMessage handle (E.164 phone or Apple ID email), then `pnpm seed:reset`.
+4. Set `ESSOS_CONCIERGE_HANDLES` (comma-separated) to the concierge participants' real handles (not display names) so their messages don't trigger Eve and signal takeover.
+5. Use `ESSOS_MINIAPP_DELIVERY=spectrum_app` for the new Spectrum Mini App card path. The card opens `ESSOS_PATIENT_MINIAPP_BASE_URL` (current reviewer prod: `https://patient-miniapp.vercel.app`; switch to `https://mini.essos.dev` after DNS is attached) and falls back to a plain link if iMessage cannot render the card.
+6. Create the group chat containing the patient device, the concierge device, and the Spectrum agent line.
+7. `pnpm demo` (starts convex + eve + dashboard + supervised transport together), then text from the patient device. To run the pieces separately instead: `pnpm eve:dev`, `pnpm transport:imessage`, `pnpm dashboard:dev`.
 
 `pnpm eve:dev` serves Eve's HTTP API on `:3000` (the port the transport's `EVE_BASE_URL` defaults to); use `pnpm eve:tui` for the interactive console instead. To run Eve on a different port, set `EVE_BASE_URL` for the transport to match. Restart `eve:dev` after changing `@essos/shared` or an agent tool — the dev server snapshots them at startup.
 
@@ -194,6 +198,7 @@ The trial is deployed across **Convex Cloud** (data), **Vercel** (dashboard), an
 | Piece | Where | URL |
 | --- | --- | --- |
 | Dashboard | Vercel | https://essos-dashboard.vercel.app |
+| Patient mini-app / App Clip URL | Static web host | https://patient-miniapp.vercel.app now; `https://mini.essos.dev` after DNS attach |
 | Eve agent | Railway (web) | https://eve-production-0971.up.railway.app |
 | Spectrum transport | Railway (worker) | — (connects out to Spectrum, Eve, Convex) |
 | Slack bridge | Railway (worker) | — (Socket Mode; opt-in via `SLACK_ENABLED`, [ADR 019](.docs/decisions/019-slack-concierge-bridge.md)) |
@@ -217,7 +222,8 @@ Eve, the transport, and the Slack bridge live on Railway because all three are l
    ```
 2. **Railway (Eve + transport + Slack)** — `railway init`, then one service per worker. Because the build needs the whole monorepo (Eve links `@essos/shared`), each service is built from a Dockerfile selected with the `RAILWAY_DOCKERFILE_PATH` variable (`deploy/eve.Dockerfile`, `deploy/transport.Dockerfile`, `deploy/slack.Dockerfile`) rather than Railpack auto-detection. The Slack worker is opt-in: it needs `SLACK_ENABLED=1`, `SLACK_APP_TOKEN`, `SLACK_BOT_TOKEN`, `SLACK_ESCALATION_CHANNEL_ID` (plus the shared `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`), and `SLACK_ENABLED=1` on the Convex deployment so the backend enqueues. See [slack/README.md](slack/README.md) for the Slack app scopes.
    - `eve` (web): `railway domain` for a public URL; vars `ANTHROPIC_API_KEY`, `ESSOS_AGENT_MODEL`, `ESSOS_TRANSPORT_SECRET`. Eve binds `$PORT`; the public URL is protected by the transport bearer.
-   - `transport` (worker, no domain): `CONVEX_SITE_URL` (prod `.convex.site`) + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` (the eve public URL) + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`, `ESSOS_GUEST_MODE=1`, `ESSOS_CONCIERGE_HANDLES`.
+   - `transport` (worker, no domain): `CONVEX_SITE_URL` (prod `.convex.site`) + `CONVEX_SERVICE_SECRET`, `EVE_BASE_URL` (the eve public URL) + `ESSOS_TRANSPORT_SECRET`, `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET`, `ESSOS_GUEST_MODE=1`, `ESSOS_CONCIERGE_HANDLES`, `ESSOS_PATIENT_MINIAPP_BASE_URL=https://patient-miniapp.vercel.app` for current reviewers, `ESSOS_MINIAPP_DELIVERY=spectrum_app`, `ESSOS_APPLE_TEAM_ID=6JY9M75PT4`, `ESSOS_PATIENT_CARD_TTL_MINUTES=1440` for reviewer links.
+   - `patient-miniapp` (static web/App Clip surface): deploy with `EXPO_PUBLIC_CARD_API_URL=https://intent-hare-36.convex.site/miniapp/card`, `ESSOS_PATIENT_MINIAPP_DOMAIN=patient-miniapp.vercel.app` for current reviewers, and `ESSOS_APPLE_TEAM_ID=6JY9M75PT4`. Apple bundles: main `com.essos.raziworktrial`, App Clip `com.essos.raziworktrial.Clip`. Switch `ESSOS_PATIENT_MINIAPP_DOMAIN` to `mini.essos.dev` after that domain resolves to the deployed mini-app.
 3. **Dashboard (Vercel)** — link the project at the **repo root** with **Root Directory = `dashboard`** (so the whole monorepo uploads); [dashboard/vercel.json](dashboard/vercel.json) sets the build to compile `@essos/shared` first. Env: `NEXT_PUBLIC_CONVEX_URL` (prod `.convex.cloud`), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_ISSUER_DOMAIN`, `NEXT_PUBLIC_ESSOS_DEMO_MODE=1`, plus `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET` (and `CLERK_WEBHOOK_SIGNING_SECRET` if you wire the webhook). `vercel deploy --prod` from the repo root.
 4. **Clerk** — the `convex` JWT template carries `org_id`/`org_role`/`org_slug` claims (for role scoping). The org-sync webhook (`/api/webhooks`) is optional — concierge profiles are also synced on first dashboard action.
 

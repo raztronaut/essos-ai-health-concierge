@@ -59,17 +59,17 @@ export function ActionButton(props: {
         borderRadius: compact ? 8 : 10,
         borderWidth: 1,
         justifyContent: "center",
-        minHeight: compact ? 32 : 42,
+        minHeight: compact ? 36 : 42,
         minWidth: compact ? 40 : 52,
         opacity: pressed ? 0.76 : 1,
-        paddingHorizontal: compact ? 10 : 14,
+        paddingHorizontal: compact ? 11 : 14,
         transform: [{ scale: pressed ? 0.96 : 1 }],
       })}
     >
       <Text
         style={{
           color: palette.text,
-          fontSize: compact ? 12 : 15,
+          fontSize: compact ? 12.5 : 15,
           fontWeight: "800",
         }}
       >
@@ -80,6 +80,11 @@ export function ActionButton(props: {
 }
 
 export async function copyText(value: string): Promise<void> {
+  const webClipboard = globalThis.navigator?.clipboard;
+  if (webClipboard?.writeText) {
+    await webClipboard.writeText(value).catch(() => Clipboard.setStringAsync(value));
+    return;
+  }
   await Clipboard.setStringAsync(value);
 }
 

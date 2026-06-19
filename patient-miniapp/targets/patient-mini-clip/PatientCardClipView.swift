@@ -98,7 +98,7 @@ struct PatientCardClipView: View {
             error = "Open this App Clip from an Essos patient card link."
             return
         }
-        let base = ProcessInfo.processInfo.environment["EXPO_PUBLIC_CARD_API_URL"] ?? "https://mini.essos.dev/miniapp/card"
+        let base = ProcessInfo.processInfo.environment["EXPO_PUBLIC_CARD_API_URL"] ?? "https://intent-hare-36.convex.site/miniapp/card"
         guard var components = URLComponents(string: base) else {
             error = "The card API URL is not configured."
             return

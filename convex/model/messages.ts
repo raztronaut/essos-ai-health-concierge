@@ -28,6 +28,7 @@ export async function add(
     authorHandle?: string | null;
     category?: string | null;
     meta?: Record<string, unknown> | null;
+    sourceEventId?: string | null;
   }
 ): Promise<Message> {
   const meta = args.meta ?? null;
@@ -43,6 +44,7 @@ export async function add(
     conversation_id: args.conversationId,
     role: args.role,
     author_handle: args.authorHandle ?? null,
+    source_event_id: args.sourceEventId ?? null,
     text: args.text,
     category: args.category ?? null,
     created_at: nowIso(),
@@ -67,6 +69,21 @@ export async function add(
     });
   }
   return created;
+}
+
+export async function getBySourceEvent(
+  ctx: QueryCtx | MutationCtx,
+  conversationId: string,
+  sourceEventId: string
+): Promise<Message | null> {
+  const rows = await ctx.db
+    .query("messages")
+    .withIndex("by_conversation", (q) =>
+      q.eq("conversation_id", conversationId)
+    )
+    .order("desc")
+    .take(50);
+  return rows.find((m) => m.source_event_id === sourceEventId) ?? null;
 }
 
 /**

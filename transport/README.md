@@ -60,7 +60,7 @@ In the terminal provider, prefix a line with `/concierge ` to act as the human c
 
 `EVE_BASE_URL` (default `http://127.0.0.1:3000`), `ESSOS_DEMO_PATIENT`, `ESSOS_CONCIERGE_HANDLES`, `ESSOS_TRANSPORT_SECRET` (bearer for a non-loopback Eve; optional on localhost), and for iMessage `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET`. The machine path also needs `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`; `ESSOS_GUEST_MODE=1` enables guest onboarding.
 
-Patient mini-app/App Clip cards use `ESSOS_PATIENT_MINIAPP_BASE_URL` (default `http://localhost:8081`), `ESSOS_PATIENT_CARD_TTL_MINUTES` (default `60`), and `ESSOS_MINIAPP_DELIVERY=link|spectrum_card`. `spectrum_card` is best-effort and falls back to a link unless the installed `spectrum-ts` exposes `customizedMiniApp` and `ESSOS_APPLE_TEAM_ID` is set. Apple metadata uses `ESSOS_IMESSAGE_EXTENSION_BUNDLE_ID` (default `com.essos.concierge.messages`) plus optional `ESSOS_APP_STORE_ID`.
+Patient mini-app/App Clip cards use `ESSOS_PATIENT_MINIAPP_BASE_URL` (default `http://localhost:8081`), `ESSOS_PATIENT_CARD_TTL_MINUTES` (default `60`), and `ESSOS_MINIAPP_DELIVERY=link|spectrum_app|customized_miniapp`. `spectrum_app` is the reviewer default: it sends Spectrum's Mini App launcher card and falls back to a plain link. `customized_miniapp` first tries an Essos-owned iMessage mini-app card and then falls back to `spectrum_app`; it requires `ESSOS_APPLE_TEAM_ID` plus `ESSOS_IMESSAGE_EXTENSION_BUNDLE_ID` (default `com.essos.raziworktrial.MessagesExtension`) and optional `ESSOS_APP_STORE_ID`.
 
 ## Deploy
 

@@ -131,12 +131,18 @@ export async function upsert(
   await ctx.db.insert("patients", fields);
 }
 
-function guestNameFor(handle: string): string {
+function guestNameFor(handle: string, templateName: string): string {
   if (handle.includes("@")) {
-    return `Guest (${handle.split("@")[0]})`;
+    const local = handle.split("@")[0]?.trim();
+    if (local) {
+      return local
+        .split(/[._-]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+    }
   }
-  const tail = handle.replace(/\D/g, "").slice(-4);
-  return tail ? `Guest (·${tail})` : "Guest";
+  return templateName;
 }
 
 /**
@@ -150,7 +156,7 @@ export async function ensureGuest(
   args: { handle: string; name?: string | null; templateId?: string }
 ): Promise<Patient> {
   const existing = await getByHandle(ctx, args.handle);
-  if (existing) {
+  if (existing && !existing.name.startsWith("Guest")) {
     return existing;
   }
   const templateId = args.templateId ?? "pat_maya";
@@ -158,11 +164,19 @@ export async function ensureGuest(
   if (!template) {
     throw new Error(`Guest template patient "${templateId}" not found`);
   }
+  if (existing) {
+    const name = args.name?.trim() || guestNameFor(args.handle, template.name);
+    if (existing.name !== name) {
+      await ctx.db.patch(existing._id, { name });
+      return (await getByExternalId(ctx, existing.id)) ?? existing;
+    }
+    return existing;
+  }
 
   const id = newId("pat_guest");
   await ctx.db.insert("patients", {
     id,
-    name: args.name?.trim() || guestNameFor(args.handle),
+    name: args.name?.trim() || guestNameFor(args.handle, template.name),
     handle: args.handle,
     procedure: template.procedure,
     destination_city: template.destination_city,
@@ -175,12 +189,39 @@ export async function ensureGuest(
     created_at: nowIso(),
   });
 
-  // Clone the template's itinerary, care, and patient-specific source docs onto
-  // the new guest (fresh ids; shared global docs stay shared).
+  // Clone the template's patient-specific source docs first, then remap any
+  // itinerary/care references to those fresh ids. Shared global docs stay shared.
+  const sourceDocumentIdMap = new Map<string, string>();
+  const templateDocs = (
+    await listSourceDocumentsForPatient(ctx, template.id)
+  ).filter((d) => d.patient_id === template.id);
+  for (const doc of templateDocs) {
+    const clonedId = newId("doc_guest");
+    sourceDocumentIdMap.set(doc.id, clonedId);
+    await insertSourceDocument(ctx, {
+      id: clonedId,
+      patient_id: id,
+      kind: doc.kind,
+      title: doc.title,
+      source_type: doc.source_type,
+      source_status: doc.source_status,
+      answer_policy: doc.answer_policy,
+      markdown_path: doc.markdown_path,
+      pdf_path: doc.pdf_path,
+      sha256: doc.sha256,
+      storage_id: doc.storage_id,
+      file_name: doc.file_name,
+      content_type: doc.content_type,
+    });
+  }
+
   for (const event of await listItinerary(ctx, template.id)) {
     await insertItineraryEvent(ctx, {
       patient_id: id,
-      source_document_id: event.source_document_id,
+      source_document_id: event.source_document_id
+        ? (sourceDocumentIdMap.get(event.source_document_id) ??
+          event.source_document_id)
+        : null,
       kind: event.kind,
       title: event.title,
       detail: event.detail,
@@ -196,7 +237,10 @@ export async function ensureGuest(
   for (const care of await listCareInstructions(ctx, template.id)) {
     await insertCareInstruction(ctx, {
       patient_id: id,
-      source_document_id: care.source_document_id,
+      source_document_id: care.source_document_id
+        ? (sourceDocumentIdMap.get(care.source_document_id) ??
+          care.source_document_id)
+        : null,
       phase: care.phase,
       procedure: care.procedure,
       title: care.title,
@@ -208,24 +252,6 @@ export async function ensureGuest(
       effective_until: care.effective_until,
     });
   }
-  const templateDocs = (
-    await listSourceDocumentsForPatient(ctx, template.id)
-  ).filter((d) => d.patient_id === template.id);
-  for (const doc of templateDocs) {
-    await insertSourceDocument(ctx, {
-      id: newId("doc_guest"),
-      patient_id: id,
-      kind: doc.kind,
-      title: doc.title,
-      source_type: doc.source_type,
-      source_status: doc.source_status,
-      answer_policy: doc.answer_policy,
-      markdown_path: doc.markdown_path,
-      pdf_path: doc.pdf_path,
-      sha256: doc.sha256,
-    });
-  }
-
   const created = await getByExternalId(ctx, id);
   if (!created) {
     throw new Error("Failed to create guest patient");

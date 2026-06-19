@@ -9,12 +9,15 @@ import {
   drainBatch,
   enqueueInbound,
   getConversationById,
+  getMessageBySourceEvent,
   getPatientById,
   listOrphanedChains,
   listQueuedConversations,
+  markOutboundDelivered,
   type PipelineMessage,
   readCarried,
   readInflight,
+  recordOutboundFailure,
   recordJobFailure,
   setChainStage,
   sweepJobFailures,
@@ -75,6 +78,7 @@ export interface EnqueueInput {
   isConcierge: boolean;
   patientId?: string;
   spaceId: string;
+  sourceEventId?: string | null;
   text: string;
 }
 
@@ -145,11 +149,28 @@ export async function enqueue(input: EnqueueInput): Promise<void> {
     return;
   }
 
+  if (input.sourceEventId) {
+    const existing = await getMessageBySourceEvent(
+      conversation.id,
+      input.sourceEventId
+    );
+    if (existing) {
+      debug(
+        "pipeline",
+        "duplicate inbound event, dropping",
+        conversation.id,
+        input.sourceEventId
+      );
+      return;
+    }
+  }
+
   // Log the patient message once, now (durable + prompt Slack mirror).
   const inbound = await appendMessage({
     conversationId: conversation.id,
     role: "patient",
     authorHandle: authorHandle ?? patient.handle,
+    sourceEventId: input.sourceEventId ?? null,
     text: input.text,
   });
 
@@ -170,7 +191,8 @@ export async function enqueue(input: EnqueueInput): Promise<void> {
   await enqueueInbound({
     conversationId: conversation.id,
     spaceId: input.spaceId,
-    clientGuid: crypto.randomUUID(),
+    clientGuid: input.sourceEventId ?? crypto.randomUUID(),
+    sourceEventId: input.sourceEventId ?? null,
     authorHandle,
     sourceMessageId: inbound.id,
     text: input.text,
@@ -266,7 +288,13 @@ async function runChain(conversationId: string): Promise<void> {
     // Stage 4 - send with pacing + crash-safe resume (no abort mid-send).
     await setChainStage(conversationId, "send");
     if (result.reply) {
-      await sendReply(conversationId, chainId, result.reply, io);
+      await sendReply(
+        conversationId,
+        chainId,
+        result.reply,
+        io,
+        result.deliveryMessageIds ?? []
+      );
     }
     await setChainStage(conversationId, "done");
   } catch (err) {
@@ -342,39 +370,58 @@ async function sendReply(
   conversationId: string,
   chainId: string,
   reply: string,
-  io: ConversationIO
+  io: ConversationIO,
+  deliveryMessageIds: string[] = []
 ): Promise<void> {
   const items = await buildDeliveryItems(conversationId, reply);
   const chain = await readInflight(conversationId);
   const startIndex = chain?.chain_id === chainId ? chain.start_index : 0;
   const sent = new Set(chain?.chain_id === chainId ? chain.sent_guids : []);
 
-  for (let i = startIndex; i < items.length; i++) {
-    const guid = `${chainId}-${i}`;
-    if (sent.has(guid)) {
-      continue;
-    }
-    const item = items[i];
-    if (item?.kind === "patient_card") {
-      const sentNative =
-        MINIAPP_DELIVERY === "spectrum_card" && io.sendPatientCard
-          ? await io.sendPatientCard(item.link)
-          : false;
-      if (!sentNative) {
-        await io.send(formatPatientCardLink(item.link));
+  try {
+    for (let i = startIndex; i < items.length; i++) {
+      const guid = `${chainId}-${i}`;
+      if (sent.has(guid)) {
+        continue;
       }
-    } else {
-      await io.send(item?.text ?? "");
+      const item = items[i];
+      if (item?.kind === "patient_card") {
+        const sentNative =
+          MINIAPP_DELIVERY !== "link" && io.sendPatientCard
+            ? await io.sendPatientCard(item.link)
+            : false;
+        if (!sentNative) {
+          await io.send(formatPatientCardLink(item.link));
+        }
+      } else {
+        await io.send(item?.text ?? "");
+      }
+      await advanceStartIndex({
+        conversationId,
+        startIndex: i + 1,
+        sentGuid: guid,
+      });
+      if (i < items.length - 1 && SEND_PACING_MS > 0) {
+        await sleep(SEND_PACING_MS);
+      }
     }
-    await advanceStartIndex({
-      conversationId,
-      startIndex: i + 1,
-      sentGuid: guid,
-    });
-    if (i < items.length - 1 && SEND_PACING_MS > 0) {
-      await sleep(SEND_PACING_MS);
-    }
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    await Promise.all(
+      deliveryMessageIds.map((messageId) =>
+        recordOutboundFailure({ messageId, error, permanent: true }).catch(
+          () => undefined
+        )
+      )
+    );
+    throw err;
   }
+
+  await Promise.all(
+    deliveryMessageIds.map((messageId) =>
+      markOutboundDelivered(messageId).catch(() => undefined)
+    )
+  );
 }
 
 /**

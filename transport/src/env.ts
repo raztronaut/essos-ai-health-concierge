@@ -35,16 +35,31 @@ export const PATIENT_MINIAPP_BASE_URL =
   process.env.ESSOS_PATIENT_MINIAPP_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8081";
 
-export const MINIAPP_DELIVERY =
-  process.env.ESSOS_MINIAPP_DELIVERY === "spectrum_card"
-    ? "spectrum_card"
-    : "link";
+export type MiniappDeliveryMode =
+  | "link"
+  | "spectrum_app"
+  | "customized_miniapp";
+
+function miniappDeliveryMode(): MiniappDeliveryMode {
+  const raw = process.env.ESSOS_MINIAPP_DELIVERY?.trim();
+  if (raw === "link" || raw === "spectrum_app") {
+    return raw;
+  }
+  // Backward-compatible alias for the first App Clip spike.
+  if (raw === "spectrum_card" || raw === "customized_miniapp") {
+    return "customized_miniapp";
+  }
+  // Reviewer default: use Spectrum's Apple-approved Mini App launcher card.
+  return "spectrum_app";
+}
+
+export const MINIAPP_DELIVERY = miniappDeliveryMode();
 
 export const APPLE_TEAM_ID = process.env.ESSOS_APPLE_TEAM_ID?.trim() || null;
 
 export const IMESSAGE_EXTENSION_BUNDLE_ID =
   process.env.ESSOS_IMESSAGE_EXTENSION_BUNDLE_ID?.trim() ||
-  "com.essos.concierge.messages";
+  "com.essos.raziworktrial.MessagesExtension";
 
 export const APP_STORE_ID = process.env.ESSOS_APP_STORE_ID
   ? Number.parseInt(process.env.ESSOS_APP_STORE_ID, 10)

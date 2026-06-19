@@ -22,13 +22,13 @@ export function InfoCard(props: {
           ? essosTheme.color.amberLine
           : essosTheme.color.line,
         borderCurve: "continuous",
-        borderRadius: 14,
+        borderRadius: 16,
         borderWidth: 1,
         boxShadow: warning
           ? "0 0 0 1px rgba(246, 168, 0, 0.16)"
           : essosTheme.shadow.darkRing,
-        gap: 12,
-        padding: 16,
+        gap: 14,
+        padding: 14,
       }}
     >
       <View style={{ gap: 4 }}>
@@ -37,8 +37,9 @@ export function InfoCard(props: {
             selectable
             style={{
               color: warning ? essosTheme.color.amber : essosTheme.color.muted,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: "800",
+              letterSpacing: 0.4,
               textTransform: "uppercase",
             }}
           >
@@ -49,8 +50,9 @@ export function InfoCard(props: {
           selectable
           style={{
             color: warning ? essosTheme.color.pearl : essosTheme.color.pearl,
-            fontSize: 20,
+            fontSize: 19,
             fontWeight: "800",
+            lineHeight: 24,
           }}
         >
           {props.title}
@@ -82,13 +84,14 @@ export function DataRow(props: {
         borderTopColor: essosTheme.color.line,
         borderTopWidth: 1,
         flexDirection: "row",
+        flexWrap: "wrap",
         gap: 10,
         justifyContent: "space-between",
         minHeight: props.compact ? 36 : 44,
         paddingTop: props.compact ? 8 : 10,
       }}
     >
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={{ flex: 1, gap: 3, minWidth: 0 }}>
         <Text
           style={{
             color: essosTheme.color.quiet,
@@ -105,6 +108,7 @@ export function DataRow(props: {
             fontSize: props.compact ? 14 : 16,
             fontVariant: ["tabular-nums"],
             fontWeight: "700",
+            lineHeight: props.compact ? 18 : 22,
           }}
         >
           {props.value}

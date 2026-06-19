@@ -26,7 +26,7 @@ export function SourceDocumentCard(props: {
         backgroundColor: essosTheme.color.panel,
         borderColor: essosTheme.color.line,
         borderCurve: "continuous",
-        borderRadius: 12,
+        borderRadius: 14,
         borderWidth: 1,
         gap: 12,
         padding: 12,
@@ -37,8 +37,9 @@ export function SourceDocumentCard(props: {
           selectable
           style={{
             color: essosTheme.color.muted,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: "800",
+            letterSpacing: 0.4,
             textTransform: "uppercase",
           }}
         >
@@ -48,15 +49,16 @@ export function SourceDocumentCard(props: {
           selectable
           style={{
             color: essosTheme.color.pearl,
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: "800",
+            lineHeight: 22,
           }}
         >
           {props.document.title}
         </Text>
         <Text
           selectable
-          style={{ color: essosTheme.color.muted, fontSize: 13 }}
+          style={{ color: essosTheme.color.muted, fontSize: 13, lineHeight: 18 }}
         >
           {props.document.fileName ??
             (props.document.downloadable
@@ -80,7 +82,7 @@ export function SourceDocumentCard(props: {
               borderRadius: 8,
               borderWidth: 1,
               justifyContent: "center",
-              minHeight: 32,
+              minHeight: 36,
               opacity: pressed ? 0.76 : 1,
               paddingHorizontal: 10,
             })}
@@ -88,7 +90,7 @@ export function SourceDocumentCard(props: {
             <Text
               style={{
                 color: essosTheme.color.background,
-                fontSize: 12,
+                fontSize: 12.5,
                 fontWeight: "800",
               }}
             >

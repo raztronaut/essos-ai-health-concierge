@@ -15,6 +15,7 @@ export interface PipelineMessage {
   author_handle: string | null;
   client_guid: string;
   created_at: string;
+  source_event_id?: string | null;
   source_message_id: string;
   text: string;
 }
@@ -26,6 +27,7 @@ function toPipelineMessage(
 ): PipelineMessage {
   return {
     client_guid: row.client_guid,
+    source_event_id: row.source_event_id ?? null,
     author_handle: row.author_handle,
     source_message_id: row.source_message_id,
     text: row.text,
@@ -41,6 +43,7 @@ export async function enqueueInbound(
     conversationId: string;
     spaceId: string;
     clientGuid: string;
+    sourceEventId?: string | null;
     authorHandle: string | null;
     sourceMessageId: string;
     text: string;
@@ -50,6 +53,7 @@ export async function enqueueInbound(
     conversation_id: args.conversationId,
     space_id: args.spaceId,
     client_guid: args.clientGuid,
+    source_event_id: args.sourceEventId ?? null,
     author_handle: args.authorHandle,
     source_message_id: args.sourceMessageId,
     text: args.text,
@@ -105,6 +109,7 @@ export async function carryForward(
     await ctx.db.insert("carried_messages", {
       conversation_id: conversationId,
       client_guid: m.client_guid,
+      source_event_id: m.source_event_id ?? null,
       author_handle: m.author_handle,
       source_message_id: m.source_message_id,
       text: m.text,

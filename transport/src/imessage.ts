@@ -8,11 +8,13 @@ import {
   EVE_BASE_URL,
   GUEST_MODE,
   IMESSAGE_EXTENSION_BUNDLE_ID,
+  MINIAPP_DELIVERY,
 } from "./env.js";
 import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
 import { monitorSpectrumStreamLogs, startStreamHealth } from "./health.js";
 import { type TapbackName, toImessageText } from "./imessageText.js";
+import { sendMiniAppCard } from "./miniAppCards.js";
 import {
   sendRawToPatientSpace,
   startOutboundLoop,
@@ -43,29 +45,26 @@ async function sendSpectrumMiniAppCard(
   handle: string | null,
   link: PatientCardLink
 ): Promise<boolean> {
-  if (!APPLE_TEAM_ID) {
-    return false;
-  }
-  const provider = (await import("spectrum-ts/providers/imessage")) as {
-    customizedMiniApp?: (input: unknown) => unknown;
-  };
-  if (typeof provider.customizedMiniApp !== "function") {
-    return false;
-  }
-  const card = provider.customizedMiniApp({
-    appName: "Essos",
-    appStoreId: APP_STORE_ID ?? undefined,
-    extensionBundleId: IMESSAGE_EXTENSION_BUNDLE_ID,
-    teamId: APPLE_TEAM_ID,
-    url: link.url,
-    layout: {
-      caption: "Essos itinerary",
-      subcaption: "Tap for confirmations, clinic info, and pickup details",
-      trailingCaption: "Open",
-      summary: `Open your Essos ${link.purpose.replace("_", " ")} card`,
+  const result = await sendMiniAppCard(
+    link,
+    {
+      appStoreId: APP_STORE_ID,
+      appleTeamId: APPLE_TEAM_ID,
+      extensionBundleId: IMESSAGE_EXTENSION_BUNDLE_ID,
+      mode: MINIAPP_DELIVERY,
     },
-  });
-  return await sendRawToPatientSpace(app, spaceId, handle, card);
+    (content) => sendRawToPatientSpace(app, spaceId, handle, content)
+  );
+  if (result.delivered) {
+    console.error(
+      `[transport.imessage] patient mini-app card delivered (${result.mode}, purpose=${link.purpose})`
+    );
+  } else if (result.reason) {
+    console.error(
+      `[transport.imessage] patient mini-app card fallback (${result.reason}, purpose=${link.purpose})`
+    );
+  }
+  return result.delivered;
 }
 
 /**

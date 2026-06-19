@@ -1,5 +1,5 @@
 import { Link } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { ActionButton, copyText, openUrl } from "@/components/action-button";
 import { patientDocumentRoute } from "@/lib/card-api";
 import { formatDateTime, kindLabel } from "@/lib/format";
@@ -13,6 +13,8 @@ export function ItineraryCard(props: {
   status: "completed" | "current" | "upcoming";
   token: string;
 }) {
+  const { width } = useWindowDimensions();
+  const compact = width < 430;
   const statusLabel = {
     completed: "Completed",
     current: "You are here",
@@ -24,8 +26,8 @@ export function ItineraryCard(props: {
       : essosTheme.color.panel;
 
   return (
-    <View style={{ flexDirection: "row", gap: 14 }}>
-      <View style={{ alignItems: "center", width: 32 }}>
+    <View style={{ flexDirection: "row", gap: compact ? 10 : 14 }}>
+      <View style={{ alignItems: "center", width: compact ? 28 : 32 }}>
         <View
           style={{
             alignItems: "center",
@@ -36,9 +38,9 @@ export function ItineraryCard(props: {
                 : essosTheme.color.lineStrong,
             borderRadius: 16,
             borderWidth: 1,
-            height: 28,
+            height: compact ? 26 : 28,
             justifyContent: "center",
-            width: 28,
+            width: compact ? 26 : 28,
           }}
         >
           <Text
@@ -67,7 +69,14 @@ export function ItineraryCard(props: {
           />
         )}
       </View>
-      <View style={{ flex: 1, gap: 10, paddingBottom: props.isLast ? 0 : 22 }}>
+      <View
+        style={{
+          flex: 1,
+          gap: compact ? 9 : 10,
+          minWidth: 0,
+          paddingBottom: props.isLast ? 0 : compact ? 18 : 22,
+        }}
+      >
         <View style={{ gap: 3 }}>
           <View
             style={{
@@ -82,8 +91,9 @@ export function ItineraryCard(props: {
               style={{
                 color: essosTheme.color.pearl,
                 flexShrink: 1,
-                fontSize: 22,
+                fontSize: compact ? 20 : 22,
                 fontWeight: "800",
+                lineHeight: compact ? 24 : 27,
               }}
             >
               {props.event.title}
@@ -101,7 +111,7 @@ export function ItineraryCard(props: {
                 borderRadius: 999,
                 borderWidth: 1,
                 paddingHorizontal: 8,
-                paddingVertical: 3,
+                paddingVertical: 2,
               }}
             >
               <Text
@@ -112,6 +122,7 @@ export function ItineraryCard(props: {
                       : essosTheme.color.muted,
                   fontSize: 11,
                   fontWeight: "800",
+                  lineHeight: 14,
                 }}
               >
                 {statusLabel}
@@ -126,7 +137,11 @@ export function ItineraryCard(props: {
           </Text>
           <Text
             selectable
-            style={{ color: essosTheme.color.muted, fontSize: 13 }}
+            style={{
+              color: essosTheme.color.muted,
+              fontSize: 13,
+              lineHeight: 18,
+            }}
           >
             {formatDateTime(props.event.startsAt)}
           </Text>
@@ -138,10 +153,10 @@ export function ItineraryCard(props: {
               backgroundColor: essosTheme.color.panel,
               borderColor: essosTheme.color.line,
               borderCurve: "continuous",
-              borderRadius: 12,
+              borderRadius: 14,
               borderWidth: 1,
               gap: 10,
-              padding: 12,
+              padding: compact ? 10 : 12,
             }}
           >
             <Text
@@ -150,6 +165,7 @@ export function ItineraryCard(props: {
                 color: essosTheme.color.pearlSoft,
                 fontSize: 14,
                 fontWeight: "700",
+                lineHeight: 18,
               }}
             >
               {props.event.location}
@@ -182,6 +198,7 @@ export function ItineraryCard(props: {
             style={{
               alignItems: "center",
               flexDirection: "row",
+              flexWrap: "wrap",
               gap: 10,
               justifyContent: "space-between",
             }}
@@ -191,6 +208,7 @@ export function ItineraryCard(props: {
                 color: essosTheme.color.muted,
                 fontSize: 13,
                 fontWeight: "700",
+                lineHeight: 18,
               }}
             >
               Confirmation
@@ -203,7 +221,7 @@ export function ItineraryCard(props: {
                 borderColor: essosTheme.color.line,
                 borderRadius: 8,
                 borderWidth: 1,
-                minHeight: 32,
+                minHeight: 36,
                 opacity: pressed ? 0.72 : 1,
                 paddingHorizontal: 10,
                 paddingVertical: 7,
@@ -216,6 +234,7 @@ export function ItineraryCard(props: {
                   fontSize: 12,
                   fontVariant: ["tabular-nums"],
                   fontWeight: "900",
+                  lineHeight: 16,
                 }}
               >
                 {props.event.confirmationNumber}
@@ -227,7 +246,11 @@ export function ItineraryCard(props: {
         {props.event.detail ? (
           <Text
             selectable
-            style={{ color: essosTheme.color.muted, fontSize: 13 }}
+            style={{
+              color: essosTheme.color.muted,
+              fontSize: 13,
+              lineHeight: 19,
+            }}
           >
             {props.event.detail}
           </Text>
@@ -253,7 +276,7 @@ export function ItineraryCard(props: {
                 borderRadius: 8,
                 borderWidth: 1,
                 justifyContent: "center",
-                minHeight: 32,
+                minHeight: 36,
                 opacity: pressed ? 0.72 : 1,
                 paddingHorizontal: 10,
               })}
@@ -261,7 +284,7 @@ export function ItineraryCard(props: {
               <Text
                 style={{
                   color: essosTheme.color.green,
-                  fontSize: 12,
+                  fontSize: 12.5,
                   fontWeight: "800",
                 }}
               >
@@ -289,7 +312,7 @@ export function ItineraryCard(props: {
                   borderRadius: 8,
                   borderWidth: 1,
                   justifyContent: "center",
-                  minHeight: 32,
+                  minHeight: 36,
                   opacity: pressed ? 0.72 : 1,
                   paddingHorizontal: 10,
                 })}
@@ -297,7 +320,7 @@ export function ItineraryCard(props: {
                 <Text
                   style={{
                     color: essosTheme.color.pearlSoft,
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: "800",
                   }}
                 >

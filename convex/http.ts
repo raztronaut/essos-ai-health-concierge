@@ -35,6 +35,7 @@ const QUERIES: Record<string, AnyRef> = {
   listOpenEscalationsForConversation:
     internal.machine.listOpenEscalationsForConversation,
   hasMessageWithMetaKind: internal.machine.hasMessageWithMetaKind,
+  getMessageBySourceEvent: internal.machine.getMessageBySourceEvent,
   listPendingOutbound: internal.machine.listPendingOutbound,
   getPatientCardLinkByTokenHash: internal.machine.getPatientCardLinkByTokenHash,
   listPendingSlackOutbox: internal.machine.listPendingSlackOutbox,
