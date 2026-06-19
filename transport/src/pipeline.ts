@@ -11,14 +11,15 @@ import {
   getConversationById,
   getMessageBySourceEvent,
   getPatientById,
+  listMessages,
   listOrphanedChains,
   listQueuedConversations,
   markOutboundDelivered,
   type PipelineMessage,
   readCarried,
   readInflight,
-  recordOutboundFailure,
   recordJobFailure,
+  recordOutboundFailure,
   setChainStage,
   sweepJobFailures,
 } from "@essos/shared";
@@ -59,10 +60,10 @@ import {
 
 /** Provider-specific delivery for one conversation, captured from its space. */
 export interface ConversationIO {
-  /** Send a fresh bubble into the conversation (provider-transformed). */
-  send: (text: string) => Promise<void>;
   /** Mark the inbound message/conversation as read where supported. */
   markRead?: () => Promise<void> | void;
+  /** Send a fresh bubble into the conversation (provider-transformed). */
+  send: (text: string) => Promise<void>;
   /** Send a native rich patient card when the provider supports it. */
   sendPatientCard?: (link: PatientCardLink) => Promise<boolean>;
   startTyping?: () => Promise<void> | void;
@@ -77,8 +78,8 @@ export interface EnqueueInput {
   io: ConversationIO;
   isConcierge: boolean;
   patientId?: string;
-  spaceId: string;
   sourceEventId?: string | null;
+  spaceId: string;
   text: string;
 }
 
@@ -90,6 +91,21 @@ interface ChainState {
 }
 
 const chains = new Map<string, ChainState>();
+
+async function shouldUseNewContactGuard(
+  conversationId: string,
+  channel: Channel
+): Promise<boolean> {
+  if (channel !== "imessage") {
+    return false;
+  }
+  const messages = await listMessages(conversationId).catch(() => []);
+  const patientMessages = messages.filter((m) => m.role === "patient").length;
+  const deliveredAgentMessages = messages.some(
+    (m) => m.role !== "patient" && m.outbound === "sent"
+  );
+  return patientMessages <= 1 && !deliveredAgentMessages;
+}
 
 function getState(conversationId: string, io: ConversationIO): ChainState {
   const existing = chains.get(conversationId);
@@ -288,12 +304,20 @@ async function runChain(conversationId: string): Promise<void> {
     // Stage 4 - send with pacing + crash-safe resume (no abort mid-send).
     await setChainStage(conversationId, "send");
     if (result.reply) {
+      const newContactGuard = await shouldUseNewContactGuard(
+        conversationId,
+        conversation.channel
+      );
       await sendReply(
         conversationId,
         chainId,
         result.reply,
         io,
-        result.deliveryMessageIds ?? []
+        result.deliveryMessageIds ?? [],
+        {
+          allowPatientCards: !newContactGuard,
+          collapseTextBubbles: newContactGuard,
+        }
       );
     }
     await setChainStage(conversationId, "done");
@@ -333,28 +357,54 @@ export function splitBubbles(reply: string): string[] {
 }
 
 type DeliveryItem =
-  | { kind: "text"; text: string }
+  | { kind: "text"; messageIds: string[]; text: string }
   | { kind: "patient_card"; link: PatientCardLink };
 
-async function buildDeliveryItems(
+export async function buildDeliveryItems(
   conversationId: string,
-  reply: string
+  reply: string,
+  options: {
+    allowPatientCards: boolean;
+    collapseTextBubbles: boolean;
+    deliveryMessageIds: string[];
+  }
 ): Promise<DeliveryItem[]> {
   const extracted = extractPatientCardRequests(reply);
-  const items = extracted.text
-    ? splitBubbles(extracted.text).map<DeliveryItem>((text) => ({
-        kind: "text",
-        text,
-      }))
-    : [];
-  const links = await createLinksForConversation(
-    conversationId,
-    extracted.purposes
-  );
-  for (const link of links) {
-    items.push({ kind: "patient_card", link });
+  const items: DeliveryItem[] = [];
+  let text = extracted.text;
+
+  if (!options.allowPatientCards && extracted.purposes.length > 0) {
+    const note = 'Reply "card" and I\'ll send the visual Essos card next.';
+    text = text ? `${text}\n${note}` : note;
   }
-  return items.length > 0 ? items : [{ kind: "text", text: reply }];
+
+  if (text) {
+    const textBubbles = options.collapseTextBubbles
+      ? [text.replace(/\n{2,}/g, "\n").trim()]
+      : splitBubbles(text);
+    for (const [index, bubble] of textBubbles.entries()) {
+      const messageIds =
+        textBubbles.length === options.deliveryMessageIds.length
+          ? [options.deliveryMessageIds[index] ?? ""].filter(Boolean)
+          : index === textBubbles.length - 1
+            ? options.deliveryMessageIds
+            : [];
+      items.push({ kind: "text", text: bubble, messageIds });
+    }
+  }
+
+  if (options.allowPatientCards) {
+    const links = await createLinksForConversation(
+      conversationId,
+      extracted.purposes
+    );
+    for (const link of links) {
+      items.push({ kind: "patient_card", link });
+    }
+  }
+  return items.length > 0
+    ? items
+    : [{ kind: "text", text: reply, messageIds: options.deliveryMessageIds }];
 }
 
 const sleep = (ms: number): Promise<void> =>
@@ -371,9 +421,17 @@ async function sendReply(
   chainId: string,
   reply: string,
   io: ConversationIO,
-  deliveryMessageIds: string[] = []
+  deliveryMessageIds: string[] = [],
+  options: {
+    allowPatientCards?: boolean;
+    collapseTextBubbles?: boolean;
+  } = {}
 ): Promise<void> {
-  const items = await buildDeliveryItems(conversationId, reply);
+  const items = await buildDeliveryItems(conversationId, reply, {
+    allowPatientCards: options.allowPatientCards ?? true,
+    collapseTextBubbles: options.collapseTextBubbles ?? false,
+    deliveryMessageIds,
+  });
   const chain = await readInflight(conversationId);
   const startIndex = chain?.chain_id === chainId ? chain.start_index : 0;
   const sent = new Set(chain?.chain_id === chainId ? chain.sent_guids : []);
@@ -396,6 +454,13 @@ async function sendReply(
       } else {
         await io.send(item?.text ?? "");
       }
+      if (item?.kind === "text") {
+        await Promise.all(
+          item.messageIds.map((messageId) =>
+            markOutboundDelivered(messageId).catch(() => undefined)
+          )
+        );
+      }
       await advanceStartIndex({
         conversationId,
         startIndex: i + 1,
@@ -407,8 +472,15 @@ async function sendReply(
     }
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
+    const unsentMessageIds = [
+      ...new Set(
+        items
+          .slice(startIndex)
+          .flatMap((item) => (item.kind === "text" ? item.messageIds : []))
+      ),
+    ];
     await Promise.all(
-      deliveryMessageIds.map((messageId) =>
+      unsentMessageIds.map((messageId) =>
         recordOutboundFailure({ messageId, error, permanent: true }).catch(
           () => undefined
         )
@@ -416,12 +488,6 @@ async function sendReply(
     );
     throw err;
   }
-
-  await Promise.all(
-    deliveryMessageIds.map((messageId) =>
-      markOutboundDelivered(messageId).catch(() => undefined)
-    )
-  );
 }
 
 /**

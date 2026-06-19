@@ -105,9 +105,9 @@ function isStaleAutomatedFallback(
  */
 function buildDisclosure(_patient: Patient): string {
   return (
-    "Just so you know — you're chatting with Essos's AI concierge assistant. I can help " +
-    "with your itinerary, logistics, and travel questions any time, and our human care " +
-    "team is on this thread too. For anything medical, a person always steps in."
+    "Just so you know — I'm Eve, Essos's AI concierge. I can help with itinerary, " +
+    "logistics, confirmations, and source docs; for medical questions, a human care " +
+    "team member steps in."
   );
 }
 

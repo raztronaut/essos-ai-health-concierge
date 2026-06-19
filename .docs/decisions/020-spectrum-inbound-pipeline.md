@@ -42,6 +42,12 @@ durable.
   — handoff state, disclosure latch, `askEve`, graceful degradation, telemetry),
   send (split into bubbles, pace by `SEND_PACING_MS`, persist `start_index` +
   `sent_guids` after each so a crash resumes without re-sending).
+- **New-contact guard**: for a brand-new iMessage contact (one patient message
+  and no delivered agent message yet), the send stage collapses the first reply
+  into one text-only bubble and defers Spectrum mini-app/link delivery until the
+  patient replies again. This keeps the first exchange inside Photon/iMessage
+  deliverability limits and avoids the provider fallback that says the agent is
+  offline when the first turn tried to send disclosure + greeting + media.
 - **Generation stays in the transport**: `askEve` talks to the local eve HTTP
   server; Convex actions can't reach it. The `AbortSignal` is threaded into the
   eve fetch so a cancelled turn actually stops.
@@ -64,6 +70,10 @@ durable.
   not on `messages` rows.
 - **No mid-send abort.** Generation (the slow part) is cancellable; sends are
   fast and a partial re-send would duplicate, so sending runs to completion.
+- **First-contact media is deferred.** This is intentionally more conservative
+  than the normal Spectrum app-card path. Once the reviewer has completed one
+  text exchange, card requests use `ESSOS_MINIAPP_DELIVERY=spectrum_app` as
+  usual.
 - **Recovery is best-effort.** Stranded queued messages are picked up when the
   next message for that conversation arrives (no live Spectrum space exists at
   startup); orphaned chain markers are cleared. Spectrum exposes no `clientGuid`
