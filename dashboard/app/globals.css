@@ -15,6 +15,16 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /*
+   * System-wide defense against unbreakable tokens (user IDs, URLs, emails,
+   * hashes) overflowing their container. `overflow-wrap` is inherited, so this
+   * one declaration covers every descendant. We use `anywhere` rather than
+   * `break-word` because only `anywhere` lets a long token contribute its
+   * broken width to `min-content` — without it, flex/grid items refuse to
+   * shrink below the token and the text spills out (the classic activity-log
+   * overflow). Opt out per element with `white-space: nowrap` or `truncate`.
+   */
+  overflow-wrap: anywhere;
 }
 
 /* Serif display face for headings; tightened tracking for a sharper masthead. */
