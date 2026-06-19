@@ -121,7 +121,7 @@ function CommandPaletteDialog({
   return (
     <Command.Dialog
       className={cn(
-        "pointer-events-auto w-full max-w-lg overflow-hidden rounded-modal border border-border bg-card shadow-card outline-none focus:outline-none",
+        "pointer-events-auto w-full max-w-lg overflow-hidden rounded-modal bg-card shadow-border outline-none focus:outline-none",
         !reduceMotion && "transition-[opacity,transform] duration-150"
       )}
       contentClassName={cn(

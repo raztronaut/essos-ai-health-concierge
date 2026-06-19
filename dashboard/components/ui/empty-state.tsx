@@ -15,7 +15,7 @@ export function EmptyState({
   return (
     <Card
       className={cn(
-        "flex flex-col items-center justify-center border-dashed bg-surface/30 py-10 text-center",
+        "flex flex-col items-center justify-center border border-border border-dashed bg-surface/30 py-10 text-center shadow-none",
         className
       )}
     >

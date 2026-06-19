@@ -16,7 +16,7 @@ export default function DashboardError({
   }, [error]);
 
   return (
-    <div className="mx-auto max-w-md space-y-4 rounded-card border border-border bg-card p-6 text-center shadow-card">
+    <div className="mx-auto max-w-md space-y-4 rounded-card bg-card p-6 text-center shadow-border">
       <h1 className="serif text-2xl">Something went wrong</h1>
       <p className="text-muted text-sm">
         The dashboard hit an unexpected error reading the local store. You can

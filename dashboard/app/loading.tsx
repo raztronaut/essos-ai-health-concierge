@@ -6,7 +6,7 @@ export default function Loading() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div
-            className="h-24 animate-pulse rounded-card border border-border bg-card shadow-card"
+            className="h-24 animate-pulse rounded-card bg-card shadow-border"
             key={i}
           />
         ))}
@@ -14,7 +14,7 @@ export default function Loading() {
       <div className="space-y-3">
         {[0, 1, 2].map((i) => (
           <div
-            className="h-20 animate-pulse rounded-card border border-border bg-card shadow-card"
+            className="h-20 animate-pulse rounded-card bg-card shadow-border"
             key={i}
           />
         ))}

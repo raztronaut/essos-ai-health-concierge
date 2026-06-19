@@ -17,7 +17,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-card border border-border bg-card p-5 shadow-card",
+        "rounded-card bg-card p-5 shadow-border",
         interactive && "hover-lift cursor-pointer",
         className
       )}

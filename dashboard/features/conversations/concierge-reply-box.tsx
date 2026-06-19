@@ -75,7 +75,7 @@ export function ConciergeReplyBox({
 
   return (
     <form
-      className="relative overflow-hidden rounded-card border border-border bg-card shadow-card transition-shadow duration-fast ease-out focus-within:border-transparent focus-within:[box-shadow:var(--ring)]"
+      className="relative overflow-hidden rounded-card bg-card shadow-border transition-shadow duration-fast ease-out focus-within:[box-shadow:var(--ring)]"
       onSubmit={onSubmit}
     >
       {hasDraft ? (

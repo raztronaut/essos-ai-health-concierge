@@ -124,7 +124,7 @@ export function Dialog({
             aria-describedby={description ? descId : undefined}
             aria-labelledby={titleId}
             aria-modal="true"
-            className="w-full max-w-lg rounded-card border border-border bg-card p-6 shadow-card outline-none"
+            className="w-full max-w-lg rounded-card bg-card p-6 shadow-border outline-none"
             exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
             initial={
               reduceMotion ? { opacity: 1 } : { opacity: 0, y: 12, scale: 0.98 }

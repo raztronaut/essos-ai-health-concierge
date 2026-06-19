@@ -3,7 +3,7 @@
  *
  * Brand values are extracted from essos.com (see .essos_branding). Everything
  * the UI styles with lives here as a Tailwind v4 `@theme` token so it generates
- * a utility (e.g. `bg-surface`, `text-high`, `rounded-card`, `shadow-card`).
+ * a utility (e.g. `bg-surface`, `text-high`, `rounded-card`, `shadow-border`).
  * This file is the single source of truth for the design system.
  */
 @theme {
@@ -71,9 +71,20 @@
 
   /* Elevation — layered low-alpha shadows for real, soft depth ---------- */
   --shadow-sm: 0 1px 2px rgb(23 23 21 / 0.05);
-  --shadow-card: 0 1px 2px rgb(23 23 21 / 0.04), 0 1px 1px rgb(23 23 21 / 0.03);
-  --shadow-card-hover:
-    0 2px 4px rgb(23 23 21 / 0.05), 0 12px 28px -8px rgb(23 23 21 / 0.18);
+
+  /* Shadow-as-border — the elevation treatment for every raised surface
+   * (cards, dialogs, the command palette, toasts). Replaces a solid 1px
+   * hairline so depth adapts to any background: the first layer is the 1px
+   * ring, the next two add a soft lift. Pure black per the design-engineering
+   * recipe so the ring never picks up a surface tint. `--shadow-border-hover`
+   * keeps the elevated lift for interactive cards (see `.hover-lift`).
+   * Dividers, form-control outlines, and inset chips keep real borders. */
+  --shadow-border:
+    0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06),
+    0 2px 4px 0 rgb(0 0 0 / 0.04);
+  --shadow-border-hover:
+    0 0 0 1px rgb(0 0 0 / 0.09), 0 2px 4px rgb(0 0 0 / 0.05),
+    0 12px 28px -8px rgb(0 0 0 / 0.16);
 
   /* Motion — strong custom easing curves (built-in CSS easings are weak).
    * Defined in the --ease-* namespace so they back the `ease-out` /

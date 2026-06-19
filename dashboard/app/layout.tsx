@@ -84,8 +84,7 @@ export default function RootLayout({
                 position="bottom-right"
                 toastOptions={{
                   classNames: {
-                    toast:
-                      "rounded-card border border-border bg-card text-ink shadow-card",
+                    toast: "rounded-card bg-card text-ink shadow-border",
                     description: "text-muted",
                     actionButton: "bg-secondary text-ink",
                     cancelButton: "bg-surface text-muted",

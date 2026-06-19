@@ -59,14 +59,12 @@ body {
 .hover-lift {
   transition:
     transform var(--duration-base) var(--ease-out),
-    box-shadow var(--duration-base) var(--ease-out),
-    border-color var(--duration-base) var(--ease-out);
+    box-shadow var(--duration-base) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .hover-lift:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
-    box-shadow: var(--shadow-card-hover);
+    box-shadow: var(--shadow-border-hover);
     transform: translateY(-2px);
   }
 }
