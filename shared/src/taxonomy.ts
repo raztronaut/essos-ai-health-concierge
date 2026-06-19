@@ -139,3 +139,151 @@ export function categoryRequiresEscalation(
 ): boolean {
   return !CATEGORY_POLICIES[category].autonomous;
 }
+
+// ---------------------------------------------------------------------------
+// Per-patient policy overrides (tighten-only) — see ADR 021.
+//
+// The global `CATEGORY_POLICIES` are the conservative default for every
+// patient. A patient may carry overrides that make Eve *more* cautious for
+// them specifically — never less. This is the safety invariant of the whole
+// feature: an override can force a normally-autonomous category to escalate
+// and can raise a Med flag to High, but it can never make a category
+// autonomous or lower a level. A clinical guardrail can only ever tighten.
+// ---------------------------------------------------------------------------
+
+/**
+ * A single per-patient override of the global taxonomy for one category.
+ * Tighten-only by construction: there is no field that loosens a guardrail.
+ */
+export interface PatientPolicyOverride {
+  category: EscalationCategory;
+  /**
+   * Force a normally-autonomous category (e.g. `travel_logistics`) to escalate
+   * for this patient. Has no effect on categories that already escalate — you
+   * cannot use `false` here to make a clinical category autonomous.
+   */
+  force_escalate?: boolean;
+  /** Raise the escalation level for this category. Only ever raises (Med -> High); never lowers. */
+  level?: EscalationLevel;
+}
+
+const LEVEL_RANK: Record<EscalationLevel, number> = { Med: 1, High: 2 };
+
+/** The stricter (higher-priority) of two levels. */
+export function higherLevel(
+  a: EscalationLevel,
+  b: EscalationLevel
+): EscalationLevel {
+  return LEVEL_RANK[a] >= LEVEL_RANK[b] ? a : b;
+}
+
+/**
+ * Resolve the effective policy for a category given a patient's overrides.
+ * Tighten-only: the result is never more permissive than the global default.
+ */
+export function resolvePatientPolicy(
+  category: EscalationCategory,
+  overrides?: readonly PatientPolicyOverride[] | null
+): CategoryPolicy {
+  const base = CATEGORY_POLICIES[category];
+  const override = overrides?.find((o) => o.category === category);
+  if (!override) {
+    return base;
+  }
+
+  let autonomous = base.autonomous;
+  let defaultLevel = base.defaultLevel;
+
+  // Tighten only: a normally-autonomous category can be forced to escalate.
+  // `force_escalate === false` is ignored — it can never make a clinical
+  // category autonomous.
+  if (override.force_escalate === true && autonomous) {
+    autonomous = false;
+    defaultLevel = override.level ?? defaultLevel ?? "Med";
+  }
+
+  // A level override only ever raises, and only matters once escalating.
+  if (!autonomous && override.level) {
+    defaultLevel = higherLevel(defaultLevel ?? "Med", override.level);
+  }
+
+  return { ...base, autonomous, defaultLevel };
+}
+
+/** The full per-patient effective policy map (global defaults + overrides). */
+export function resolvePatientPolicies(
+  overrides?: readonly PatientPolicyOverride[] | null
+): Record<EscalationCategory, CategoryPolicy> {
+  const out = {} as Record<EscalationCategory, CategoryPolicy>;
+  for (const category of ALL_CATEGORIES) {
+    out[category] = resolvePatientPolicy(category, overrides);
+  }
+  return out;
+}
+
+/**
+ * Drop no-op / invalid / loosening entries so only real tightenings persist.
+ * Keeps one entry per category. Used by the mutation and the dashboard so the
+ * stored overrides are always meaningful and minimal.
+ */
+export function sanitizePolicyOverrides(
+  overrides: readonly PatientPolicyOverride[] | null | undefined
+): PatientPolicyOverride[] {
+  if (!overrides) {
+    return [];
+  }
+  const byCategory = new Map<EscalationCategory, PatientPolicyOverride>();
+  for (const raw of overrides) {
+    if (!isEscalationCategory(raw.category)) {
+      continue;
+    }
+    const base = CATEGORY_POLICIES[raw.category];
+    const forces = raw.force_escalate === true && base.autonomous;
+    // A level bump only tightens when the (resolved) category escalates and the
+    // bump is strictly higher than the current default.
+    const escalates = forces || !base.autonomous;
+    const raises =
+      raw.level !== undefined &&
+      escalates &&
+      higherLevel(base.defaultLevel ?? "Med", raw.level) === raw.level &&
+      raw.level !== (base.defaultLevel ?? "Med");
+    if (!(forces || raises)) {
+      continue;
+    }
+    const entry: PatientPolicyOverride = { category: raw.category };
+    if (forces) {
+      entry.force_escalate = true;
+    }
+    if (raises) {
+      entry.level = raw.level;
+    }
+    byCategory.set(raw.category, entry);
+  }
+  return [...byCategory.values()];
+}
+
+/**
+ * A compact one-line-per-category summary of how a patient's overrides differ
+ * from the global default, for the trusted agent context header and the
+ * dashboard. Returns null when nothing differs.
+ */
+export function summarizePolicyOverrides(
+  overrides?: readonly PatientPolicyOverride[] | null
+): string | null {
+  const clean = sanitizePolicyOverrides(overrides);
+  if (clean.length === 0) {
+    return null;
+  }
+  const parts = clean.map((o) => {
+    const resolved = resolvePatientPolicy(o.category, clean);
+    const bits: string[] = [];
+    if (o.force_escalate && CATEGORY_POLICIES[o.category].autonomous) {
+      bits.push("always escalate");
+    }
+    if (resolved.defaultLevel) {
+      bits.push(`level ${resolved.defaultLevel}`);
+    }
+    return `${o.category} (${bits.join(", ")})`;
+  });
+  return parts.join("; ");
+}

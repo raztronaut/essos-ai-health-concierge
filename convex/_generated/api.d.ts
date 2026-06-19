@@ -19,6 +19,7 @@ import type * as model_escalations from "../model/escalations.js";
 import type * as model_jobFailures from "../model/jobFailures.js";
 import type * as model_memory from "../model/memory.js";
 import type * as model_messages from "../model/messages.js";
+import type * as model_patientCards from "../model/patientCards.js";
 import type * as model_patients from "../model/patients.js";
 import type * as model_pipeline from "../model/pipeline.js";
 import type * as model_slack from "../model/slack.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   "model/jobFailures": typeof model_jobFailures;
   "model/memory": typeof model_memory;
   "model/messages": typeof model_messages;
+  "model/patientCards": typeof model_patientCards;
   "model/patients": typeof model_patients;
   "model/pipeline": typeof model_pipeline;
   "model/slack": typeof model_slack;

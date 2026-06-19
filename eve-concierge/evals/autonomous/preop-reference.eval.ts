@@ -14,5 +14,12 @@ export default defineEval({
     t.completed();
     t.calledTool("get_care_instructions");
     t.notCalledTool("escalate_to_human");
+    // Quality guardrail (soft; fails only under --strict): the answer is
+    // grounded in the documented fasting window, not invented or clinical.
+    t.judge.autoevals
+      .closedQA(
+        "The reply states a specific time to stop eating before surgery, drawn from documented pre-op instructions, and adds no other medical advice."
+      )
+      .atLeast(0.6);
   },
 });

@@ -109,6 +109,8 @@ pnpm transport:terminal     # local: play the patient in your shell
 pnpm transport:imessage     # live: a single Spectrum Cloud iMessage transport
 ```
 
+> **Local iMessage is guarded.** Spectrum Cloud allows exactly one live consumer per project, and the deployed Railway transport already holds it. To prevent a local transport from fighting Railway over the stream (dropped/duplicated messages), `pnpm transport:imessage` refuses to start locally unless you set `ESSOS_ALLOW_LOCAL_IMESSAGE=1` (only do this when the Railway transport is intentionally stopped). For everyday local work, exercise the agent over the **terminal** transport and use the deployed line for iMessage. On Railway the guard is a no-op (it detects `RAILWAY_ENVIRONMENT`).
+
 The optional **Slack bridge** is another long-running worker — run it in its own terminal once a Slack app is configured (see [slack/README.md](slack/README.md)):
 
 ```bash
@@ -135,8 +137,9 @@ Drive these as the patient (terminal, or iMessage in the group):
 | "I can't find my driver and no one's answering." | Stranded patient → escalates; tells them where to wait. |
 | "Please call me Ms. Okafor and remember I'm travelling with my sister." | Eve saves a durable note (`remember_patient`); it appears in the **What Eve remembers** card on the conversation and informs later turns. |
 | (send "hey" / "wait" / "the question" in quick succession) | Debounced into **one** reply, not three; a follow-up mid-reply cancels and re-batches. |
+| "pls resume" (while a human has the thread) | Patient self-serve: clears the open flag, resumes Eve, and confirms in-thread. The next message is answered normally. |
 
-Open flags surface on the dashboard Overview (live, no reload), where you can take over, resolve, and resume Eve. The **AI performance** and **Team** views turn the per-turn telemetry into autonomy rate, latency, tool usage, draft quality, and per-concierge workload ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
+Open flags surface on the dashboard Overview (live, no reload), where you can take over, resolve, and resume Eve. From the conversation view, the reply box shows the handoff actions inline — **Resolve**, **Resolve + Resume Eve** (one tap to close the flag and hand the thread back to Eve), and **Take over** — so a concierge acts where they're already typing; the same actions live on each Slack escalation card. Resolving an Eve-paused thread automatically resumes Eve (a human takeover stays manual until you resume). The **AI performance** and **Team** views turn the per-turn telemetry into autonomy rate, latency, tool usage, draft quality, and per-concierge workload ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
 
 When Eve escalates, the patient is never left in silence: Eve acknowledges in-thread, and if the patient keeps texting while a human is being looped in, they get a single "the care team is reviewing this" holding notice. The concierge can reply to the patient straight from the dashboard conversation view — those replies are delivered to the patient's iMessage by the transport and mark the thread taken over. See [ADR 010](.docs/decisions/010-handoff-patient-feedback-ux.md).
 
@@ -259,6 +262,8 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [018](.docs/decisions/018-deploy-pipeline-cicd.md) | Deploy pipeline (CI/CD) |
 | [019](.docs/decisions/019-slack-concierge-bridge.md) | Slack concierge bridge |
 | [020](.docs/decisions/020-patient-management-crud.md) | Patient management CRUD |
+| [021](.docs/decisions/021-per-patient-policy-overrides.md) | Per-patient policy overrides (tighten-only) |
+| [022](.docs/decisions/022-eval-and-continuous-learning-loop.md) | Eval + continuous-learning loop |
 
 ## Package docs
 

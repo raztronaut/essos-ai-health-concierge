@@ -8,14 +8,19 @@ import {
   getSlackLinkByThread,
   listPatients,
   listSourceDocumentsWithUrls,
+  resolveAndResumeFromSlack,
   resolveEscalationFromSlack,
   resumeAutomationFromSlack,
+  setEscalationFeedbackFromSlack,
   takeOverFromSlack,
 } from "@essos/shared";
 import type { App } from "@slack/bolt";
 import type { KnownBlock } from "@slack/types";
 import {
+  ACTION_FEEDBACK_INVALID,
+  ACTION_FEEDBACK_VALID,
   ACTION_RESOLVE,
+  ACTION_RESOLVE_RESUME,
   ACTION_RESUME,
   ACTION_SEND_SUGGESTED,
   ACTION_TAKE_OVER,
@@ -158,6 +163,25 @@ export function registerListeners(app: App): void {
     }
   });
 
+  // --- Resolve every flag + resume Eve in one tap ---
+  app.action(ACTION_RESOLVE_RESUME, async ({ ack, body, action, client }) => {
+    await ack();
+    const payload = decodeAction("value" in action ? action.value : undefined);
+    if (!payload) {
+      return;
+    }
+    try {
+      const identity = await resolveIdentity(client, body.user.id);
+      await resolveAndResumeFromSlack({
+        conversationId: payload.conversationId,
+        label: identity.label,
+        clerkId: identity.clerkId,
+      });
+    } catch (err) {
+      debug("listeners", "resolve+resume failed", String(err));
+    }
+  });
+
   // --- Resume Eve automation ---
   app.action(ACTION_RESUME, async ({ ack, body, action, client }) => {
     await ack();
@@ -175,6 +199,39 @@ export function registerListeners(app: App): void {
       debug("listeners", "resume failed", String(err));
     }
   });
+
+  // --- Escalation-validity verdict (ADR 022) ---
+  for (const [actionId, valid] of [
+    [ACTION_FEEDBACK_VALID, true],
+    [ACTION_FEEDBACK_INVALID, false],
+  ] as const) {
+    app.action(actionId, async ({ ack, body, action, client }) => {
+      await ack();
+      const payload = decodeAction(
+        "value" in action ? action.value : undefined
+      );
+      if (!payload?.escalationId) {
+        return;
+      }
+      try {
+        const identity = await resolveIdentity(client, body.user.id);
+        await setEscalationFeedbackFromSlack({
+          escalationId: payload.escalationId,
+          valid,
+          label: identity.label,
+        });
+        await postThread(
+          app,
+          payload.conversationId,
+          `${valid ? "✅" : "🚫"} ${identity.label} marked this escalation ${
+            valid ? "necessary" : "unnecessary"
+          }.`
+        );
+      } catch (err) {
+        debug("listeners", "feedback failed", String(err));
+      }
+    });
+  }
 
   // Acknowledge link-only buttons (URL buttons still fire an action event).
   app.action("essos_open_dashboard", async ({ ack }) => {

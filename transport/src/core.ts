@@ -16,12 +16,39 @@ import {
   markConciergeTakeover,
   type Patient,
   recordAgentTurn,
+  resolveAndResume,
+  resumeAutomation,
   saveEveSession,
 } from "@essos/shared";
 import { buildContextMessage } from "./context.js";
 import { debug } from "./debug.js";
+import { GUEST_TEMPLATE } from "./env.js";
 import { askEve, type EveSession, type TurnTelemetry } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
+
+/**
+ * Best-effort mapping from the tool Eve used to the taxonomy category an
+ * autonomous turn served, so `agent_turns.category` is populated for answered
+ * turns too (escalated turns take their category from the escalation's
+ * `reason`). The last meaningful tool wins. Null when no tool maps cleanly —
+ * the metric then falls back to "uncategorized" rather than guessing.
+ */
+const TOOL_CATEGORY: Record<string, string> = {
+  get_itinerary: "itinerary_reference",
+  update_logistics: "travel_logistics",
+  get_care_instructions: "documented_preop_reference",
+  search_local_places: "local_recommendation",
+};
+
+function inferCategoryFromTools(toolCalls: string[]): string | null {
+  for (const tool of [...toolCalls].reverse()) {
+    const category = TOOL_CATEGORY[tool];
+    if (category) {
+      return category;
+    }
+  }
+  return null;
+}
 
 /** Best-effort typing indicator, driven only while Eve is composing a reply. */
 export interface TypingController {
@@ -106,26 +133,66 @@ async function degradeToHuman(args: {
   errorDetail: string;
   reason: InboundResult["reason"];
 }): Promise<InboundResult> {
-  try {
-    await escalateToHuman({
-      conversationId: args.conversationId,
-      patientId: args.patientId,
-      level: "Med",
-      reason: "missing_source_or_unsure",
-      summary: `Automated fallback — the AI concierge could not produce a reply (${args.errorDetail}). Routed to the care team.`,
-      sourceMessageId: args.sourceMessageId,
-    });
-  } catch (err) {
-    // Even if escalation bookkeeping fails, still give the patient a reply.
-    debug("transport", "degrade escalate failed", String(err));
-  }
+  // No try/catch here: this is the patient's safety net. If escalation
+  // bookkeeping or the holding-notice write fails, that is a critical failure
+  // that must surface loudly (the caller records it to job_failures) rather
+  // than pretending the patient was routed to a human when they weren't.
+  await escalateToHuman({
+    conversationId: args.conversationId,
+    patientId: args.patientId,
+    level: "Med",
+    reason: "missing_source_or_unsure",
+    summary: `Automated fallback — the AI concierge could not produce a reply (${args.errorDetail}). Routed to the care team.`,
+    sourceMessageId: args.sourceMessageId,
+  });
   await appendMessage({
     conversationId: args.conversationId,
     role: "agent",
     text: HOLDING_NOTICE_MED,
     meta: { kind: "handoff_holding" },
-  }).catch(() => {});
+  });
   return { reply: HOLDING_NOTICE_MED, reason: args.reason };
+}
+
+/**
+ * Patient self-serve resume: a paused/taken-over thread can be handed back to
+ * Eve by the patient texting a short "resume" command. Matches the whole
+ * (trimmed) message so it never fires on a sentence that merely contains the
+ * word — e.g. "resume my booking" is not a command. See ADR 010.
+ */
+const RESUME_COMMAND =
+  /^(pls\s+|please\s+)?(resume|unpause|reactivate)( eve| the (bot|agent|ai|assistant))?[\s.!]*$/i;
+
+export function isResumeCommand(text: string): boolean {
+  return RESUME_COMMAND.test(text.trim());
+}
+
+const RESUME_CONFIRMATION =
+  "You're back with Eve — I've got it from here. What can I help you with?";
+
+/**
+ * Handle a patient "resume" command on a paused/taken-over thread: clear the
+ * open flags, resume automation, and confirm in-thread. Returns true when the
+ * command applied (the caller should not also run a normal turn for it), false
+ * when the thread was already active (treat the text as a normal message).
+ */
+export async function handlePatientResume(
+  conversationId: string,
+  send: (text: string) => Promise<void>
+): Promise<boolean> {
+  const fresh = await getConversationById(conversationId);
+  if (!fresh || fresh.automation_state === "active") {
+    return false;
+  }
+  await resolveAndResume(conversationId, "patient");
+  await appendMessage({
+    conversationId,
+    role: "agent",
+    text: RESUME_CONFIRMATION,
+    meta: { kind: "resume_confirmation" },
+  });
+  await send(RESUME_CONFIRMATION);
+  return true;
 }
 
 /**
@@ -169,6 +236,7 @@ export async function resolveConversationAndPatient(args: {
       patient = await ensureGuestPatient({
         handle: authorHandle,
         name: args.guestName ?? null,
+        templateId: GUEST_TEMPLATE,
       });
     }
     if (!patient) {
@@ -243,33 +311,54 @@ export async function generateTurn(
   const fresh = (await getConversationById(conversation.id)) ?? conversation;
   if (fresh.automation_state === "paused_for_review") {
     const open = await listOpenEscalationsForConversation(conversation.id);
-    // Durable one-time latch anchored on the current escalation's open time, so
-    // exactly one holding notice is sent per pause and a restart won't repeat it.
-    const since = open[0]?.created_at;
-    const alreadyNotified = since
-      ? await hasMessageWithMetaKind(conversation.id, "handoff_holding", since)
-      : await hasMessageWithMetaKind(conversation.id, "handoff_holding");
-    if (alreadyNotified) {
-      return { reply: null, reason: "paused_for_review" };
+    const latestOpen = open[0];
+    if (!latestOpen) {
+      // Paused but nothing open to review — the flag was resolved without
+      // resuming, or state drifted. Self-heal so the patient is never stranded
+      // in silence, then fall through to a normal Eve turn.
+      debug(
+        "transport",
+        "paused with no open escalation; resuming Eve",
+        conversation.id
+      );
+      await resumeAutomation(conversation.id, "system");
+    } else {
+      // Durable one-time latch anchored on the current escalation's open time,
+      // so exactly one holding notice is sent per pause, a restart won't repeat
+      // it, and a re-pause after a resume (a newer escalation) notifies again.
+      const since = latestOpen.created_at;
+      const alreadyNotified = await hasMessageWithMetaKind(
+        conversation.id,
+        "handoff_holding",
+        since
+      );
+      if (alreadyNotified) {
+        return { reply: null, reason: "paused_for_review" };
+      }
+      const isHigh = open.some((e) => e.level === "High");
+      const notice = isHigh ? HOLDING_NOTICE_HIGH : HOLDING_NOTICE_MED;
+      await appendMessage({
+        conversationId: conversation.id,
+        role: "agent",
+        text: notice,
+        meta: { kind: "handoff_holding" },
+      });
+      return { reply: notice, reason: "paused_for_review" };
     }
-    const isHigh = open.some((e) => e.level === "High");
-    const notice = isHigh ? HOLDING_NOTICE_HIGH : HOLDING_NOTICE_MED;
-    await appendMessage({
-      conversationId: conversation.id,
-      role: "agent",
-      text: notice,
-      meta: { kind: "handoff_holding" },
-    });
-    return { reply: notice, reason: "paused_for_review" };
-  }
-  if (fresh.automation_state === "taken_over") {
+  } else if (fresh.automation_state === "taken_over") {
     return { reply: null, reason: "taken_over" };
   }
 
   // Per-person memory (keyed by patient, stable across their conversations).
+  // Memory is an optional enhancement, so a fetch error is logged and the turn
+  // proceeds without it — but it is never silently swallowed.
   const memory =
-    (await getAgentMemory(patient.id).catch(() => null))?.working_memory ??
-    null;
+    (
+      await getAgentMemory(patient.id).catch((err: unknown) => {
+        debug("transport", "memory fetch failed", String(err));
+        return null;
+      })
+    )?.working_memory ?? null;
   const contextMessage = buildContextMessage({
     patient,
     conversation: fresh,
@@ -287,8 +376,9 @@ export async function generateTurn(
   const startedAt = Date.now();
   try {
     await args.typing?.start();
-  } catch {
+  } catch (err) {
     // Typing is best-effort; never fail a turn because the indicator didn't set.
+    debug("transport", "typing start failed", String(err));
   }
   try {
     const result = await respond(contextMessage, prior, args.signal);
@@ -310,7 +400,9 @@ export async function generateTurn(
       escalated: false,
       ok: false,
       error: message,
-    }).catch(() => {});
+    }).catch((telemetryErr: unknown) => {
+      debug("transport", "telemetry record failed", String(telemetryErr));
+    });
     return await degradeToHuman({
       conversationId: conversation.id,
       patientId: patient.id,
@@ -319,7 +411,9 @@ export async function generateTurn(
       reason: `eve_error: ${message}`,
     });
   } finally {
-    await Promise.resolve(args.typing?.stop()).catch(() => {});
+    await Promise.resolve(args.typing?.stop()).catch((err: unknown) => {
+      debug("transport", "typing stop failed", String(err));
+    });
   }
   const latencyMs = Date.now() - startedAt;
 
@@ -336,7 +430,9 @@ export async function generateTurn(
       totalTokens: telemetry?.totalTokens ?? null,
       escalated: false,
       ok: true,
-    }).catch(() => {});
+    }).catch((telemetryErr: unknown) => {
+      debug("transport", "telemetry record failed", String(telemetryErr));
+    });
     return await degradeToHuman({
       conversationId: conversation.id,
       patientId: patient.id,
@@ -369,6 +465,21 @@ export async function generateTurn(
   // A now-paused state is a reliable "this turn escalated" signal.
   const afterState = (await getConversationById(conversation.id))
     ?.automation_state;
+  const escalated = afterState === "paused_for_review";
+  // Category: an escalated turn carries the escalation's taxonomy category; an
+  // autonomous turn is inferred from the tool it used (best-effort).
+  let category: string | null;
+  if (escalated) {
+    const open = await listOpenEscalationsForConversation(
+      conversation.id
+    ).catch((err: unknown) => {
+      debug("transport", "escalation category lookup failed", String(err));
+      return [];
+    });
+    category = open[0]?.reason ?? "missing_source_or_unsure";
+  } else {
+    category = inferCategoryFromTools(telemetry?.toolCalls ?? []);
+  }
   await recordAgentTurn({
     conversationId: conversation.id,
     patientId: patient.id,
@@ -378,9 +489,12 @@ export async function generateTurn(
     promptTokens: telemetry?.promptTokens ?? null,
     completionTokens: telemetry?.completionTokens ?? null,
     totalTokens: telemetry?.totalTokens ?? null,
-    escalated: afterState === "paused_for_review",
+    escalated,
+    category,
     ok: true,
-  }).catch(() => {});
+  }).catch((telemetryErr: unknown) => {
+    debug("transport", "telemetry record failed", String(telemetryErr));
+  });
 
   return { reply, reason: "answered" };
 }

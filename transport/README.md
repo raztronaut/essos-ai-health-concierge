@@ -60,6 +60,8 @@ In the terminal provider, prefix a line with `/concierge ` to act as the human c
 
 `EVE_BASE_URL` (default `http://127.0.0.1:3000`), `ESSOS_DEMO_PATIENT`, `ESSOS_CONCIERGE_HANDLES`, `ESSOS_TRANSPORT_SECRET` (bearer for a non-loopback Eve; optional on localhost), and for iMessage `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET`. The machine path also needs `CONVEX_SITE_URL` + `CONVEX_SERVICE_SECRET`; `ESSOS_GUEST_MODE=1` enables guest onboarding.
 
+Patient mini-app/App Clip cards use `ESSOS_PATIENT_MINIAPP_BASE_URL` (default `http://localhost:8081`), `ESSOS_PATIENT_CARD_TTL_MINUTES` (default `60`), and `ESSOS_MINIAPP_DELIVERY=link|spectrum_card`. `spectrum_card` is best-effort and falls back to a link unless the installed `spectrum-ts` exposes `customizedMiniApp` and `ESSOS_APPLE_TEAM_ID` is set. Apple metadata uses `ESSOS_IMESSAGE_EXTENSION_BUNDLE_ID` (default `com.essos.concierge.messages`) plus optional `ESSOS_APP_STORE_ID`.
+
 ## Deploy
 
 Runs as a long-running **Railway worker** (it holds the Spectrum connection + outbound/reminder loops, so it can't be serverless), built from [deploy/transport.Dockerfile](../deploy/transport.Dockerfile). Full runbook in the root [README](../README.md#deploy-live) and [ADR 017](../.docs/decisions/017-guest-onboarding-and-deployment.md).

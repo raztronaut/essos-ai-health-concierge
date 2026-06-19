@@ -11,6 +11,9 @@ import {
   inflightChainDoc,
   itineraryEventDoc,
   messageDoc,
+  patientCardLinkDoc,
+  patientCardLinkResult,
+  patientCardPurpose,
   patientDoc,
   pipelineMessageDoc,
   slackLinkDoc,
@@ -22,6 +25,7 @@ import * as Escalations from "./model/escalations.js";
 import * as JobFailures from "./model/jobFailures.js";
 import * as Memory from "./model/memory.js";
 import * as Messages from "./model/messages.js";
+import * as PatientCards from "./model/patientCards.js";
 import * as Patients from "./model/patients.js";
 import * as Pipeline from "./model/pipeline.js";
 import * as Slack from "./model/slack.js";
@@ -136,6 +140,13 @@ export const listPendingOutbound = internalQuery({
   handler: async (ctx) => Messages.listPendingOutbound(ctx),
 });
 
+export const getPatientCardLinkByTokenHash = internalQuery({
+  args: { tokenHash: v.string() },
+  returns: v.union(patientCardLinkDoc, v.null()),
+  handler: async (ctx, { tokenHash }) =>
+    PatientCards.getByTokenHash(ctx, tokenHash),
+});
+
 // ----------------------------- Writes -----------------------------
 
 export const ensureConversation = internalMutation({
@@ -206,6 +217,14 @@ export const resumeAutomation = internalMutation({
   returns: v.null(),
   handler: async (ctx, { conversationId, actor }) =>
     Escalations.resumeAutomation(ctx, conversationId, actor),
+});
+
+/** Resolve all flags on a conversation and resume Eve in one step (patient "resume"). */
+export const resolveAndResume = internalMutation({
+  args: { conversationId: v.string(), actor: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, actor }) =>
+    Escalations.resolveAndResume(ctx, conversationId, actor),
 });
 
 /** Dev/test cleanup: delete a conversation by space id and its child rows. */
@@ -382,6 +401,34 @@ export const ensureGuestPatient = internalMutation({
     }),
 });
 
+export const createPatientCardLink = internalMutation({
+  args: {
+    patientId: v.string(),
+    conversationId: v.string(),
+    purpose: patientCardPurpose,
+    ttlMinutes: v.optional(v.union(v.number(), v.null())),
+    baseUrl: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: patientCardLinkResult,
+  handler: async (ctx, args) =>
+    PatientCards.createLink(ctx, {
+      patientId: args.patientId,
+      conversationId: args.conversationId,
+      purpose: args.purpose,
+      ttlMinutes: args.ttlMinutes ?? null,
+      baseUrl: args.baseUrl ?? null,
+    }),
+});
+
+export const markPatientCardLinkUsed = internalMutation({
+  args: { tokenHash: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { tokenHash }) => {
+    await PatientCards.markUsed(ctx, tokenHash);
+    return null;
+  },
+});
+
 export const recordAgentTurn = internalMutation({
   args: {
     conversationId: v.string(),
@@ -543,6 +590,32 @@ export const listSourceDocumentsWithUrls = internalQuery({
   },
 });
 
+/** Resolve one patient-card document after the HTTP layer validates the token. */
+export const getMiniappSourceDocument = internalQuery({
+  args: { patientId: v.string(), documentId: v.string() },
+  returns: v.union(
+    v.object({
+      content_type: v.union(v.string(), v.null()),
+      file_name: v.union(v.string(), v.null()),
+      title: v.string(),
+      url: v.union(v.string(), v.null()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, { patientId, documentId }) => {
+    const doc = await Patients.getSourceDocument(ctx, documentId);
+    if (!(doc && (doc.patient_id === patientId || doc.patient_id === null))) {
+      return null;
+    }
+    return {
+      content_type: doc.content_type ?? null,
+      file_name: doc.file_name ?? null,
+      title: doc.title,
+      url: doc.storage_id ? await ctx.storage.getUrl(doc.storage_id) : null,
+    };
+  },
+});
+
 /** Patients + open escalations a concierge should see (App Home queue). */
 export const getQueueForConcierge = internalQuery({
   args: { clerkId: v.union(v.string(), v.null()), isLead: v.boolean() },
@@ -649,6 +722,8 @@ export const conciergeReplyFromSlack = internalMutation({
       return null;
     }
     const composed = composeConciergeReply(trimmed, label);
+    // Draft-quality signal: how much the concierge changed Eve's draft (ADR 022).
+    await Escalations.recordDraftEdit(ctx, conversationId, trimmed);
     await Messages.enqueueConciergeOutbound(ctx, {
       conversationId,
       text: composed,
@@ -700,6 +775,30 @@ export const resumeAutomationFromSlack = internalMutation({
   returns: v.null(),
   handler: async (ctx, { conversationId, label }) =>
     Escalations.resumeAutomation(ctx, conversationId, label),
+});
+
+export const setEscalationFeedbackFromSlack = internalMutation({
+  args: {
+    escalationId: v.string(),
+    valid: v.boolean(),
+    label: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { escalationId, valid, label }) => {
+    await Escalations.setFeedback(ctx, escalationId, { valid, by: label });
+    return null;
+  },
+});
+
+export const resolveAndResumeFromSlack = internalMutation({
+  args: {
+    conversationId: v.string(),
+    label: v.string(),
+    clerkId: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, label, clerkId }) =>
+    Escalations.resolveAndResume(ctx, conversationId, label, clerkId ?? null),
 });
 
 // ----------------------------- Pipeline (ADR 020) -----------------------------

@@ -49,6 +49,7 @@ export function PerformanceView() {
   const tools = Object.entries(perf.toolUsage).sort((a, b) => b[1] - a[1]);
   const maxTool = tools.reduce((m, [, n]) => Math.max(m, n), 0);
   const maxTrend = perf.trend.reduce((m, t) => Math.max(m, t.turns), 0);
+  const maxCategory = perf.byCategory.reduce((m, c) => Math.max(m, c.turns), 0);
 
   return (
     <div className="space-y-8">
@@ -108,21 +109,83 @@ export function PerformanceView() {
           <h2 className="text-balance font-semibold text-sm">
             Concierge AI-assist drafts
           </h2>
-          <div className="mt-3 grid grid-cols-2 gap-4">
+          <div className="mt-3 grid grid-cols-3 gap-4">
             <Stat label="Escalations" value={perf.drafts.escalations} />
             <Stat
               hint={`${pct(perf.drafts.draftRate)} drafted`}
               label="With draft"
               value={perf.drafts.withDraft}
             />
+            <Stat
+              hint="lower = less rework"
+              label="Avg edit"
+              value={
+                perf.drafts.avgEditDistance === null
+                  ? "—"
+                  : pct(perf.drafts.avgEditDistance)
+              }
+            />
           </div>
           <p className="mt-3 text-pretty text-muted text-xs">
             Eve drafts a source-grounded reply on escalation; the concierge
             reviews and sends it. A higher draft rate means less cold-start
-            typing for the team.
+            typing — and a low average edit distance means the drafts are good
+            enough to send nearly as-is.
+          </p>
+        </Card>
+
+        <Card>
+          <h2 className="text-balance font-semibold text-sm">
+            Escalation validity
+          </h2>
+          <div className="mt-3 grid grid-cols-2 gap-4">
+            <Stat
+              hint={`${perf.validity.labeled} labeled`}
+              label="Were necessary"
+              value={
+                perf.validity.labeled === 0 ? "—" : pct(perf.validity.validRate)
+              }
+            />
+            <Stat label="Unnecessary" value={perf.validity.invalid} />
+          </div>
+          <p className="mt-3 text-pretty text-muted text-xs">
+            The human verdict on each flag. A falling "were necessary" rate
+            means Eve is over-escalating — the signal to loosen a category or
+            expand what it can answer.
           </p>
         </Card>
       </div>
+
+      <Card>
+        <h2 className="font-semibold text-sm">Turns by category</h2>
+        {perf.byCategory.length === 0 ? (
+          <EmptyState message="No categorized turns yet." />
+        ) : (
+          <div className="mt-3 space-y-2">
+            {perf.byCategory.map((c) => (
+              <div className="space-y-1" key={c.category}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-ink">{humanize(c.category)}</span>
+                  <span className="text-muted tabular-nums">
+                    {c.turns}
+                    {c.escalated > 0 ? ` · ${c.escalated} escalated` : ""}
+                  </span>
+                </div>
+                <BarMeter
+                  label={humanize(c.category)}
+                  max={maxCategory}
+                  value={c.turns}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="mt-3 text-pretty text-muted text-xs">
+          Where Eve spends its turns, and which categories drive escalations —
+          the slice to watch when tuning the taxonomy or expanding what Eve can
+          answer.
+        </p>
+      </Card>
 
       <Card>
         <h2 className="font-semibold text-sm">Daily volume</h2>

@@ -1,7 +1,12 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import type { Patient, Procedure } from "@essos/shared";
+import {
+  type Patient,
+  type PatientPolicyOverride,
+  type Procedure,
+  sanitizePolicyOverrides,
+} from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import {
@@ -15,6 +20,7 @@ import {
 } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 import { PROCEDURE_OPTIONS } from "./options";
+import { PolicyControl } from "./policy-control";
 
 interface FormState {
   assignee_user_id: string;
@@ -27,6 +33,7 @@ interface FormState {
   handle: string;
   hotel_name: string;
   name: string;
+  policy_overrides: PatientPolicyOverride[];
   procedure: Procedure;
 }
 
@@ -43,6 +50,7 @@ function initialState(patient?: Patient | null): FormState {
     dietary_notes: patient?.dietary_notes ?? "",
     assignee_user_id: patient?.assignee_user_id ?? "",
     associated_user_ids: patient?.associated_user_ids ?? [],
+    policy_overrides: patient?.policy_overrides ?? [],
   };
 }
 
@@ -83,6 +91,7 @@ export function PatientFormDialog({
         dietary_notes: formData.dietary_notes.trim() || null,
         assignee_user_id: formData.assignee_user_id || null,
         associated_user_ids: formData.associated_user_ids,
+        policy_overrides: sanitizePolicyOverrides(formData.policy_overrides),
         viewAs,
       });
     },
@@ -224,6 +233,17 @@ export function PatientFormDialog({
                 onChange={(e) => set("dietary_notes", e.target.value)}
                 placeholder="Optional"
                 value={form.dietary_notes}
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
+            <Field
+              hint="Per-patient overrides only ever make Eve more cautious — they can force a routine category to escalate or raise a flag's level, never the reverse."
+              label="Escalation policy"
+            >
+              <PolicyControl
+                onChange={(next) => set("policy_overrides", next)}
+                value={form.policy_overrides}
               />
             </Field>
           </div>

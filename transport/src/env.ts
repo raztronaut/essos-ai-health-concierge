@@ -31,6 +31,30 @@ export const DEMO_PATIENT = process.env.ESSOS_DEMO_PATIENT ?? "pat_maya";
 export const GUEST_MODE = Boolean(process.env.ESSOS_GUEST_MODE);
 export const GUEST_TEMPLATE = process.env.ESSOS_GUEST_TEMPLATE || undefined;
 
+export const PATIENT_MINIAPP_BASE_URL =
+  process.env.ESSOS_PATIENT_MINIAPP_BASE_URL?.replace(/\/$/, "") ??
+  "http://localhost:8081";
+
+export const MINIAPP_DELIVERY =
+  process.env.ESSOS_MINIAPP_DELIVERY === "spectrum_card"
+    ? "spectrum_card"
+    : "link";
+
+export const APPLE_TEAM_ID = process.env.ESSOS_APPLE_TEAM_ID?.trim() || null;
+
+export const IMESSAGE_EXTENSION_BUNDLE_ID =
+  process.env.ESSOS_IMESSAGE_EXTENSION_BUNDLE_ID?.trim() ||
+  "com.essos.concierge.messages";
+
+export const APP_STORE_ID = process.env.ESSOS_APP_STORE_ID
+  ? Number.parseInt(process.env.ESSOS_APP_STORE_ID, 10)
+  : null;
+
+export const PATIENT_CARD_TTL_MINUTES = intEnv(
+  "ESSOS_PATIENT_CARD_TTL_MINUTES",
+  60
+);
+
 /** Concierge handles, normalized so detection survives formatting differences. */
 export const CONCIERGE_HANDLES = (process.env.ESSOS_CONCIERGE_HANDLES ?? "")
   .split(",")

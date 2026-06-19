@@ -1,0 +1,80 @@
+# Agent eval gate (ADR 022).
+#
+# Runs the eve eval suite (deterministic tool-routing gates + soft LLM-judge
+# quality checks) under `--strict`, so a regression in Eve's routing or a
+# guardrail failure (medical advice leaking into an autonomous reply) fails CI.
+#
+# Opt-in: the job only runs when the `RUN_EVALS` repository variable is "true"
+# (Settings -> Secrets and variables -> Actions -> "Variables"). This keeps PRs
+# green until the eval secrets below are configured.
+#
+# Required when RUN_EVALS is on (Actions secrets):
+#   ANTHROPIC_API_KEY        the zero-data-retention key (agent + judge)
+#   CONVEX_EVAL_DEPLOY_KEY   a Convex *dev* deploy key for a throwaway eval
+#                            deployment (Convex dashboard -> Settings -> Deploy keys)
+# Required Actions variable:
+#   CONVEX_EVAL_URL          the eval deployment's cloud URL,
+#                            e.g. https://<name>.convex.cloud
+#
+# The judge routes directly to Anthropic (ADR 006), so no AI-gateway token is
+# needed. Seeding is destructive, so it is env-gated by ESSOS_ALLOW_SEED.
+
+name: Evals
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  evals:
+    name: eve eval --strict
+    runs-on: ubuntu-latest
+    if: ${{ vars.RUN_EVALS == 'true' }}
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ESSOS_AGENT_MODEL: claude-sonnet-4-5
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_EVAL_DEPLOY_KEY }}
+      # The seed scripts and the agent machine client read these. The .site URL
+      # is the .cloud URL with the suffix swapped.
+      CONVEX_URL: ${{ vars.CONVEX_EVAL_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C eve-concierge install --frozen-lockfile
+      - run: pnpm --filter @essos/shared run build
+
+      - name: Derive Convex site URL
+        run: echo "CONVEX_SITE_URL=${CONVEX_URL/.convex.cloud/.convex.site}" >> "$GITHUB_ENV"
+
+      # Push schema + functions to the eval deployment.
+      - name: Provision Convex eval deployment
+        run: pnpm exec convex deploy -y
+
+      # Seed the fixture pack (3 patients, docs, itineraries, one escalation).
+      - name: Seed fixtures
+        run: |
+          pnpm exec convex env set ESSOS_ALLOW_SEED 1
+          pnpm seed:reset
+          pnpm exec convex env remove ESSOS_ALLOW_SEED
+
+      # The eval runner boots a local Eve target in-process and drives it over
+      # HTTP; tool-routing assertions gate, judge assertions fail under --strict.
+      - name: Run evals
+        working-directory: eve-concierge
+        run: pnpm run eval:strict
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eve-eval-junit
+          path: eve-concierge/.eve/junit.xml
+          if-no-files-found: ignore

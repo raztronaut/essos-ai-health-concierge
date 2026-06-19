@@ -9,6 +9,7 @@ import {
   careSourceStatus,
   careSourceType,
   itineraryKind,
+  policyOverride,
   procedure,
   sourceDocumentKind,
 } from "./lib/validators.js";
@@ -61,6 +62,34 @@ export const resolveEscalation = conciergeMutation({
   },
 });
 
+/**
+ * Record whether an escalation was necessary (ADR 022). Decoupled from resolve
+ * so a concierge can label a flag at any point; surfaced as the escalation-
+ * validity rate in AI performance.
+ */
+export const setEscalationFeedback = conciergeMutation({
+  args: {
+    escalationId: v.string(),
+    valid: v.boolean(),
+    note: v.optional(v.union(v.string(), v.null())),
+    ...viewAsArg,
+  },
+  returns: v.null(),
+  handler: async (ctx, { escalationId, valid, note, viewAs }) => {
+    const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
+    const escalation = await Escalations.getByExternalId(ctx, escalationId);
+    if (escalation) {
+      await assertConversationAccess(ctx, escalation.conversation_id, scope);
+    }
+    await Escalations.setFeedback(ctx, escalationId, {
+      valid,
+      note: note ?? null,
+      by: scope.label,
+    });
+    return null;
+  },
+});
+
 export const takeOverConversation = conciergeMutation({
   args: { conversationId: v.string(), ...viewAsArg },
   returns: v.null(),
@@ -84,6 +113,27 @@ export const resumeAutomation = conciergeMutation({
     const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
     await assertConversationAccess(ctx, conversationId, scope);
     await Escalations.resumeAutomation(ctx, conversationId, scope.label);
+    return null;
+  },
+});
+
+/**
+ * One-tap "Resolve + Resume Eve": close every flag on the thread and hand
+ * control back to Eve. The single action a concierge takes when they've
+ * answered (or the situation no longer needs a human) and want automation on.
+ */
+export const resolveAndResume = conciergeMutation({
+  args: { conversationId: v.string(), ...viewAsArg },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, viewAs }) => {
+    const scope = await effectiveScope(ctx, ctx.concierge, viewAs);
+    await assertConversationAccess(ctx, conversationId, scope);
+    await Escalations.resolveAndResume(
+      ctx,
+      conversationId,
+      scope.label,
+      scope.clerkId
+    );
     return null;
   },
 });
@@ -122,6 +172,8 @@ export const sendConciergeReply = conciergeMutation({
     await assertConversationAccess(ctx, conversationId, scope);
     const signedName = (agentName ?? "").trim();
     const composed = composeConciergeReply(trimmed, signedName);
+    // Draft-quality signal: how much the concierge changed Eve's draft (ADR 022).
+    await Escalations.recordDraftEdit(ctx, conversationId, trimmed);
     await Messages.enqueueConciergeOutbound(ctx, {
       conversationId,
       text: composed,
@@ -199,6 +251,7 @@ export const upsertPatient = conciergeMutation({
     dietary_notes: nullableString,
     assignee_user_id: v.optional(nullableString),
     associated_user_ids: v.optional(v.array(v.string())),
+    policy_overrides: v.optional(v.array(policyOverride)),
     ...viewAsArg,
   },
   returns: v.string(),
@@ -217,6 +270,7 @@ export const upsertPatient = conciergeMutation({
       dietary_notes: args.dietary_notes,
       assignee_user_id: args.assignee_user_id,
       associated_user_ids: args.associated_user_ids,
+      policy_overrides: args.policy_overrides,
     });
     return id;
   },

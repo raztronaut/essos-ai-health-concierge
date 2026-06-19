@@ -82,6 +82,31 @@ const escalationStatus = v.union(
 
 const escalationLevel = v.union(v.literal("High"), v.literal("Med"));
 
+const escalationCategory = v.union(
+  v.literal("itinerary_reference"),
+  v.literal("travel_logistics"),
+  v.literal("local_recommendation"),
+  v.literal("documented_preop_reference"),
+  v.literal("medication_decision"),
+  v.literal("postop_symptom_or_recovery"),
+  v.literal("medical_or_clinical_judgment"),
+  v.literal("staff_safety_or_quality"),
+  v.literal("out_of_package_request"),
+  v.literal("missing_source_or_unsure")
+);
+
+/**
+ * A per-patient, tighten-only policy override (ADR 021). `category` is a
+ * taxonomy category (the narrow `EscalationCategory` union, so the stored row
+ * matches the domain type); the tighten-only invariant is enforced by
+ * `resolvePatientPolicy` in `@essos/shared`.
+ */
+const policyOverride = v.object({
+  category: escalationCategory,
+  force_escalate: v.optional(v.boolean()),
+  level: v.optional(escalationLevel),
+});
+
 const activityEvent = v.union(
   v.literal("message"),
   v.literal("logistics"),
@@ -109,6 +134,8 @@ export const patientDoc = v.object({
   dietary_notes: v.union(v.string(), v.null()),
   assignee_user_id: v.optional(v.union(v.string(), v.null())),
   associated_user_ids: v.optional(v.array(v.string())),
+  /** Per-patient tighten-only policy overrides (ADR 021). */
+  policy_overrides: v.optional(v.array(policyOverride)),
   created_at: v.string(),
 });
 
@@ -221,6 +248,11 @@ export const escalationDoc = v.object({
   resolved_at: v.union(v.string(), v.null()),
   suggested_reply: v.union(v.string(), v.null()),
   suggested_reply_sources: v.union(v.string(), v.null()),
+  feedback_valid: v.optional(v.union(v.boolean(), v.null())),
+  feedback_note: v.optional(v.union(v.string(), v.null())),
+  feedback_by: v.optional(v.union(v.string(), v.null())),
+  feedback_at: v.optional(v.union(v.string(), v.null())),
+  draft_edit_distance: v.optional(v.union(v.number(), v.null())),
 });
 
 export const activityLogDoc = v.object({
@@ -255,6 +287,12 @@ const slackOutboxKind = v.union(
   v.literal("patient_message")
 );
 
+const patientCardPurpose = v.union(
+  v.literal("itinerary"),
+  v.literal("clinic"),
+  v.literal("source_data")
+);
+
 export const slackOutboxDoc = v.object({
   _id: v.id("slack_outbox"),
   _creationTime: v.number(),
@@ -276,6 +314,28 @@ export const slackLinkDoc = v.object({
   channel_id: v.string(),
   thread_ts: v.string(),
   created_at: v.string(),
+});
+
+export const patientCardLinkDoc = v.object({
+  _id: v.id("patient_card_links"),
+  _creationTime: v.number(),
+  id: v.string(),
+  token_hash: v.string(),
+  patient_id: v.string(),
+  conversation_id: v.string(),
+  purpose: patientCardPurpose,
+  payload_json: v.string(),
+  expires_at: v.string(),
+  created_at: v.string(),
+  used_at: v.union(v.string(), v.null()),
+});
+
+export const patientCardLinkResult = v.object({
+  expiresAt: v.string(),
+  path: v.string(),
+  purpose: patientCardPurpose,
+  token: v.string(),
+  url: v.string(),
 });
 
 /** Persisted Eve session blob. */
@@ -350,6 +410,8 @@ export {
   escalationLevel,
   itineraryKind,
   messageRole,
+  patientCardPurpose,
+  policyOverride,
   procedure,
   sourceDocumentKind,
 };

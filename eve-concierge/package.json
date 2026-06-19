@@ -11,6 +11,8 @@
     "dev": "eve dev --no-ui --port 3000",
     "tui": "eve dev",
     "start": "eve start",
+    "eval": "eve eval",
+    "eval:strict": "eve eval --strict --junit .eve/junit.xml",
     "typecheck": "tsgo"
   },
   "dependencies": {

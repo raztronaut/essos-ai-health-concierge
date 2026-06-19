@@ -1,7 +1,9 @@
 import type { FunctionReference } from "convex/server";
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
+import type { ActionCtx } from "./_generated/server";
 import { httpAction } from "./_generated/server";
+import { hashToken } from "./model/patientCards.js";
 
 /**
  * Machine path for the trusted Eve agent + Spectrum transport.
@@ -34,12 +36,14 @@ const QUERIES: Record<string, AnyRef> = {
     internal.machine.listOpenEscalationsForConversation,
   hasMessageWithMetaKind: internal.machine.hasMessageWithMetaKind,
   listPendingOutbound: internal.machine.listPendingOutbound,
+  getPatientCardLinkByTokenHash: internal.machine.getPatientCardLinkByTokenHash,
   listPendingSlackOutbox: internal.machine.listPendingSlackOutbox,
   getSlackLinkByConversation: internal.machine.getSlackLinkByConversation,
   getSlackLinkByThread: internal.machine.getSlackLinkByThread,
   getEscalationCard: internal.machine.getEscalationCard,
   getPatientOverview: internal.machine.getPatientOverview,
   listSourceDocumentsWithUrls: internal.machine.listSourceDocumentsWithUrls,
+  getMiniappSourceDocument: internal.machine.getMiniappSourceDocument,
   getQueueForConcierge: internal.machine.getQueueForConcierge,
   readInflight: internal.machine.readInflight,
   listQueuedConversations: internal.machine.listQueuedConversations,
@@ -53,6 +57,7 @@ const MUTATIONS: Record<string, AnyRef> = {
   setAutomationState: internal.machine.setAutomationState,
   markConciergeTakeover: internal.machine.markConciergeTakeover,
   resumeAutomation: internal.machine.resumeAutomation,
+  resolveAndResume: internal.machine.resolveAndResume,
   deleteConversationBySpace: internal.machine.deleteConversationBySpace,
   logActivity: internal.machine.logActivity,
   escalateToHuman: internal.machine.escalateToHuman,
@@ -62,6 +67,8 @@ const MUTATIONS: Record<string, AnyRef> = {
   recordAgentTurn: internal.machine.recordAgentTurn,
   assignPatient: internal.machine.assignPatient,
   ensureGuestPatient: internal.machine.ensureGuestPatient,
+  createPatientCardLink: internal.machine.createPatientCardLink,
+  markPatientCardLinkUsed: internal.machine.markPatientCardLinkUsed,
   upsertClerkUser: internal.users.upsertClerkUser,
   setClerkMembership: internal.users.setClerkMembership,
   deleteClerkUser: internal.users.deleteClerkUser,
@@ -72,6 +79,9 @@ const MUTATIONS: Record<string, AnyRef> = {
   takeOverFromSlack: internal.machine.takeOverFromSlack,
   resolveEscalationFromSlack: internal.machine.resolveEscalationFromSlack,
   resumeAutomationFromSlack: internal.machine.resumeAutomationFromSlack,
+  resolveAndResumeFromSlack: internal.machine.resolveAndResumeFromSlack,
+  setEscalationFeedbackFromSlack:
+    internal.machine.setEscalationFeedbackFromSlack,
   enqueueInbound: internal.machine.enqueueInbound,
   drainBatch: internal.machine.drainBatch,
   readCarried: internal.machine.readCarried,
@@ -126,6 +136,166 @@ const machine = httpAction(async (ctx, request) => {
   }
 });
 
+const patientCard = httpAction(async (ctx, request) => {
+  const validated = await validatePatientCardRequest(ctx, request);
+  if (validated instanceof Response) {
+    return validated;
+  }
+
+  await ctx
+    .runMutation(internal.machine.markPatientCardLinkUsed, {
+      tokenHash: validated.tokenHash,
+    })
+    .catch(() => null);
+
+  return new Response(validated.link.payload_json, {
+    status: 200,
+    headers: {
+      ...corsHeaders(),
+      "content-type": "application/json",
+      "cache-control": "private, max-age=30",
+    },
+  });
+});
+
+const patientDocument = httpAction(async (ctx, request) => {
+  const url = new URL(request.url);
+  const documentId = url.searchParams.get("documentId")?.trim() ?? "";
+  if (!documentId) {
+    return jsonError("missing documentId", 400, corsHeaders());
+  }
+
+  const validated = await validatePatientCardRequest(ctx, request);
+  if (validated instanceof Response) {
+    return validated;
+  }
+
+  const payload = parsePatientCardPayload(validated.link.payload_json);
+  const allowed = payload?.documents.find((doc) => doc.id === documentId);
+  if (!allowed) {
+    return jsonError("document not found", 404, corsHeaders());
+  }
+  if (!allowed.downloadable) {
+    return jsonError("document file unavailable", 404, corsHeaders());
+  }
+
+  const doc = await ctx.runQuery(internal.machine.getMiniappSourceDocument, {
+    patientId: validated.link.patient_id,
+    documentId,
+  });
+  if (!doc?.url) {
+    return jsonError("document file unavailable", 404, corsHeaders());
+  }
+
+  const upstream = await fetch(doc.url);
+  if (!upstream.ok) {
+    return jsonError("document file unavailable", 502, corsHeaders());
+  }
+
+  await ctx
+    .runMutation(internal.machine.markPatientCardLinkUsed, {
+      tokenHash: validated.tokenHash,
+    })
+    .catch(() => null);
+
+  const disposition =
+    url.searchParams.get("download") === "1" ? "attachment" : "inline";
+  const filename = safeFilename(doc.file_name ?? `${doc.title}.pdf`);
+  return new Response(await upstream.arrayBuffer(), {
+    status: 200,
+    headers: {
+      ...corsHeaders(),
+      "cache-control": "private, max-age=30",
+      "content-disposition": `${disposition}; filename="${filename}"`,
+      "content-type":
+        doc.content_type ??
+        upstream.headers.get("content-type") ??
+        "application/octet-stream",
+    },
+  });
+});
+
+const corsPreflight = httpAction(
+  async () => new Response(null, { status: 204, headers: corsHeaders() })
+);
+
+async function validatePatientCardRequest(
+  ctx: ActionCtx,
+  request: Request
+): Promise<
+  | Response
+  | {
+      link: {
+        expires_at: string;
+        patient_id: string;
+        payload_json: string;
+      };
+      tokenHash: string;
+    }
+> {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token")?.trim() ?? "";
+  if (!token) {
+    return jsonError("missing token", 400, corsHeaders());
+  }
+
+  const tokenHash = await hashToken(token);
+  const link = await ctx.runQuery(
+    internal.machine.getPatientCardLinkByTokenHash,
+    {
+      tokenHash,
+    }
+  );
+  if (!link) {
+    return jsonError("card not found", 404, corsHeaders());
+  }
+  if (link.expires_at <= new Date().toISOString()) {
+    return jsonError("card expired", 410, corsHeaders());
+  }
+  return { link, tokenHash };
+}
+
+function parsePatientCardPayload(
+  payloadJson: string
+): { documents: Array<{ downloadable: boolean; id: string }> } | null {
+  try {
+    const parsed = JSON.parse(payloadJson) as {
+      documents?: Array<{ downloadable?: boolean; id?: string }>;
+    };
+    return {
+      documents: Array.isArray(parsed.documents)
+        ? parsed.documents
+            .filter(
+              (doc): doc is { downloadable?: boolean; id: string } =>
+                typeof doc.id === "string"
+            )
+            .map((doc) => ({
+              downloadable: doc.downloadable === true,
+              id: doc.id,
+            }))
+        : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function safeFilename(value: string): string {
+  const filename = value
+    .replace(/[/\\?%*:|"<>]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+  return filename || "essos-document";
+}
+
+function corsHeaders(): Record<string, string> {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-headers": "authorization, content-type",
+  };
+}
+
 function jsonOk(result: unknown): Response {
   return new Response(JSON.stringify({ ok: true, result: result ?? null }), {
     status: 200,
@@ -133,13 +303,33 @@ function jsonOk(result: unknown): Response {
   });
 }
 
-function jsonError(error: string, status: number): Response {
+function jsonError(
+  error: string,
+  status: number,
+  extraHeaders: Record<string, string> = {}
+): Response {
   return new Response(JSON.stringify({ ok: false, error }), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...extraHeaders },
   });
 }
 
 const http = httpRouter();
 http.route({ path: "/machine", method: "POST", handler: machine });
+http.route({ path: "/miniapp/card", method: "GET", handler: patientCard });
+http.route({
+  path: "/miniapp/document",
+  method: "GET",
+  handler: patientDocument,
+});
+http.route({
+  path: "/miniapp/card",
+  method: "OPTIONS",
+  handler: corsPreflight,
+});
+http.route({
+  path: "/miniapp/document",
+  method: "OPTIONS",
+  handler: corsPreflight,
+});
 export default http;

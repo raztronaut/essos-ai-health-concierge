@@ -1,4 +1,8 @@
-import type { Conversation, Patient } from "@essos/shared";
+import {
+  type Conversation,
+  type Patient,
+  summarizePolicyOverrides,
+} from "@essos/shared";
 
 /**
  * Build the trusted ESSOS_CONTEXT header the agent reads on every turn. The
@@ -27,6 +31,13 @@ export function buildContextMessage(args: {
   ];
   if (memory?.trim()) {
     lines.push(`known_about_patient: ${memory.trim()}`);
+  }
+  // Tighten-only per-patient policy (ADR 021): categories Eve must escalate for
+  // this patient even though they are normally autonomous, plus any raised
+  // levels. Sanitized in `summarizePolicyOverrides` so junk never reaches Eve.
+  const policy = summarizePolicyOverrides(patient.policy_overrides);
+  if (policy) {
+    lines.push(`policy_overrides: ${policy}`);
   }
   lines.push("<<END_CONTEXT>>", text);
   return lines.join("\n");

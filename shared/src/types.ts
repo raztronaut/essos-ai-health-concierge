@@ -1,4 +1,4 @@
-import type { EscalationLevel } from "./taxonomy.js";
+import type { EscalationLevel, PatientPolicyOverride } from "./taxonomy.js";
 
 export type Procedure = "rhinoplasty" | "hair_transplant" | "other";
 
@@ -73,6 +73,8 @@ export interface Patient {
   hotel_name: string;
   id: string;
   name: string;
+  /** Per-patient tighten-only escalation policy overrides (ADR 021). */
+  policy_overrides?: PatientPolicyOverride[];
   procedure: Procedure;
 }
 
@@ -90,6 +92,74 @@ export interface ItineraryEvent {
   source_document_id: string | null;
   starts_at: string | null;
   title: string;
+}
+
+export type PatientCardPurpose = "itinerary" | "clinic" | "source_data";
+
+export interface PatientCardPayload {
+  clinic: {
+    address: string | null;
+    name: string;
+    phone: string | null;
+  };
+  documents: Array<{
+    contentType: string | null;
+    downloadable: boolean;
+    fileName: string | null;
+    id: string;
+    kind: SourceDocumentKind;
+    relatedEventIds: string[];
+    sourceStatus: CareSourceStatus;
+    sourceType: CareSourceType;
+    title: string;
+  }>;
+  expiresAt: string;
+  generatedAt: string;
+  hotel: {
+    address: string | null;
+    confirmationNumber: string | null;
+    name: string;
+  };
+  itinerary: Array<{
+    confirmationNumber: string | null;
+    detail: string | null;
+    driverName: string | null;
+    driverPhone: string | null;
+    endsAt: string | null;
+    id: string;
+    kind: ItineraryKind;
+    location: string | null;
+    sortOrder: number;
+    sourceDocumentId: string | null;
+    startsAt: string | null;
+    title: string;
+  }>;
+  patient: {
+    destinationCity: string;
+    destinationCountry: string;
+    displayName: string;
+    firstName: string;
+    id: string;
+    procedure: Procedure;
+  };
+  purpose: PatientCardPurpose;
+  sources: string[];
+  transport: {
+    driverName: string | null;
+    driverPhone: string | null;
+    nextPickupAt: string | null;
+    nextPickupLocation: string | null;
+    nextPickupTitle: string | null;
+  };
+  version: 1;
+}
+
+export interface PatientCardLink {
+  expiresAt: string;
+  path: string;
+  purpose: PatientCardPurpose;
+  token: string;
+  url: string;
 }
 
 export interface CareInstruction {
@@ -195,6 +265,16 @@ export interface Escalation {
   assignee_user_id?: string | null;
   conversation_id: string;
   created_at: string;
+  /** 0..1 how much the concierge changed Eve's draft before sending (ADR 022). */
+  draft_edit_distance?: number | null;
+  /** When the verdict was recorded. */
+  feedback_at?: string | null;
+  /** Who recorded the validity verdict (display label). */
+  feedback_by?: string | null;
+  /** Optional free-text note on the verdict. */
+  feedback_note?: string | null;
+  /** Human verdict: was this escalation necessary? null = not yet labeled (ADR 022). */
+  feedback_valid?: boolean | null;
   id: string;
   level: EscalationLevel;
   patient_id: string;

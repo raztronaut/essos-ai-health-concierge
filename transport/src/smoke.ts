@@ -4,6 +4,7 @@ import {
   escalateToHuman,
   getConversationBySpace,
   listOpenEscalationsForConversation,
+  resolveEscalationFromSlack,
   resumeAutomation,
 } from "@essos/shared";
 import { type EveResponder, handleInbound } from "./core.js";
@@ -201,7 +202,34 @@ async function run(): Promise<string[]> {
     r6.reason === "concierge_logged"
   );
 
-  return [spaceId, orphanSpaceId];
+  // 7) Resolving an Eve-paused thread (no human takeover) auto-resumes Eve, so
+  //    the patient is never stranded silent after a flag is closed.
+  const resolveSpaceId = `terminal:smoke-resolve-${Date.now()}`;
+  await handleInbound({
+    spaceId: resolveSpaceId,
+    channel: "terminal",
+    authorHandle: null,
+    text: "Is this swelling on my nose normal?",
+    patientId: DEMO_PATIENT,
+    eveRespond: stub,
+  });
+  const pausedConv = (await getConversationBySpace(resolveSpaceId))!;
+  check(
+    "resolve-flow: paused after escalation",
+    pausedConv.automation_state === "paused_for_review"
+  );
+  const [openFlag] = await listOpenEscalationsForConversation(pausedConv.id);
+  await resolveEscalationFromSlack({
+    escalationId: openFlag?.id ?? "",
+    label: "Ryan",
+  });
+  const resolvedConv = (await getConversationBySpace(resolveSpaceId))!;
+  check(
+    "resolve-flow: Eve auto-resumes when the last flag is resolved",
+    resolvedConv.automation_state === "active"
+  );
+
+  return [spaceId, orphanSpaceId, resolveSpaceId];
 }
 
 async function main(): Promise<void> {

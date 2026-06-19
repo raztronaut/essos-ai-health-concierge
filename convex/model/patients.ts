@@ -96,10 +96,12 @@ export async function upsert(
     | "created_at"
     | "assignee_user_id"
     | "associated_user_ids"
+    | "policy_overrides"
   > & {
     created_at?: string;
     assignee_user_id?: string | null;
     associated_user_ids?: string[];
+    policy_overrides?: Patient["policy_overrides"];
   }
 ): Promise<void> {
   const existing = await getByExternalId(ctx, patient.id);
@@ -118,6 +120,8 @@ export async function upsert(
       patient.assignee_user_id ?? existing?.assignee_user_id ?? null,
     associated_user_ids:
       patient.associated_user_ids ?? existing?.associated_user_ids ?? [],
+    policy_overrides:
+      patient.policy_overrides ?? existing?.policy_overrides ?? [],
     created_at: patient.created_at ?? nowIso(),
   };
   if (existing) {

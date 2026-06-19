@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "ESSOS_TEAM_ID.com.essos.concierge.patientmini"
+        ],
+        "components": [
+          {
+            "/": "/p/*",
+            "comment": "Patient mini app card links"
+          }
+        ]
+      }
+    ]
+  },
+  "appclips": {
+    "apps": [
+      "ESSOS_TEAM_ID.com.essos.concierge.patientmini.Clip"
+    ]
+  }
+}

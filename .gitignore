@@ -39,9 +39,17 @@ build/
 *.swp
 *.swo
 
+# Personal / private working notes (not for the repo)
+.personal/
+
 # Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 .vercel
 .env*.local
+
+# Expo generated native projects (source-owned config lives in patient-miniapp/)
+patient-miniapp/.expo/
+patient-miniapp/ios/
+patient-miniapp/android/

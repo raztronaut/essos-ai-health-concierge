@@ -27,6 +27,8 @@ import type {
   Message,
   MessageRole,
   Patient,
+  PatientCardLink,
+  PatientCardPurpose,
   PatientOverview,
   PipelineMessage,
   QueueData,
@@ -108,6 +110,16 @@ export function listCareInstructions(
   phase?: CarePhase
 ): Promise<CareInstruction[]> {
   return call("listCareInstructions", { patientId, phase });
+}
+
+export function createPatientCardLink(args: {
+  baseUrl?: string | null;
+  conversationId: string;
+  patientId: string;
+  purpose: PatientCardPurpose;
+  ttlMinutes?: number | null;
+}): Promise<PatientCardLink> {
+  return call("createPatientCardLink", args);
 }
 
 // --------------------------- Conversations ---------------------------
@@ -214,6 +226,13 @@ export function resumeAutomation(
   actor: string
 ): Promise<void> {
   return call("resumeAutomation", { conversationId, actor });
+}
+/** Resolve every flag on a conversation and resume Eve in one step. */
+export function resolveAndResume(
+  conversationId: string,
+  actor: string
+): Promise<void> {
+  return call("resolveAndResume", { conversationId, actor });
 }
 /** Dev/test cleanup helper. */
 export function deleteConversationBySpace(spaceId: string): Promise<void> {
@@ -354,6 +373,20 @@ export function resumeAutomationFromSlack(args: {
   label: string;
 }): Promise<void> {
   return call("resumeAutomationFromSlack", args);
+}
+export function setEscalationFeedbackFromSlack(args: {
+  escalationId: string;
+  valid: boolean;
+  label: string;
+}): Promise<void> {
+  return call("setEscalationFeedbackFromSlack", args);
+}
+export function resolveAndResumeFromSlack(args: {
+  conversationId: string;
+  label: string;
+  clerkId?: string | null;
+}): Promise<void> {
+  return call("resolveAndResumeFromSlack", args);
 }
 
 // --------------------------- Pipeline (ADR 020) ---------------------------

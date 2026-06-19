@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
+import type { EscalationStatus } from "@essos/shared";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +10,14 @@ import { DocIcon } from "@/components/icons";
 import { BorderBeam } from "@/components/motion/border-beam";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { HandoffActionBar } from "./escalation-actions";
 import { useConciergeSignature } from "./use-concierge-signature";
+
+type AutomationState =
+  | "active"
+  | "paused_for_review"
+  | "taken_over"
+  | "resolved";
 
 /**
  * Lets a concierge reply to the patient directly from the dashboard. The message
@@ -28,10 +36,16 @@ export function ConciergeReplyBox({
   conversationId,
   suggestedReply,
   sources = [],
+  automationState,
+  openEscalationId = null,
+  openEscalationStatus = null,
 }: {
   conversationId: string;
   suggestedReply?: string | null;
   sources?: string[];
+  automationState: AutomationState;
+  openEscalationId?: string | null;
+  openEscalationStatus?: EscalationStatus | null;
 }) {
   const { defaultName, viewAs } = useConciergeSignature();
   const draft = suggestedReply?.trim() ?? "";
@@ -83,6 +97,12 @@ export function ConciergeReplyBox({
       {hasDraft ? (
         <BorderBeam radius={12} size={220} strength={0.5} tone="colorful" />
       ) : null}
+      <HandoffActionBar
+        automationState={automationState}
+        conversationId={conversationId}
+        openEscalationId={openEscalationId}
+        openEscalationStatus={openEscalationStatus}
+      />
       <div className="flex items-center justify-between gap-2 px-4 pt-3.5">
         <label
           className="block font-semibold text-ink text-sm"

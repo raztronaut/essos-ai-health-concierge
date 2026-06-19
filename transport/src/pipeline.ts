@@ -1,3 +1,4 @@
+import type { PatientCardLink } from "@essos/shared";
 import {
   advanceStartIndex,
   appendMessage,
@@ -21,6 +22,8 @@ import {
 import {
   generateTurn,
   handleConciergeMessage,
+  handlePatientResume,
+  isResumeCommand,
   resolveConversationAndPatient,
   TurnAbortedError,
 } from "./core.js";
@@ -28,9 +31,15 @@ import { debug } from "./debug.js";
 import {
   DEBOUNCE_MS,
   JOB_FAILURE_RETENTION_DAYS,
+  MINIAPP_DELIVERY,
   SEND_PACING_MS,
 } from "./env.js";
 import { normalizeHandle } from "./handles.js";
+import {
+  createLinksForConversation,
+  extractPatientCardRequests,
+  formatPatientCardLink,
+} from "./patientCards.js";
 
 /**
  * The five-stage inbound pipeline (ADR 020): debounce a burst of messages into
@@ -49,6 +58,8 @@ import { normalizeHandle } from "./handles.js";
 export interface ConversationIO {
   /** Send a fresh bubble into the conversation (provider-transformed). */
   send: (text: string) => Promise<void>;
+  /** Send a native rich patient card when the provider supports it. */
+  sendPatientCard?: (link: PatientCardLink) => Promise<boolean>;
   startTyping?: () => Promise<void> | void;
   stopTyping?: () => Promise<void> | void;
 }
@@ -139,6 +150,21 @@ export async function enqueue(input: EnqueueInput): Promise<void> {
     authorHandle: authorHandle ?? patient.handle,
     text: input.text,
   });
+
+  // Patient self-serve resume: a bare "resume" command on a paused/taken-over
+  // thread clears the flags and hands control back to Eve, then stops — the
+  // next real message runs a normal turn. On an already-active thread it's just
+  // an ordinary message and flows through to Eve below.
+  if (isResumeCommand(input.text)) {
+    const resumed = await handlePatientResume(conversation.id, (text) =>
+      input.io.send(text)
+    );
+    if (resumed) {
+      await cancel(conversation.id);
+      return;
+    }
+  }
+
   await enqueueInbound({
     conversationId: conversation.id,
     spaceId: input.spaceId,
@@ -273,6 +299,31 @@ export function splitBubbles(reply: string): string[] {
   return parts.length > 0 ? parts : [reply];
 }
 
+type DeliveryItem =
+  | { kind: "text"; text: string }
+  | { kind: "patient_card"; link: PatientCardLink };
+
+async function buildDeliveryItems(
+  conversationId: string,
+  reply: string
+): Promise<DeliveryItem[]> {
+  const extracted = extractPatientCardRequests(reply);
+  const items = extracted.text
+    ? splitBubbles(extracted.text).map<DeliveryItem>((text) => ({
+        kind: "text",
+        text,
+      }))
+    : [];
+  const links = await createLinksForConversation(
+    conversationId,
+    extracted.purposes
+  );
+  for (const link of links) {
+    items.push({ kind: "patient_card", link });
+  }
+  return items.length > 0 ? items : [{ kind: "text", text: reply }];
+}
+
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -288,23 +339,34 @@ async function sendReply(
   reply: string,
   io: ConversationIO
 ): Promise<void> {
-  const bubbles = splitBubbles(reply);
+  const items = await buildDeliveryItems(conversationId, reply);
   const chain = await readInflight(conversationId);
   const startIndex = chain?.chain_id === chainId ? chain.start_index : 0;
   const sent = new Set(chain?.chain_id === chainId ? chain.sent_guids : []);
 
-  for (let i = startIndex; i < bubbles.length; i++) {
+  for (let i = startIndex; i < items.length; i++) {
     const guid = `${chainId}-${i}`;
     if (sent.has(guid)) {
       continue;
     }
-    await io.send(bubbles[i] ?? "");
+    const item = items[i];
+    if (item?.kind === "patient_card") {
+      const sentNative =
+        MINIAPP_DELIVERY === "spectrum_card" && io.sendPatientCard
+          ? await io.sendPatientCard(item.link)
+          : false;
+      if (!sentNative) {
+        await io.send(formatPatientCardLink(item.link));
+      }
+    } else {
+      await io.send(item?.text ?? "");
+    }
     await advanceStartIndex({
       conversationId,
       startIndex: i + 1,
       sentGuid: guid,
     });
-    if (i < bubbles.length - 1 && SEND_PACING_MS > 0) {
+    if (i < items.length - 1 && SEND_PACING_MS > 0) {
       await sleep(SEND_PACING_MS);
     }
   }

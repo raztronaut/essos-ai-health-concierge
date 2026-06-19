@@ -26,12 +26,15 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 | [018](018-deploy-pipeline-cicd.md) | Deploy pipeline (CI/CD) | One GitHub Actions workflow deploys Convex → Vercel + Railway on push to `main`; Convex-first, no concurrent deploys, remote Vercel build. |
 | [019](019-slack-concierge-bridge.md) | Slack concierge bridge | A staff-facing Slack surface that brings escalations + handoff actions (reply, take over, resolve, `/essos` lookups, App Home) into where the team works, reducing cognitive switching/load to address concierge burnout. |
 | [020](020-patient-management-crud.md) | Patient management CRUD | Dashboard roster + editable patient records (profile, itinerary, care instructions, source-doc uploads to Convex storage); Eve reads the same tables via the machine path. |
+| [021](021-per-patient-policy-overrides.md) | Per-patient policy overrides (tighten-only) | A per-patient layer over the global taxonomy that can force a category to escalate or raise a level for one patient, never loosen a clinical guardrail; enforced by a clamping resolver. |
+| [022](022-eval-and-continuous-learning-loop.md) | Eval + continuous-learning loop | Category telemetry, an escalation-validity label, LLM-as-judge quality assertions + CI gate, and a production→eval flywheel (regression generator + draft-edit-distance). |
 
 ## Grouping
 
-- **Product / safety policy:** 001, 002, 003, 010, 011
+- **Product / safety policy:** 001, 002, 003, 010, 011, 021
 - **Transport:** 004, 008, 010, 011, 012, 017
-- **Agent + model:** 005, 006, 009, 011, 012
-- **Dashboard:** 007, 010, 011, 014, 015, 016, 020
+- **Agent + model:** 005, 006, 009, 011, 012, 021
+- **Dashboard:** 007, 010, 011, 014, 015, 016, 020, 021
 - **Concierge experience / team well-being:** 010, 011, 016, 019, 020
-- **Platform (backend / auth / observability):** 013, 014, 015, 016, 017, 018, 019
+- **Platform (backend / auth / observability):** 013, 014, 015, 016, 017, 018, 019, 022
+- **Quality / evals:** 009, 015, 022

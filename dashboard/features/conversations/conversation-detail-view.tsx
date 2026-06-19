@@ -88,7 +88,10 @@ export function ConversationDetailView({ id }: { id: string }) {
         <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
           <MessageThread messages={msgs} />
           <ConciergeReplyBox
+            automationState={conversation.automation_state}
             conversationId={conversation.id}
+            openEscalationId={openEscalation?.id ?? null}
+            openEscalationStatus={openEscalation?.status ?? null}
             sources={draftSources}
             suggestedReply={openEscalation?.suggested_reply ?? null}
           />

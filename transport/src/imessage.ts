@@ -1,6 +1,15 @@
+import type { PatientCardLink } from "@essos/shared";
+import type { Space } from "spectrum-ts";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { CONCIERGE_HANDLES, EVE_BASE_URL, GUEST_MODE } from "./env.js";
+import {
+  APP_STORE_ID,
+  APPLE_TEAM_ID,
+  CONCIERGE_HANDLES,
+  EVE_BASE_URL,
+  GUEST_MODE,
+  IMESSAGE_EXTENSION_BUNDLE_ID,
+} from "./env.js";
 import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
 import { monitorSpectrumStreamLogs, startStreamHealth } from "./health.js";
@@ -25,14 +34,67 @@ const TAPBACK_EMOJI: Record<TapbackName, string> = {
   dislike: "👎",
 };
 
+async function sendSpectrumMiniAppCard(
+  space: Space,
+  link: PatientCardLink
+): Promise<boolean> {
+  if (!APPLE_TEAM_ID) {
+    return false;
+  }
+  const provider = (await import("spectrum-ts/providers/imessage")) as {
+    customizedMiniApp?: (input: unknown) => Parameters<typeof space.send>[0];
+  };
+  if (typeof provider.customizedMiniApp !== "function") {
+    return false;
+  }
+  await space.send(
+    provider.customizedMiniApp({
+      appName: "Essos",
+      appStoreId: APP_STORE_ID ?? undefined,
+      extensionBundleId: IMESSAGE_EXTENSION_BUNDLE_ID,
+      teamId: APPLE_TEAM_ID,
+      url: link.url,
+      layout: {
+        caption: "Essos itinerary",
+        subcaption: "Tap for confirmations, clinic info, and pickup details",
+        trailingCaption: "Open",
+        summary: `Open your Essos ${link.purpose.replace("_", " ")} card`,
+      },
+    })
+  );
+  return true;
+}
+
 /**
  * Live iMessage transport via Spectrum Cloud. Maps each iMessage space (group
  * or DM) to a patient conversation, ignores the agent's own messages, and
  * treats configured concierge handles as the human team.
  */
 async function main(): Promise<void> {
-  // Spectrum Cloud allows one live consumer per project; refuse to start a
-  // second local transport that would fight over the stream.
+  // Spectrum Cloud allows exactly one live consumer per project. The deployed
+  // Railway transport already holds it, so a local iMessage transport would
+  // fight over the stream and drop/duplicate messages. The single-instance lock
+  // is host-local and cannot see across hosts, so guard explicitly: run freely
+  // on Railway, but refuse locally unless the operator opts in (e.g. the Railway
+  // transport is intentionally stopped). Local development should use the
+  // terminal transport instead.
+  const onRailway = Boolean(
+    process.env.RAILWAY_ENVIRONMENT ?? process.env.RAILWAY_SERVICE_ID
+  );
+  const allowLocalImessage = Boolean(process.env.ESSOS_ALLOW_LOCAL_IMESSAGE);
+  if (!(onRailway || allowLocalImessage)) {
+    console.error(
+      "Refusing to start the iMessage transport locally: it would fight the\n" +
+        "deployed Railway transport over the single shared Spectrum stream (one\n" +
+        "live consumer per project), dropping or duplicating patient messages.\n\n" +
+        "• For local development, use `pnpm run transport:terminal` (no Spectrum).\n" +
+        "• To intentionally run iMessage locally (e.g. the Railway transport is\n" +
+        "  stopped), set ESSOS_ALLOW_LOCAL_IMESSAGE=1."
+    );
+    process.exit(1);
+  }
+
+  // Host-local safety net against a second transport on this same machine.
   acquireSingleInstanceLock("imessage");
 
   const projectId = process.env.SPECTRUM_PROJECT_ID;
@@ -124,6 +186,7 @@ async function main(): Promise<void> {
           await space.send(text);
         }
       },
+      sendPatientCard: (link) => sendSpectrumMiniAppCard(space, link),
       startTyping: () => space.startTyping(),
       stopTyping: () => space.stopTyping(),
     }),

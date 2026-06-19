@@ -87,6 +87,19 @@ const escalationStatus = v.union(
 
 const escalationLevel = v.union(v.literal("High"), v.literal("Med"));
 
+const escalationCategory = v.union(
+  v.literal("itinerary_reference"),
+  v.literal("travel_logistics"),
+  v.literal("local_recommendation"),
+  v.literal("documented_preop_reference"),
+  v.literal("medication_decision"),
+  v.literal("postop_symptom_or_recovery"),
+  v.literal("medical_or_clinical_judgment"),
+  v.literal("staff_safety_or_quality"),
+  v.literal("out_of_package_request"),
+  v.literal("missing_source_or_unsure")
+);
+
 const activityEvent = v.union(
   v.literal("message"),
   v.literal("logistics"),
@@ -105,6 +118,12 @@ const slackOutboxKind = v.union(
   v.literal("patient_message")
 );
 
+const patientCardPurpose = v.union(
+  v.literal("itinerary"),
+  v.literal("clinic"),
+  v.literal("source_data")
+);
+
 export default defineSchema({
   patients: defineTable({
     id: v.string(),
@@ -121,6 +140,16 @@ export default defineSchema({
     assignee_user_id: v.optional(v.union(v.string(), v.null())),
     /** Associated concierges (Clerk user ids) */
     associated_user_ids: v.optional(v.array(v.string())),
+    /** Per-patient tighten-only policy overrides (ADR 021). */
+    policy_overrides: v.optional(
+      v.array(
+        v.object({
+          category: escalationCategory,
+          force_escalate: v.optional(v.boolean()),
+          level: v.optional(escalationLevel),
+        })
+      )
+    ),
     created_at: v.string(),
   })
     .index("by_external_id", ["id"])
@@ -253,6 +282,15 @@ export default defineSchema({
     suggested_reply: v.union(v.string(), v.null()),
     /** JSON array of short source labels Eve used for the draft. */
     suggested_reply_sources: v.union(v.string(), v.null()),
+    /** Human verdict: was this escalation necessary? null = not yet labeled (ADR 022). */
+    feedback_valid: v.optional(v.union(v.boolean(), v.null())),
+    /** Optional free-text note on the verdict. */
+    feedback_note: v.optional(v.union(v.string(), v.null())),
+    /** Who labeled it (display label) and when. */
+    feedback_by: v.optional(v.union(v.string(), v.null())),
+    feedback_at: v.optional(v.union(v.string(), v.null())),
+    /** 0..1 how much the concierge changed Eve's draft before sending (ADR 022). */
+    draft_edit_distance: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_external_id", ["id"])
     .index("by_conversation", ["conversation_id", "created_at"])
@@ -344,6 +382,23 @@ export default defineSchema({
   })
     .index("by_conversation", ["conversation_id"])
     .index("by_thread", ["thread_ts"]),
+
+  // Short-lived read-only snapshots opened by patient mini-app links, App Clips,
+  // or Spectrum mini-app cards. The plaintext token is never stored.
+  patient_card_links: defineTable({
+    id: v.string(),
+    token_hash: v.string(),
+    patient_id: v.string(),
+    conversation_id: v.string(),
+    purpose: patientCardPurpose,
+    payload_json: v.string(),
+    expires_at: v.string(),
+    created_at: v.string(),
+    used_at: v.union(v.string(), v.null()),
+  })
+    .index("by_external_id", ["id"])
+    .index("by_token_hash", ["token_hash"])
+    .index("by_patient", ["patient_id", "created_at"]),
 
   // --- New: durable five-stage inbound pipeline (see ADR 020) ---
   //

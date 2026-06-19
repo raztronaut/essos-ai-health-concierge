@@ -5,6 +5,7 @@ import { Card } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatRelativeTime, humanize } from "@/lib/format";
 import { EscalationActions } from "./escalation-actions";
+import { EscalationFeedback } from "./escalation-feedback";
 
 export function FlagsPanel({
   escalations,
@@ -113,17 +114,21 @@ export function FlagsPanel({
                   </div>
                 ) : null}
 
-                {/* Footer Actions */}
-                {isOpen ? (
-                  <div className="mt-3.5 flex items-center justify-end gap-2 border-border/40 border-t pt-3">
+                {/* Footer: validity verdict + handoff actions */}
+                <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-border/40 border-t pt-3">
+                  <EscalationFeedback
+                    escalationId={esc.id}
+                    value={esc.feedback_valid}
+                  />
+                  {isOpen ? (
                     <EscalationActions
                       conversationId={conversationId}
                       escalationId={esc.id}
                       size="sm"
                       status={esc.status}
                     />
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             );
           })}

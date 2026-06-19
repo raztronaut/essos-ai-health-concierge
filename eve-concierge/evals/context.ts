@@ -3,6 +3,7 @@ import {
   getOrCreateConversation,
   getPatientById,
   setAutomationState,
+  summarizePolicyOverrides,
 } from "@essos/shared";
 
 /**
@@ -53,6 +54,7 @@ export async function essosTurn(args: {
     text: args.text,
   });
 
+  const policy = summarizePolicyOverrides(patient.policy_overrides);
   const message = [
     "<<ESSOS_CONTEXT>>",
     `conversation_id: ${conversation.id}`,
@@ -63,6 +65,7 @@ export async function essosTurn(args: {
     `city: ${patient.destination_city}`,
     `country: ${patient.destination_country}`,
     "automation_state: active",
+    ...(policy ? [`policy_overrides: ${policy}`] : []),
     "<<END_CONTEXT>>",
     args.text,
   ].join("\n");

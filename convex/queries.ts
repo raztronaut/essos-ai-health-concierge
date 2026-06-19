@@ -410,10 +410,24 @@ export const aiPerformance = conciergeQuery({
     trend: v.array(
       v.object({ day: v.string(), turns: v.number(), escalated: v.number() })
     ),
+    byCategory: v.array(
+      v.object({
+        category: v.string(),
+        turns: v.number(),
+        escalated: v.number(),
+      })
+    ),
     drafts: v.object({
       escalations: v.number(),
       withDraft: v.number(),
       draftRate: v.number(),
+      avgEditDistance: v.union(v.number(), v.null()),
+    }),
+    validity: v.object({
+      labeled: v.number(),
+      valid: v.number(),
+      invalid: v.number(),
+      validRate: v.number(),
     }),
     remindersSent: v.number(),
   }),
@@ -454,11 +468,47 @@ export const aiPerformance = conciergeQuery({
       .map(([day, v2]) => ({ day, turns: v2.turns, escalated: v2.escalated }))
       .sort((a, b) => a.day.localeCompare(b.day));
 
+    // Per-category breakdown (category is null on uncategorized/failed turns).
+    const byCategoryMap: Record<string, { turns: number; escalated: number }> =
+      {};
+    for (const t of turns) {
+      const key = t.category ?? "uncategorized";
+      byCategoryMap[key] ??= { turns: 0, escalated: 0 };
+      byCategoryMap[key].turns += 1;
+      if (t.escalated) {
+        byCategoryMap[key].escalated += 1;
+      }
+    }
+    const byCategory = Object.entries(byCategoryMap)
+      .map(([category, v2]) => ({
+        category,
+        turns: v2.turns,
+        escalated: v2.escalated,
+      }))
+      .sort((a, b) => b.turns - a.turns);
+
     // Draft quality from escalations created in-window.
     const escalations = (await Escalations.listByStatus(ctx)).filter(
       (e) => e.created_at >= since
     );
     const withDraft = escalations.filter((e) => e.suggested_reply).length;
+
+    // Draft quality: average edit distance between Eve's draft and what the
+    // concierge actually sent (lower = the draft needed less rework).
+    const edited = escalations
+      .map((e) => e.draft_edit_distance)
+      .filter((d): d is number => typeof d === "number");
+    const avgEditDistance =
+      edited.length === 0
+        ? null
+        : edited.reduce((s, d) => s + d, 0) / edited.length;
+
+    // Escalation-validity: the human verdict on whether a flag was necessary.
+    const labeled = escalations.filter(
+      (e) => e.feedback_valid !== null && e.feedback_valid !== undefined
+    );
+    const validCount = labeled.filter((e) => e.feedback_valid === true).length;
+    const invalidCount = labeled.length - validCount;
 
     const remindersSent = (await Activity.listAll(ctx, 1000)).filter(
       (a) => a.event === "reminder" && a.created_at >= since
@@ -484,11 +534,19 @@ export const aiPerformance = conciergeQuery({
       toolUsage,
       tokens: { promptTokens, completionTokens, totalTokens },
       trend,
+      byCategory,
       drafts: {
         escalations: escalations.length,
         withDraft,
         draftRate:
           escalations.length === 0 ? 0 : withDraft / escalations.length,
+        avgEditDistance,
+      },
+      validity: {
+        labeled: labeled.length,
+        valid: validCount,
+        invalid: invalidCount,
+        validRate: labeled.length === 0 ? 0 : validCount / labeled.length,
       },
       remindersSent,
     };

@@ -17,6 +17,7 @@
     "seed": "tsx scripts/seed.ts",
     "seed:reset": "tsx scripts/seed.ts --reset",
     "seed:team": "tsx scripts/seed-team.ts",
+    "eval:from-escalation": "tsx scripts/eval-from-escalation.ts",
     "eve:dev": "pnpm -C eve-concierge run dev",
     "eve:tui": "pnpm -C eve-concierge run tui",
     "eve:build": "pnpm -C eve-concierge run build",
@@ -26,8 +27,12 @@
     "transport:remind": "pnpm --filter @essos/transport run remind",
     "slack:dev": "pnpm --filter @essos/slack run dev",
     "dashboard:dev": "pnpm --filter @essos/dashboard run dev",
+    "patient-miniapp:dev": "pnpm --filter @essos/patient-miniapp run dev",
+    "patient-miniapp:ios": "pnpm --filter @essos/patient-miniapp run ios",
+    "patient-miniapp:typecheck": "pnpm --filter @essos/patient-miniapp run typecheck",
     "lint": "biome check .",
     "format": "biome check --write .",
+    "test:shared": "tsx --test shared/src/*.test.ts",
     "typecheck": "pnpm -r run typecheck && pnpm -C eve-concierge run typecheck"
   },
   "dependencies": {

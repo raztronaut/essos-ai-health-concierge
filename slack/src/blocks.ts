@@ -20,6 +20,9 @@ export const ACTION_SEND_SUGGESTED = "essos_send_suggested";
 export const ACTION_TAKE_OVER = "essos_take_over";
 export const ACTION_RESOLVE = "essos_resolve";
 export const ACTION_RESUME = "essos_resume";
+export const ACTION_RESOLVE_RESUME = "essos_resolve_resume";
+export const ACTION_FEEDBACK_VALID = "essos_feedback_valid";
+export const ACTION_FEEDBACK_INVALID = "essos_feedback_invalid";
 
 /** Encoded into button `value`s so a click carries the ids it needs to act. */
 export interface ActionPayload {
@@ -165,6 +168,12 @@ export function escalationBlocks(
       },
       {
         type: "button",
+        text: { type: "plain_text", text: "Resolve + Resume Eve", emoji: true },
+        action_id: ACTION_RESOLVE_RESUME,
+        value: payload,
+      },
+      {
+        type: "button",
         text: { type: "plain_text", text: "Resume Eve", emoji: true },
         action_id: ACTION_RESUME,
         value: payload,
@@ -178,6 +187,24 @@ export function escalationBlocks(
     ],
   };
   blocks.push(actionButtons);
+  // Validity verdict (ADR 022): was this escalation necessary?
+  blocks.push({
+    type: "actions",
+    elements: [
+      {
+        type: "button",
+        text: { type: "plain_text", text: "✅ Was necessary", emoji: true },
+        action_id: ACTION_FEEDBACK_VALID,
+        value: payload,
+      },
+      {
+        type: "button",
+        text: { type: "plain_text", text: "🚫 Unnecessary", emoji: true },
+        action_id: ACTION_FEEDBACK_INVALID,
+        value: payload,
+      },
+    ],
+  });
   blocks.push({
     type: "context",
     elements: [
