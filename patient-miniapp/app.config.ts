@@ -1,10 +1,12 @@
 import type { ExpoConfig } from "expo/config";
 
-const domain = process.env.ESSOS_PATIENT_MINIAPP_DOMAIN ?? "mini.essos.dev";
-const teamId = process.env.ESSOS_APPLE_TEAM_ID ?? "ESSOS_TEAM_ID";
+const defaultAppleTeamId = "6JY9M75PT4";
+const domain =
+  process.env.ESSOS_PATIENT_MINIAPP_DOMAIN ?? "patient-miniapp.vercel.app";
+const teamId = process.env.ESSOS_APPLE_TEAM_ID ?? defaultAppleTeamId;
 
 const config: ExpoConfig = {
-  name: "Essos Patient",
+  name: "Razi Work Trial",
   slug: "essos-patient-miniapp",
   scheme: "essos-patient",
   version: "0.1.0",
@@ -15,8 +17,8 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
   ios: {
-    appleTeamId: teamId === "ESSOS_TEAM_ID" ? undefined : teamId,
-    bundleIdentifier: "com.essos.concierge.patientmini",
+    appleTeamId: teamId,
+    bundleIdentifier: "com.essos.raziworktrial",
     buildNumber: "1",
     supportsTablet: false,
     associatedDomains: [`applinks:${domain}`, `appclips:${domain}`],

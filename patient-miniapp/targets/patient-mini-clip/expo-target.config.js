@@ -2,8 +2,8 @@ const domain = process.env.ESSOS_PATIENT_MINIAPP_DOMAIN || "mini.essos.dev";
 
 module.exports = {
   type: "clip",
-  name: "EssosPatientMiniClip",
-  bundleIdentifier: "com.essos.concierge.patientmini.Clip",
+  name: "RaziWorkTrialClip",
+  bundleIdentifier: "com.essos.raziworktrial.Clip",
   deploymentTarget: "17.0",
   exportJs: false,
   entitlements: {
@@ -13,7 +13,7 @@ module.exports = {
     ],
   },
   infoPlist: {
-    CFBundleDisplayName: "Essos",
+    CFBundleDisplayName: "Razi Work Trial",
     ITSAppUsesNonExemptEncryption: false,
     NSAppClip: {
       NSAppClipRequestEphemeralUserNotification: false,

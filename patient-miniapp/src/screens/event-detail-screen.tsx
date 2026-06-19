@@ -58,11 +58,11 @@ export function EventDetailScreen(props: { eventId: string; token: string }) {
         contentContainerStyle={{
           alignItems: "center",
           backgroundColor: essosTheme.color.background,
-          padding: 20,
+          padding: narrow ? 14 : 20,
         }}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <View style={{ maxWidth: 520, width: "100%" }}>
+        <View style={{ maxWidth: narrow ? 430 : 560, width: "100%" }}>
           <InfoCard eyebrow="Essos" title="Source unavailable">
             <Text
               selectable
@@ -101,11 +101,11 @@ export function EventDetailScreen(props: { eventId: string; token: string }) {
         contentContainerStyle={{
           alignItems: "center",
           backgroundColor: essosTheme.color.background,
-          padding: 20,
+          padding: narrow ? 14 : 20,
         }}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <View style={{ maxWidth: 520, width: "100%" }}>
+        <View style={{ maxWidth: narrow ? 430 : 560, width: "100%" }}>
           <InfoCard eyebrow="Essos" title="Event not found">
             <Text
               selectable
@@ -125,12 +125,12 @@ export function EventDetailScreen(props: { eventId: string; token: string }) {
       contentContainerStyle={{
         alignItems: "center",
         backgroundColor: essosTheme.color.background,
-        padding: narrow ? 16 : 28,
+        padding: narrow ? 14 : 28,
         paddingBottom: 48,
       }}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <View style={{ gap: 18, maxWidth: 520, width: "100%" }}>
+      <View style={{ gap: 18, maxWidth: narrow ? 430 : 560, width: "100%" }}>
         <View style={{ gap: 8, paddingTop: narrow ? 10 : 22 }}>
           <Text
             selectable
@@ -148,9 +148,9 @@ export function EventDetailScreen(props: { eventId: string; token: string }) {
             style={{
               color: essosTheme.color.pearl,
               fontFamily: essosTheme.font.display,
-              fontSize: narrow ? 34 : 44,
+              fontSize: narrow ? 30 : 44,
               fontWeight: "800",
-              lineHeight: narrow ? 40 : 50,
+              lineHeight: narrow ? 35 : 50,
             }}
           >
             {event.title}

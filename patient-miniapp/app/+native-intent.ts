@@ -4,7 +4,7 @@ export function redirectSystemPath({ path }: { path: string }): string {
     if (url.hostname === "appclip.apple.com") {
       const bundle = url.searchParams.get("p");
       const token = url.searchParams.get("token") ?? "demo";
-      if (bundle === "com.essos.concierge.patientmini.Clip") {
+      if (bundle === "com.essos.raziworktrial.Clip") {
         return `/p/${token}`;
       }
     }

@@ -4,7 +4,7 @@
     "details": [
       {
         "appIDs": [
-          "ESSOS_TEAM_ID.com.essos.concierge.patientmini"
+          "6JY9M75PT4.com.essos.raziworktrial"
         ],
         "components": [
           {
@@ -17,7 +17,7 @@
   },
   "appclips": {
     "apps": [
-      "ESSOS_TEAM_ID.com.essos.concierge.patientmini.Clip"
+      "6JY9M75PT4.com.essos.raziworktrial.Clip"
     ]
   }
 }

@@ -81,9 +81,9 @@ export function DocumentListScreen({ token }: { token: string }) {
           style={{
             color: essosTheme.color.pearl,
             fontFamily: essosTheme.font.display,
-            fontSize: narrow ? 34 : 44,
+            fontSize: narrow ? 30 : 44,
             fontWeight: "800",
-            lineHeight: narrow ? 40 : 50,
+            lineHeight: narrow ? 35 : 50,
           }}
         >
           Source documents
@@ -127,12 +127,12 @@ function Shell(props: { children: React.ReactNode; narrow: boolean }) {
       contentContainerStyle={{
         alignItems: "center",
         backgroundColor: essosTheme.color.background,
-        padding: props.narrow ? 16 : 28,
+        padding: props.narrow ? 14 : 28,
         paddingBottom: 48,
       }}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <View style={{ gap: 20, maxWidth: 520, width: "100%" }}>
+      <View style={{ gap: 20, maxWidth: props.narrow ? 430 : 560, width: "100%" }}>
         {props.children}
       </View>
     </ScrollView>

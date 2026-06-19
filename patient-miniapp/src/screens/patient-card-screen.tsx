@@ -25,6 +25,8 @@ export function PatientCardScreen({ token }: { token: string }) {
   const [payload, setPayload] = useState<PatientCardPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const narrow = width < 430;
+  const pagePadding = narrow ? 14 : 28;
+  const contentMaxWidth = narrow ? 430 : 560;
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +49,7 @@ export function PatientCardScreen({ token }: { token: string }) {
   }, [token]);
 
   const currentUrl = useMemo(
-    () => (token === "demo" ? "essos-patient://p/demo" : `/p/${token}`),
+    () => patientCardUrl(token),
     [token]
   );
 
@@ -58,11 +60,11 @@ export function PatientCardScreen({ token }: { token: string }) {
           alignItems: "center",
           backgroundColor: essosTheme.color.background,
           gap: 16,
-          padding: 20,
+          padding: pagePadding,
         }}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <View style={{ maxWidth: 520, width: "100%" }}>
+        <View style={{ maxWidth: contentMaxWidth, width: "100%" }}>
           <InfoCard eyebrow="Essos" title="Card unavailable">
             <Text
               selectable
@@ -117,13 +119,13 @@ export function PatientCardScreen({ token }: { token: string }) {
       contentContainerStyle={{
         alignItems: "center",
         backgroundColor: essosTheme.color.background,
-        padding: narrow ? 16 : 28,
+        padding: pagePadding,
         paddingBottom: 48,
       }}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <View style={{ gap: 28, maxWidth: 520, width: "100%" }}>
-        <View style={{ gap: 14, paddingTop: narrow ? 10 : 22 }}>
+      <View style={{ gap: narrow ? 22 : 28, maxWidth: contentMaxWidth, width: "100%" }}>
+        <View style={{ gap: 12, paddingTop: narrow ? 8 : 22 }}>
           <View
             style={{
               alignSelf: "flex-start",
@@ -139,8 +141,9 @@ export function PatientCardScreen({ token }: { token: string }) {
               selectable
               style={{
                 color: essosTheme.color.muted,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: "700",
+                lineHeight: 15,
               }}
             >
               Expires {formatDateTime(payload.expiresAt)}
@@ -153,9 +156,9 @@ export function PatientCardScreen({ token }: { token: string }) {
               style={{
                 color: essosTheme.color.pearl,
                 fontFamily: essosTheme.font.display,
-                fontSize: narrow ? 36 : 46,
+                fontSize: narrow ? 31 : 46,
                 fontWeight: "800",
-                lineHeight: narrow ? 42 : 52,
+                lineHeight: narrow ? 36 : 52,
               }}
             >
               {payload.patient.firstName}'s Essos Trip
@@ -164,8 +167,8 @@ export function PatientCardScreen({ token }: { token: string }) {
               selectable
               style={{
                 color: essosTheme.color.muted,
-                fontSize: 15,
-                lineHeight: 22,
+                fontSize: narrow ? 14 : 15,
+                lineHeight: narrow ? 20 : 22,
                 maxWidth: 430,
               }}
             >
@@ -259,7 +262,7 @@ export function PatientCardScreen({ token }: { token: string }) {
           />
         </InfoCard>
 
-        <View style={{ gap: 2 }}>
+        <View style={{ gap: narrow ? 0 : 2 }}>
           {payload.itinerary.map((event, index) => (
             <ItineraryCard
               event={event}
@@ -352,4 +355,13 @@ function eventTime(value: string | null): number {
   }
   const time = new Date(value).getTime();
   return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+}
+
+function patientCardUrl(token: string): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/p/${encodeURIComponent(token)}`;
+  }
+  return token === "demo"
+    ? "essos-patient://p/demo"
+    : `essos-patient://p/${encodeURIComponent(token)}`;
 }

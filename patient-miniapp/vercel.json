@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build:web",
+  "installCommand": "npm install --legacy-peer-deps",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/p/demo",
+      "destination": "/p/demo.html"
+    },
+    {
+      "source": "/p/:token/docs/:documentId",
+      "destination": "/p/%5Btoken%5D/docs/%5BdocumentId%5D"
+    },
+    {
+      "source": "/p/:token/docs",
+      "destination": "/p/%5Btoken%5D/docs"
+    },
+    {
+      "source": "/p/:token/event/:eventId",
+      "destination": "/p/%5Btoken%5D/event/%5BeventId%5D"
+    },
+    {
+      "source": "/p/:token",
+      "destination": "/p/%5Btoken%5D"
+    }
+  ]
+}

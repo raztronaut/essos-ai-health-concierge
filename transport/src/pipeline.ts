@@ -357,7 +357,7 @@ async function sendReply(
     const item = items[i];
     if (item?.kind === "patient_card") {
       const sentNative =
-        MINIAPP_DELIVERY === "spectrum_card" && io.sendPatientCard
+        MINIAPP_DELIVERY !== "link" && io.sendPatientCard
           ? await io.sendPatientCard(item.link)
           : false;
       if (!sentNative) {
