@@ -3,6 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { SourceDocument } from "@essos/shared";
 import { useMutation } from "convex/react";
+import Link from "next/link";
 import { useState } from "react";
 import { Button, Card, ConfirmDialog, TextLink } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
@@ -27,7 +28,7 @@ export function SourceDocuments({
     <ul className="space-y-2 text-xs">
       {docs.map((doc) => (
         <li
-          className="group flex items-center justify-between gap-3"
+          className="group -mx-1.5 flex items-center justify-between gap-3 rounded-control px-1.5 py-1 transition-colors duration-fast hover:bg-surface/50"
           key={doc.id}
         >
           <div className="min-w-0 flex-1">
@@ -40,22 +41,30 @@ export function SourceDocuments({
               {doc.title}
             </TextLink>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="text-[10px] text-meta">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-right text-[10px] text-meta transition-all duration-200">
               {humanize(doc.source_status)}
             </span>
-            {doc.patient_id ? (
-              <div className="opacity-0 transition-opacity duration-fast group-hover:opacity-100">
+            <div className="pointer-events-none flex max-w-0 items-center gap-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:max-w-[120px] group-hover:opacity-100">
+              <Link
+                className="focus-ring inline-flex items-center justify-center rounded-control border border-border bg-card px-1.5 py-0.5 font-semibold text-[10px] text-ink transition-colors hover:border-secondary/70 hover:bg-surface"
+                href={`/source-docs/${doc.id}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open
+              </Link>
+              {doc.patient_id ? (
                 <Button
-                  className="px-1 py-0.5 text-[10px]"
+                  className="px-1.5 py-0.5 text-[10px]"
                   onClick={() => setDeleting(doc)}
                   size="sm"
                   variant="ghost"
                 >
                   Remove
                 </Button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </li>
       ))}
@@ -119,7 +128,7 @@ export function SourceDocuments({
         <ul className="space-y-2.5 text-sm">
           {docs.map((doc) => (
             <li
-              className="group flex items-center justify-between gap-3"
+              className="group -mx-2 flex items-center justify-between gap-3 rounded-control px-2 py-1.5 transition-colors duration-fast hover:bg-surface/50"
               key={doc.id}
             >
               <div className="min-w-0 flex-1">
@@ -133,9 +142,19 @@ export function SourceDocuments({
                 </TextLink>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-meta">{humanize(doc.source_status)}</span>
-                {doc.patient_id ? (
-                  <div className="opacity-0 transition-opacity duration-fast group-hover:opacity-100">
+                <span className="text-right text-meta transition-all duration-200">
+                  {humanize(doc.source_status)}
+                </span>
+                <div className="pointer-events-none flex max-w-0 items-center gap-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:max-w-[140px] group-hover:opacity-100">
+                  <Link
+                    className="focus-ring inline-flex items-center justify-center rounded-control border border-border bg-card px-2 py-1 font-semibold text-ink text-xs transition-colors hover:border-secondary/70 hover:bg-surface"
+                    href={`/source-docs/${doc.id}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Open
+                  </Link>
+                  {doc.patient_id ? (
                     <Button
                       onClick={() => setDeleting(doc)}
                       size="sm"
@@ -143,8 +162,8 @@ export function SourceDocuments({
                     >
                       Remove
                     </Button>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </li>
           ))}
