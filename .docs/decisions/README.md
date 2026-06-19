@@ -18,10 +18,14 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 | [010](010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge | Keeping the patient informed during escalation (acknowledgment + one-time holding notice) and letting the concierge reply to the patient from the dashboard; the multi-turn stream-replay fix. |
 | [011](011-concierge-ai-assist-and-proactive-care.md) | Concierge AI-assist + proactive care | Eve drafts a source-grounded suggested reply the concierge approves/sends, a one-time AI disclosure, clarifying questions, proactive pre-op reminders, and durable holding-notice + Eve-session state. |
 | [012](012-imessage-plaintext-and-voice.md) | iMessage plaintext formatting + texting voice | A transport-side Markdown→plaintext normalizer on every outbound send (so `**bold**` never reaches a patient), a poke-inspired texting voice in the instructions, and an opt-in `[[react: ...]]` tapback path. |
+| [013](013-convex-backend.md) | Convex backend | Reactive Convex store replaces local SQLite; two-path access (Clerk public functions vs service-secret HTTP actions). |
+| [014](014-clerk-auth-and-identity.md) | Clerk auth + identity | Dashboard auth, Organizations-as-team RBAC, real concierge identity, webhook sync. |
+| [015](015-agent-telemetry-and-analytics.md) | Agent telemetry + analytics | Per-turn telemetry capture, `agent_turns`, AI-performance + team views. |
 
 ## Grouping
 
 - **Product / safety policy:** 001, 002, 003, 010, 011
 - **Transport:** 004, 008, 010, 011, 012
 - **Agent + model:** 005, 006, 009, 011, 012
-- **Dashboard:** 007, 010, 011
+- **Dashboard:** 007, 010, 011, 014, 015
+- **Platform (backend / auth / observability):** 013, 014, 015

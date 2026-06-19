@@ -12,9 +12,19 @@ export interface EveSession {
   turns: number;
 }
 
+/** Best-effort per-turn telemetry scraped from the Eve event stream. */
+export interface TurnTelemetry {
+  toolCalls: string[];
+  finishReason: string | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  totalTokens: number | null;
+}
+
 export interface EveReply {
   text: string;
   session: EveSession;
+  telemetry: TurnTelemetry;
 }
 
 /** Hard ceiling on how long we wait for a turn's stream to settle. */
@@ -46,6 +56,43 @@ export interface ReducedReply {
   error: string | null;
   /** Whether any assistant message text was observed (vs. a silent turn). */
   sawMessage: boolean;
+  telemetry: TurnTelemetry;
+}
+
+/** Pull a tool name out of an event payload, tolerating schema variations. */
+function extractToolName(type: string, data: Record<string, unknown>): string | null {
+  if (!/tool/i.test(type)) return null;
+  const name =
+    (typeof data.toolName === "string" && data.toolName) ||
+    (typeof data.name === "string" && data.name) ||
+    (typeof data.tool === "string" && data.tool) ||
+    null;
+  return name;
+}
+
+/** Accumulate token usage from an AI-SDK-style usage object, tolerating field names. */
+function readUsage(
+  data: Record<string, unknown>,
+): { prompt: number; completion: number; total: number } | null {
+  const usage = data.usage as Record<string, unknown> | undefined;
+  if (!usage || typeof usage !== "object") return null;
+  const num = (...keys: string[]): number => {
+    for (const k of keys) {
+      const val = usage[k];
+      if (typeof val === "number") return val;
+    }
+    return 0;
+  };
+  const prompt = num("promptTokens", "inputTokens", "prompt_tokens", "input_tokens");
+  const completion = num(
+    "completionTokens",
+    "outputTokens",
+    "completion_tokens",
+    "output_tokens",
+  );
+  const total = num("totalTokens", "total_tokens") || prompt + completion;
+  if (prompt === 0 && completion === 0 && total === 0) return null;
+  return { prompt, completion, total };
 }
 
 /**
@@ -62,17 +109,41 @@ export function reduceEveEvents(events: Iterable<EveEvent>): ReducedReply {
   let finalText = "";
   let latestSoFar = "";
   let sawMessage = false;
+  const toolCalls: string[] = [];
+  let finishReason: string | null = null;
+  let prompt = 0;
+  let completion = 0;
+  let total = 0;
+  let sawUsage = false;
+
+  const telemetry = (): TurnTelemetry => ({
+    toolCalls,
+    finishReason,
+    promptTokens: sawUsage ? prompt : null,
+    completionTokens: sawUsage ? completion : null,
+    totalTokens: sawUsage ? total : null,
+  });
 
   for (const evt of events) {
     const type = String(evt.type ?? "");
     const data = (evt.data ?? {}) as Record<string, unknown>;
+
+    const toolName = extractToolName(type, data);
+    if (toolName) toolCalls.push(toolName);
+    const usage = readUsage(data);
+    if (usage) {
+      prompt += usage.prompt;
+      completion += usage.completion;
+      total += usage.total;
+      sawUsage = true;
+    }
 
     if (FAILED_EVENTS.has(type)) {
       const error =
         (typeof data.message === "string" && data.message) ||
         (typeof evt.message === "string" && evt.message) ||
         "agent error";
-      return { text: "", error, sawMessage };
+      return { text: "", error, sawMessage, telemetry: telemetry() };
     }
     if (type === "message.appended") {
       if (typeof data.messageSoFar === "string") {
@@ -82,13 +153,20 @@ export function reduceEveEvents(events: Iterable<EveEvent>): ReducedReply {
     } else if (type === "message.completed") {
       const message = typeof data.message === "string" ? data.message : "";
       if (message) sawMessage = true;
-      if (message && String(data.finishReason ?? "") !== "tool-calls") {
+      const reason = String(data.finishReason ?? "");
+      if (reason) finishReason = reason;
+      if (message && reason !== "tool-calls") {
         finalText = message;
       }
     }
   }
 
-  return { text: (finalText || latestSoFar).trim(), error: null, sawMessage };
+  return {
+    text: (finalText || latestSoFar).trim(),
+    error: null,
+    sawMessage,
+    telemetry: telemetry(),
+  };
 }
 
 /** Split a buffer into complete ndjson lines, returning the trailing partial. */
@@ -133,7 +211,10 @@ async function postJson(url: string, body: unknown): Promise<SessionResponse> {
  * reduce only that turn's events. The `eveClient.test.ts` fixtures pin the
  * parsing/reduction half of this contract.
  */
-async function collectReply(sessionId: string, expectedTurns: number): Promise<string> {
+async function collectReply(
+  sessionId: string,
+  expectedTurns: number,
+): Promise<{ text: string; telemetry: TurnTelemetry }> {
   const url = `${EVE_BASE_URL}/eve/v1/session/${sessionId}/stream`;
   const res = await fetch(url, {
     headers: authHeaders({ accept: "application/x-ndjson" }),
@@ -142,7 +223,7 @@ async function collectReply(sessionId: string, expectedTurns: number): Promise<s
     throw new Error(`Eve stream failed: ${res.status}`);
   }
 
-  return await new Promise<string>((resolvePromise, reject) => {
+  return await new Promise<{ text: string; telemetry: TurnTelemetry }>((resolvePromise, reject) => {
     const events: EveEvent[] = [];
     let turnsSeen = 0;
     let hardTimer: ReturnType<typeof setTimeout> | null = null;
@@ -162,15 +243,15 @@ async function collectReply(sessionId: string, expectedTurns: number): Promise<s
             : "no assistant message parsed from stream (possible schema drift)",
         );
       }
-      finish(reduced.text);
+      finish({ text: reduced.text, telemetry: reduced.telemetry });
     };
 
-    const finish = (text: string) => {
+    const finish = (result: { text: string; telemetry: TurnTelemetry }) => {
       if (done) return;
       done = true;
       if (hardTimer) clearTimeout(hardTimer);
       reader.cancel().catch(() => {});
-      resolvePromise(text);
+      resolvePromise(result);
     };
 
     const fail = (message: string) => {
@@ -257,8 +338,12 @@ export async function askEve(
     continuationToken = cont.continuationToken ?? prior.continuationToken;
   }
 
-  const text = await collectReply(sessionId, expectedTurns);
-  return { text, session: { sessionId, continuationToken, turns: expectedTurns } };
+  const { text, telemetry } = await collectReply(sessionId, expectedTurns);
+  return {
+    text,
+    telemetry,
+    session: { sessionId, continuationToken, turns: expectedTurns },
+  };
 }
 
 /** Health check so the transport can fail fast with a clear message. */

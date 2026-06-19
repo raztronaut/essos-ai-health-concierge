@@ -25,28 +25,28 @@ export interface EssosTurn {
   patientId: string;
 }
 
-export function essosTurn(args: {
+export async function essosTurn(args: {
   patientId: string;
   /** Stable per-eval space id so re-runs reuse one conversation. */
   spaceId: string;
   text: string;
-}): EssosTurn {
-  const patient = getPatientById(args.patientId);
+}): Promise<EssosTurn> {
+  const patient = await getPatientById(args.patientId);
   if (!patient) {
     throw new Error(
       `No patient "${args.patientId}" in the store. Run \`pnpm seed:reset\` before evals.`,
     );
   }
 
-  const conversation = getOrCreateConversation({
+  const conversation = await getOrCreateConversation({
     spaceId: args.spaceId,
     patientId: patient.id,
     channel: "terminal",
   });
   // Reset to active so a prior escalation run doesn't leave the thread paused.
-  setAutomationState(conversation.id, "active");
+  await setAutomationState(conversation.id, "active");
 
-  const inbound = addMessage({
+  const inbound = await addMessage({
     conversationId: conversation.id,
     role: "patient",
     authorHandle: patient.handle,

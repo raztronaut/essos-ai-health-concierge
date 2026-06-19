@@ -24,12 +24,15 @@ build/
 .nitro/
 .workflow-data/
 
-# Local SQLite data store
+# Legacy local SQLite data store (superseded by Convex)
 .data/
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Convex local deployment artifacts (keep convex/_generated committed)
+.convex/
 
 # IDE (keep .cursor/plans; ignore local editor state)
 .idea/

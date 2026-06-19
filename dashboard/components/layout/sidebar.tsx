@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { NavLink } from "./nav-link";
+import { ConciergeIdentity } from "./concierge-identity";
 
 const NAV = [
   { href: "/", label: "Overview" },
   { href: "/conversations", label: "Conversations" },
+  { href: "/performance", label: "AI performance" },
+  { href: "/team", label: "Team" },
 ];
 
 export function Sidebar() {
@@ -18,8 +21,11 @@ export function Sidebar() {
           <NavLink key={item.href} href={item.href} label={item.label} />
         ))}
       </nav>
-      <div className="mt-auto text-[11px] leading-relaxed text-muted">
-        Notional demo data. Read/writes hit the shared local SQLite store.
+      <div className="mt-auto space-y-3">
+        <ConciergeIdentity />
+        <p className="text-[11px] leading-relaxed text-muted">
+          Live data via Convex. Notional demo patient records.
+        </p>
       </div>
     </aside>
   );

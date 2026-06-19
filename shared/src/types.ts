@@ -1,4 +1,4 @@
-import type { EscalationCategory, EscalationLevel } from "./taxonomy.js";
+import type { EscalationLevel } from "./taxonomy.js";
 
 export type Procedure = "rhinoplasty" | "hair_transplant" | "other";
 
@@ -136,7 +136,8 @@ export interface Message {
   role: MessageRole;
   author_handle: string | null;
   text: string;
-  category: EscalationCategory | null;
+  /** Taxonomy category (an EscalationCategory value); typed wide to match the store row. */
+  category: string | null;
   created_at: string;
   meta_json: string | null;
 }
@@ -146,7 +147,8 @@ export interface Escalation {
   conversation_id: string;
   patient_id: string;
   level: EscalationLevel;
-  reason: EscalationCategory;
+  /** Taxonomy category (an EscalationCategory value); typed wide to match the store row. */
+  reason: string;
   summary: string;
   source_message_id: string | null;
   status: EscalationStatus;
@@ -169,4 +171,19 @@ export interface ActivityLogEntry {
   actor: string;
   detail: string | null;
   created_at: string;
+}
+
+/** Denormalized conversation row for the dashboard list (patient + last message + open flags). */
+export interface ConversationSummary {
+  id: string;
+  patient_id: string;
+  automation_state: AutomationState;
+  updated_at: string;
+  patient_name: string | null;
+  patient_procedure: Procedure | null;
+  patient_city: string | null;
+  patient_country: string | null;
+  last_role: MessageRole | null;
+  last_text: string | null;
+  open_flags: number;
 }

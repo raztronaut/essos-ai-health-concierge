@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.34.1",
     "@essos/shared": "workspace:*",
+    "convex": "^1.41.0",
     "motion": "^12.40.0",
     "next": "^16.2.9",
     "react": "^19.2.7",

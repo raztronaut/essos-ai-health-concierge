@@ -2,9 +2,7 @@ import { defineTool } from "eve/tools";
 import {
   CATEGORY_POLICIES,
   ESCALATABLE_CATEGORIES,
-  createEscalation,
-  logActivity,
-  setAutomationState,
+  escalateToHuman,
   type EscalationCategory,
 } from "@essos/shared";
 import { z } from "zod";
@@ -63,7 +61,7 @@ export default defineTool({
     suggested_reply,
     suggested_reply_sources,
   }) {
-    const escalation = createEscalation({
+    const { escalationId } = await escalateToHuman({
       conversationId: conversation_id,
       patientId: patient_id,
       level,
@@ -73,30 +71,9 @@ export default defineTool({
       suggestedReply: suggested_reply ?? null,
       suggestedReplySources: suggested_reply_sources ?? null,
     });
-    setAutomationState(conversation_id, "paused_for_review");
-    logActivity({
-      conversationId: conversation_id,
-      event: "escalated",
-      actor: "eve",
-      detail: `${level} • ${reason} • ${escalation.id}`,
-    });
-    if (suggested_reply && suggested_reply.trim().length > 0) {
-      logActivity({
-        conversationId: conversation_id,
-        event: "drafted",
-        actor: "eve",
-        detail: "Drafted a suggested reply for the concierge to review.",
-      });
-    }
-    logActivity({
-      conversationId: conversation_id,
-      event: "paused",
-      actor: "eve",
-      detail: "Automation paused pending human review.",
-    });
     return {
       escalated: true as const,
-      escalation_id: escalation.id,
+      escalation_id: escalationId,
       level,
       category: CATEGORY_POLICIES[reason].label,
       note: "Automation is now paused for this conversation; the concierge team has been flagged.",

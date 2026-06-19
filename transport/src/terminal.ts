@@ -11,7 +11,7 @@ import { runMessageLoop } from "./runLoop.js";
  * concierge message (which signals takeover during an open escalation).
  */
 async function main(): Promise<void> {
-  const patient = getPatientById(DEMO_PATIENT);
+  const patient = await getPatientById(DEMO_PATIENT);
   if (!patient) {
     console.error(
       `Demo patient "${DEMO_PATIENT}" not found. Run \`pnpm run seed\` first.`,

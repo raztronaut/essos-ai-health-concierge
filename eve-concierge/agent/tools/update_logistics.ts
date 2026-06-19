@@ -28,7 +28,7 @@ export default defineTool({
       .describe("What was coordinated, in one sentence (e.g. new pickup time and driver)."),
   }),
   async execute({ conversation_id, action, detail }) {
-    logActivity({
+    await logActivity({
       conversationId: conversation_id,
       event: "logistics",
       actor: "eve",

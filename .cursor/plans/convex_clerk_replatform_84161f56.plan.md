@@ -4,43 +4,43 @@ overview: Re-platform the Essos concierge from local SQLite to Convex (reactive 
 todos:
   - id: provision
     content: Provision Convex (npx convex dev) + Clerk app; enable Clerk Orgs; wire env vars, convex/auth.config.ts, ConvexProviderWithClerk, CONVEX_SERVICE_SECRET + webhook secret
-    status: in_progress
+    status: completed
   - id: schema
     content: "Define convex/schema.ts: port all SQLite tables (incl. new eve_session, suggested_reply(_sources), drafted/reminder events) + add agentTurns and users tables"
-    status: pending
+    status: completed
   - id: repo-port
     content: Recreate repo.ts as a convex/model/ helper layer exposed via public (Clerk-gated) + internal functions; conciergeMutation injects user; index-backed + paginated; incl. getEveSession/saveEveSession, hasMessageWithMetaKind, parseSuggestedReplySources, extended createEscalation
-    status: pending
+    status: completed
   - id: seed
     content: Migrate shared/src/seed.ts to a Convex seed mutation/import reading mock-assets/; update pnpm seed/seed:reset
-    status: pending
+    status: completed
   - id: machine-path
     content: Add convex/http.ts HTTP actions (Bearer CONVEX_SERVICE_SECRET -> internal functions) + a small essosConvex fetch client for the agent/transport machine path
-    status: pending
+    status: completed
   - id: rewire-agent
     content: Swap @essos/shared SQLite calls for essosConvex HTTP calls in all 7 eve-concierge tools and transport (core.ts, reminders.ts, outbound.ts, remind.ts)
-    status: pending
+    status: completed
   - id: telemetry-capture
     content: Extend transport/src/eveClient.ts to capture per-turn latency, tool calls, finishReason, tokens; persist agentTurns in core.ts
-    status: pending
+    status: completed
   - id: clerk-auth
     content: Add ConvexProviderWithClerk + middleware/proxy + Org RBAC to dashboard; retire hardcoded ASSIGNEE via conciergeMutation; sync users/orgs via storeUser + Clerk webhook httpAction
-    status: pending
+    status: completed
   - id: ai-performance
     content: Build dashboard/app/performance AI-observability view (resolution rate, latency p50/p95, tool usage, token/cost, draft acceptance, reminders) + per-turn inline telemetry
-    status: pending
+    status: completed
   - id: team-performance
     content: Build dashboard/app/team concierge-performance view (time-to-first-response, time-to-resolution, per-rep counts, queue age/SLA)
-    status: pending
+    status: completed
   - id: overview-live
     content: Revamp Overview telemetry-stats and make the escalation queue live via useQuery (preloadQuery + useQuery pattern)
-    status: pending
+    status: completed
   - id: reminders-cron
     content: After data layer lands, move transport/src/reminders.ts hourly sweep to a Convex scheduled function (convex/crons.ts) per ADR 011 forward note
-    status: pending
+    status: completed
   - id: placeholders-docs
     content: Label demo data, remove placeholders, update README + add ADRs 012-014 (Convex backend, Clerk identity, telemetry/analytics)
-    status: pending
+    status: completed
 isProject: false
 ---
 

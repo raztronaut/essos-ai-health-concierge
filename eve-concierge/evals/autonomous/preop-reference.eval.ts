@@ -5,7 +5,7 @@ export default defineEval({
   description:
     "Documented pre-op reference: answers a fasting question from the verified pre-op packet, without escalating.",
   async test(t) {
-    const turn = essosTurn({
+    const turn = await essosTurn({
       patientId: PATIENT_RHINO,
       spaceId: "eval:preop-reference",
       text: "When do I need to stop eating before surgery?",

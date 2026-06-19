@@ -23,7 +23,7 @@ export default defineTool({
       .describe("How many of the most recent messages to return (default 12)."),
   }),
   async execute({ conversation_id, limit }) {
-    const all = listMessages(conversation_id);
+    const all = await listMessages(conversation_id);
     const take = limit ?? 12;
     const recent = all.slice(-take).map((message) => ({
       role: message.role,

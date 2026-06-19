@@ -1,10 +1,9 @@
+"use client";
+
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 import type { EscalationStatus } from "@essos/shared";
 import { Button } from "@/components/ui";
-import {
-  resolveEscalationAction,
-  resumeAutomationAction,
-  takeOverConversationAction,
-} from "@/lib/actions";
 
 /** Take-over / resolve actions for a single escalation (queue + thread). */
 export function EscalationActions({
@@ -16,24 +15,19 @@ export function EscalationActions({
   conversationId: string;
   status: EscalationStatus;
 }) {
+  const takeOver = useMutation(api.mutations.takeOverConversation);
+  const resolve = useMutation(api.mutations.resolveEscalation);
   return (
     <div className="flex shrink-0 items-center gap-2">
       {status === "open" ? (
-        <form action={takeOverConversationAction}>
-          <input type="hidden" name="conversationId" value={conversationId} />
-          <Button type="submit" variant="ghost">
-            Take over
-          </Button>
-        </form>
+        <Button variant="ghost" onClick={() => void takeOver({ conversationId })}>
+          Take over
+        </Button>
       ) : null}
       {status !== "resolved" ? (
-        <form action={resolveEscalationAction}>
-          <input type="hidden" name="escalationId" value={escalationId} />
-          <input type="hidden" name="conversationId" value={conversationId} />
-          <Button type="submit" variant="ok">
-            Resolve
-          </Button>
-        </form>
+        <Button variant="ok" onClick={() => void resolve({ escalationId })}>
+          Resolve
+        </Button>
       ) : null}
     </div>
   );
@@ -41,12 +35,10 @@ export function EscalationActions({
 
 /** Resume Eve automation on a paused / taken-over thread. */
 export function ResumeAutomationButton({ conversationId }: { conversationId: string }) {
+  const resume = useMutation(api.mutations.resumeAutomation);
   return (
-    <form action={resumeAutomationAction}>
-      <input type="hidden" name="conversationId" value={conversationId} />
-      <Button type="submit" variant="primary">
-        Resume Eve
-      </Button>
-    </form>
+    <Button variant="primary" onClick={() => void resume({ conversationId })}>
+      Resume Eve
+    </Button>
   );
 }

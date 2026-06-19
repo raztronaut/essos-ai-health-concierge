@@ -12,76 +12,81 @@ Beachhead: rhinoplasty and hair-transplant patients in Turkey and Mexico.
 flowchart LR
   Patient["Patient + concierge (iMessage group)"] --> Transport
   Transport["transport/ (Spectrum bridge)"] -->|"POST /eve/v1/session"| Eve
-  Eve["eve-concierge/ (Eve agent: 7 tools, 4 skills)"] --> Shared
+  Eve["eve-concierge/ (Eve agent: 7 tools, 4 skills)"] -->|"machine path (service secret)"| Convex
   %% built-in bash/web_fetch/etc. tools are disabled for the patient-facing agent (ADR 009)
-  Transport --> Shared
-  Shared[("shared/ - SQLite store + repo layer")]
-  Dashboard["dashboard/ (Next.js admin)"] --> Shared
+  Transport -->|"machine path (service secret)"| Convex
+  Convex[("Convex (reactive store + functions)")]
+  Dashboard["dashboard/ (Next.js + Clerk)"] -->|"useQuery (live) + mutations"| Convex
+  Clerk["Clerk (concierge identity)"] --> Dashboard
   Human["Concierge team"] --> Dashboard
 ```
 
 - **Eve = brain**, **Spectrum = transport**, connected over Eve's HTTP session API so the transport stays swappable (terminal for dev, iMessage for the live demo).
-- **One shared SQLite file** is the source of truth for notional data, read/written by the agent tools and the dashboard.
-- Eve answers low-severity messages in-thread and, on escalation, pings the human team and raises a flag in the dashboard while pausing automation for that conversation.
+- **Convex** is the reactive source of truth ([ADR 013](.docs/decisions/013-convex-backend.md)). The dashboard subscribes with `useQuery` so escalations and telemetry update live; the agent + transport reach Convex through a service-secret HTTP action (no Clerk identity), while the dashboard uses Clerk-authenticated functions ([ADR 014](.docs/decisions/014-clerk-auth-and-identity.md)).
+- Eve answers low-severity messages in-thread and, on escalation, pings the human team and raises a flag in the dashboard while pausing automation for that conversation. Every turn is logged as telemetry for the AI-performance and team views ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
 
 ## Repo layout
 
 ```
 AI Health Tourism Concierge/
-├── shared/          @essos/shared — SQLite schema, repo layer, taxonomy, seed, config (workspace)
+├── convex/          Convex backend — schema, functions (public + machine path), seed, http (workspace root)
+├── shared/          @essos/shared — types, taxonomy, places, Convex machine-path client (workspace)
 ├── transport/       @essos/transport — Spectrum bridge (terminal + iMessage) (workspace)
-├── dashboard/       @essos/dashboard — Next.js admin dashboard (workspace)
+├── dashboard/       @essos/dashboard — Next.js admin dashboard (Convex + Clerk) (workspace)
 ├── eve-concierge/   Eve agent app (isolated sub-project; authored surface in agent/)
+├── scripts/         seed runner (parses mock-assets/ -> Convex import mutation)
 ├── mock-assets/     fixture pack: patient JSON, source-doc Markdown, generated PDFs
 ├── .docs/decisions/ architecture decision records (ADRs)
 ├── .context/        provided project source material
 └── .essos_branding/ extracted brand tokens
 ```
 
-`shared`, `transport`, and `dashboard` are pnpm workspace packages. `eve-concierge` is an isolated Eve sub-project with its own lockfile (it pins beta deps); it links `@essos/shared` via `link:`. See [ADR 005](.docs/decisions/005-eve-agent-project-structure.md).
+`shared`, `transport`, and `dashboard` are pnpm workspace packages; `convex/` lives at the workspace root. `eve-concierge` is an isolated Eve sub-project with its own lockfile (it pins beta deps); it links `@essos/shared` via `link:`. See [ADR 005](.docs/decisions/005-eve-agent-project-structure.md).
 
 ## Prerequisites
 
-- Node.js >= 22 (uses the built-in `node:sqlite`)
+- Node.js >= 22
 - pnpm 10+
 - An Anthropic API key (the work-trial zero-data-retention key). Optional: a Google Places API key.
+- Convex (provisioned by `npx convex dev` — a local deployment needs no account). Optional: a Clerk app for real dashboard auth (the demo runs without it).
 
-## Setup
+## Setup (first time)
 
 ```bash
-# 1) install workspace deps
-pnpm install
-# (eve-concierge installs its own deps)
-pnpm -C eve-concierge install
-
-# 2) configure env
+# 1) configure env (edit .env: set ANTHROPIC_API_KEY; eve-concierge/.env symlinks to it)
 cp .env.example .env
-# edit .env: set ANTHROPIC_API_KEY (sk-ant-...). eve-concierge/.env is a symlink to ../.env.
 
-# 3) build the shared package and seed the local SQLite store
-pnpm --filter @essos/shared run build
-pnpm seed:reset
+# 2) one-shot bootstrap: installs deps, provisions a local Convex deployment,
+#    builds the shared client, and seeds the fixture pack
+pnpm setup
 ```
 
-`seed:reset` populates `.data/essos.db` from `mock-assets/` (3 patients, source docs, itineraries, care docs, and a pre-seeded "stranded at arrivals" escalation).
+`pnpm setup` runs `pnpm install` + the eve sub-project install + `convex dev --once` (writes `CONVEX_*` to `.env.local`) + builds `@essos/shared` + `pnpm seed:reset` (3 patients, source docs, itineraries, care docs, and a pre-seeded "stranded at arrivals" escalation).
+
+**Dashboard auth (optional).** The dashboard runs as a "demo concierge" with no keys. To enable real Clerk auth, put `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` in `dashboard/.env.local` (Next reads env from the dashboard dir), set `CLERK_JWT_ISSUER_DOMAIN` on the Convex deployment (`npx convex env set …`), and add a Clerk JWT template named `convex`. See [ADR 014](.docs/decisions/014-clerk-auth-and-identity.md).
 
 ## Run
 
-Three processes (separate terminals):
+One command starts the always-on services (Convex + Eve agent + dashboard) with labeled, color-coded output; `Ctrl-C` stops them all:
 
 ```bash
-# 1) Eve agent runtime (the brain) on :3000
-pnpm eve:dev
-
-# 2) transport bridge — pick one:
-pnpm transport:terminal     # local: play the patient in your shell
-pnpm transport:imessage     # live: Spectrum Cloud iMessage group chat
-
-# 3) admin dashboard on :4000
-pnpm dashboard:dev          # http://localhost:4000
+pnpm dev            # convex (:3210) + eve (:3000) + dashboard (:4000)
+# or, for UI work without the agent:
+pnpm dev:ui         # convex + dashboard only
 ```
 
-Useful root scripts: `pnpm seed` / `pnpm seed:reset`, `pnpm eve:build`, `pnpm assets:generate` (regenerate PDFs), `pnpm transport:remind` (send a proactive pre-op reminder on demand), `pnpm typecheck` (all packages + the agent).
+The **transport** is interactive (it reads your keystrokes as the patient), so run it in its own terminal:
+
+```bash
+pnpm transport:terminal     # local: play the patient in your shell
+pnpm transport:imessage     # live: Spectrum Cloud iMessage group chat
+```
+
+Then open the dashboard at http://localhost:4000.
+
+> The dashboard needs Convex running — `pnpm dev` guarantees that. If you ever start the dashboard alone, start `pnpm convex:dev` too, or its data will hang on "Loading…" (the reactive client retries until Convex is up).
+
+Other root scripts: `pnpm seed` / `pnpm seed:reset`, `pnpm eve:build`, `pnpm assets:generate` (regenerate PDFs), `pnpm transport:remind` (fire a proactive pre-op reminder on demand), `pnpm typecheck` (all packages + the agent).
 
 ## Demo scenarios
 
@@ -96,7 +101,7 @@ Drive these as the patient (terminal, or iMessage in the group):
 | "Can I take ibuprofen tonight?" | Medication decision → escalates. |
 | "I can't find my driver and no one's answering." | Stranded patient → escalates; tells them where to wait. |
 
-Open flags surface on the dashboard Overview, where you can take over, resolve, and resume Eve.
+Open flags surface on the dashboard Overview (live, no reload), where you can take over, resolve, and resume Eve. The **AI performance** and **Team** views turn the per-turn telemetry into autonomy rate, latency, tool usage, draft quality, and per-concierge workload ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
 
 When Eve escalates, the patient is never left in silence: Eve acknowledges in-thread, and if the patient keeps texting while a human is being looped in, they get a single "the care team is reviewing this" holding notice. The concierge can reply to the patient straight from the dashboard conversation view — those replies are delivered to the patient's iMessage by the transport and mark the thread taken over. See [ADR 010](.docs/decisions/010-handoff-patient-feedback-ux.md).
 
@@ -121,7 +126,7 @@ See [ADR 008](.docs/decisions/008-transport-eve-streaming-contract.md) for the t
 - iMessage is the primary surface; the patient/concierge group chat is the primary space. Terminal transport is for development.
 - **Spectrum Cloud over Sendblue** for first-class group chat + native mini-app cards ([ADR 004](.docs/decisions/004-spectrum-imessage-transport.md)).
 - The model routes **directly to Anthropic** (not the AI Gateway) using the ZDR key, keeping PHI off a third-party gateway ([ADR 006](.docs/decisions/006-model-routing-direct-anthropic.md)).
-- Notional data; local SQLite store; agent + DB + dashboard run locally while iMessage transport goes through Spectrum Cloud.
+- Notional data in Convex (a local deployment for the demo; deployable to Convex Cloud). Patient data now lives in Convex rather than a local SQLite file — a deliberate trade-off for reactivity/deployability, with model routing still direct-Anthropic ZDR ([ADR 013](.docs/decisions/013-convex-backend.md)).
 - Pre-op questions are answerable when directly documented; medication decisions, post-op symptoms/recovery, staff-safety concerns, out-of-package requests, and unsure cases escalate ([ADR 001](.docs/decisions/001-escalation-taxonomy.md), [ADR 002](.docs/decisions/002-care-instructions-source-of-truth.md)).
 - Mini-app cards and PII/PHI hardening are later-focus items after the text-first system is working.
 
@@ -143,11 +148,14 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [010](.docs/decisions/010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge |
 | [011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md) | Concierge AI-assist + proactive care |
 | [012](.docs/decisions/012-imessage-plaintext-and-voice.md) | iMessage plaintext formatting + texting voice |
+| [013](.docs/decisions/013-convex-backend.md) | Convex backend (supersedes local SQLite) |
+| [014](.docs/decisions/014-clerk-auth-and-identity.md) | Clerk auth + concierge identity |
+| [015](.docs/decisions/015-agent-telemetry-and-analytics.md) | Agent telemetry + analytics |
 
 ## Package docs
 
 - [eve-concierge/README.md](eve-concierge/README.md) — the agent brain (tools, skills, instructions, model)
 - [transport/README.md](transport/README.md) — the Spectrum bridge
 - [dashboard/README.md](dashboard/README.md) — the admin dashboard
-- [shared/README.md](shared/README.md) — schema, repo layer, seed
+- [shared/README.md](shared/README.md) — types, taxonomy, and the Convex machine-path client
 - [mock-assets/README.md](mock-assets/README.md) — the fixture pack

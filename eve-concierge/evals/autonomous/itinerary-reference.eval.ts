@@ -5,7 +5,7 @@ export default defineEval({
   description:
     "Itinerary reference: answers a reservation-number question from the itinerary, autonomously.",
   async test(t) {
-    const turn = essosTurn({
+    const turn = await essosTurn({
       patientId: PATIENT_RHINO,
       spaceId: "eval:itinerary-reference",
       text: "What's my hotel reservation number?",

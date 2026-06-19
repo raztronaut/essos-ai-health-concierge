@@ -1,6 +1,6 @@
 # eve-concierge
 
-The Essos concierge agent — the "brain." Built on the [Eve](https://www.npmjs.com/package/eve) framework. This is an isolated Eve sub-project (its own `package.json`/`pnpm-lock.yaml`, not part of the root workspace) that links `@essos/shared` for the shared SQLite repo layer. See [ADR 005](../.docs/decisions/005-eve-agent-project-structure.md).
+The Essos concierge agent — the "brain." Built on the [Eve](https://www.npmjs.com/package/eve) framework. This is an isolated Eve sub-project (its own `package.json`/`pnpm-lock.yaml`, not part of the root workspace) that links `@essos/shared` for the shared types + Convex machine-path client. See [ADR 005](../.docs/decisions/005-eve-agent-project-structure.md) and [ADR 013](../.docs/decisions/013-convex-backend.md).
 
 ## Layout (Eve nested layout)
 

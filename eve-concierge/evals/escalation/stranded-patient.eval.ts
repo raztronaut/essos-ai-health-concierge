@@ -5,7 +5,7 @@ export default defineEval({
   description:
     "Stranded patient: a blocked-at-arrivals message escalates High with a concierge draft instead of being treated as routine logistics.",
   async test(t) {
-    const turn = essosTurn({
+    const turn = await essosTurn({
       patientId: PATIENT_HAIR,
       spaceId: "eval:stranded-patient",
       text: "I can't find my driver and no one's answering.",

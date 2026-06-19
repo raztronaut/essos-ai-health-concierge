@@ -1,19 +1,18 @@
 import {
-  createEscalation,
+  escalateToHuman,
   getConversationBySpace,
-  getDb,
   listOpenEscalationsForConversation,
   resumeAutomation,
-  setAutomationState,
+  deleteConversationBySpace,
   type EscalationCategory,
 } from "@essos/shared";
 import { handleInbound, type EveResponder } from "./core.js";
 import { DEMO_PATIENT } from "./env.js";
 
 /**
- * Verifies the transport core + DB + handoff rules without a live model. The
- * stub responder mimics what the real `escalate_to_human` tool does (create a
- * flag + pause automation) when the message looks unsafe.
+ * Verifies the transport core + Convex + handoff rules without a live model.
+ * The stub responder mimics what the real `escalate_to_human` tool does (create
+ * a flag + pause automation) when the message looks unsafe.
  */
 const stub: EveResponder = async (message, prior) => {
   const session = prior ?? { sessionId: "stub_ses", continuationToken: "stub", turns: 1 };
@@ -24,8 +23,8 @@ const stub: EveResponder = async (message, prior) => {
   const patientId = /patient_id:\s*(\S+)/.exec(message)?.[1] ?? "";
   const sourceMessageId = /source_message_id:\s*(\S+)/.exec(message)?.[1] ?? "";
 
-  const escalate = (reason: EscalationCategory, level: "High" | "Med") => {
-    createEscalation({
+  const escalate = (reason: EscalationCategory, level: "High" | "Med") =>
+    escalateToHuman({
       conversationId,
       patientId,
       level,
@@ -33,18 +32,16 @@ const stub: EveResponder = async (message, prior) => {
       summary: `stub escalation (${reason})`,
       sourceMessageId,
     });
-    setAutomationState(conversationId, "paused_for_review");
-  };
 
   if (lower.includes("swelling") || lower.includes("fever")) {
-    escalate("postop_symptom_or_recovery", "High");
+    await escalate("postop_symptom_or_recovery", "High");
     return {
       text: "I want to make sure you get the right answer, so I'm flagging this for the Essos team now.",
       session,
     };
   }
   if (lower.includes("ibuprofen") || lower.includes("medication")) {
-    escalate("medication_decision", "High");
+    await escalate("medication_decision", "High");
     return {
       text: "I'm flagging this medication question for the concierge team to confirm.",
       session,
@@ -66,9 +63,8 @@ function check(name: string, cond: boolean): void {
 }
 
 /** Remove every conversation (cascades to messages/escalations/activity) this run created. */
-function teardown(spaceIds: string[]): void {
-  const stmt = getDb().prepare("delete from conversations where space_id = ?");
-  for (const spaceId of spaceIds) stmt.run(spaceId);
+async function teardown(spaceIds: string[]): Promise<void> {
+  for (const spaceId of spaceIds) await deleteConversationBySpace(spaceId);
 }
 
 async function run(): Promise<string[]> {
@@ -96,7 +92,7 @@ async function run(): Promise<string[]> {
     eveRespond: stub,
   });
   check("routine question is answered", r1.reason === "answered" && !!r1.reply);
-  const conv = getConversationBySpace(spaceId)!;
+  const conv = (await getConversationBySpace(spaceId))!;
   check("conversation created", !!conv);
   check(
     "automation active after routine answer",
@@ -113,19 +109,20 @@ async function run(): Promise<string[]> {
     eveRespond: stub,
   });
   check("escalation question gets an acknowledgement", !!r2.reply);
-  const openAfter = listOpenEscalationsForConversation(conv.id);
+  const openAfter = await listOpenEscalationsForConversation(conv.id);
   check("an escalation was created", openAfter.length >= 1);
   check(
     "escalation reason is post-op symptom",
     openAfter.some((e) => e.reason === "postop_symptom_or_recovery"),
   );
-  const convPaused = getConversationBySpace(spaceId)!;
+  const convPaused = (await getConversationBySpace(spaceId))!;
   check(
     "automation paused after escalation",
     convPaused.automation_state === "paused_for_review",
   );
 
-  // 3) Patient sends another message while paused -> no auto reply.
+  // 3) Patient sends a message while paused -> Eve doesn't autonomously answer;
+  //    a one-time holding notice is sent (ADR 010/011), then it goes silent.
   const r3 = await handleInbound({
     spaceId,
     channel: "terminal",
@@ -134,7 +131,19 @@ async function run(): Promise<string[]> {
     patientId: DEMO_PATIENT,
     eveRespond: stub,
   });
-  check("no auto-reply while paused", r3.reply === null && r3.reason === "paused_for_review");
+  check("paused: one-time holding notice, no autonomous answer", r3.reason === "paused_for_review");
+  const r3b = await handleInbound({
+    spaceId,
+    channel: "terminal",
+    authorHandle: null,
+    text: "still waiting…",
+    patientId: DEMO_PATIENT,
+    eveRespond: stub,
+  });
+  check(
+    "paused: silent on follow-ups after the holding notice",
+    r3b.reply === null && r3b.reason === "paused_for_review",
+  );
 
   // 4) Concierge replies during open escalation -> takeover.
   const r4 = await handleInbound({
@@ -148,11 +157,11 @@ async function run(): Promise<string[]> {
   check("concierge reply triggers takeover", r4.reason === "concierge_takeover");
   check(
     "automation is taken_over",
-    getConversationBySpace(spaceId)!.automation_state === "taken_over",
+    (await getConversationBySpace(spaceId))!.automation_state === "taken_over",
   );
 
   // 5) Resume automation -> patient messages answered again.
-  resumeAutomation(conv.id, "Ryan");
+  await resumeAutomation(conv.id, "Ryan");
   const r5 = await handleInbound({
     spaceId,
     channel: "terminal",
@@ -183,7 +192,7 @@ async function main(): Promise<void> {
     created = await run();
   } finally {
     // Best-effort cleanup so repeated runs don't accumulate rows.
-    teardown(created);
+    await teardown(created);
   }
   console.log(`\n${passed} passed, ${failed} failed\n`);
   process.exit(failed === 0 ? 0 : 1);

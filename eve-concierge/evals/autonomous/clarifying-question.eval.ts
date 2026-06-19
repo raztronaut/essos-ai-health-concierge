@@ -7,7 +7,7 @@ export default defineEval({
   async test(t) {
     // Maya has several transport pickups, so this is genuinely ambiguous and
     // should prompt one clarifying question rather than a guess or an escalation.
-    const turn = essosTurn({
+    const turn = await essosTurn({
       patientId: PATIENT_RHINO,
       spaceId: "eval:clarifying-question",
       text: "Can you change my driver pickup time?",

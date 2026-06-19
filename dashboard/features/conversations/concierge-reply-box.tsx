@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { Button, Card } from "@/components/ui";
-import { sendConciergeReplyAction } from "@/lib/actions";
 
 /**
  * Lets a concierge reply to the patient directly from the dashboard. The message
@@ -25,11 +26,25 @@ export function ConciergeReplyBox({
   const draft = suggestedReply?.trim() ?? "";
   const hasDraft = draft.length > 0;
   const [text, setText] = useState(draft);
+  const [sending, setSending] = useState(false);
+  const sendReply = useMutation(api.mutations.sendConciergeReply);
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = text.trim();
+    if (!trimmed || sending) return;
+    setSending(true);
+    try {
+      await sendReply({ conversationId, text: trimmed });
+      setText("");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <Card>
-      <form action={sendConciergeReplyAction} className="space-y-3">
-        <input type="hidden" name="conversationId" value={conversationId} />
+      <form onSubmit={onSubmit} className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <label htmlFor="concierge-reply" className="block text-sm font-semibold text-ink">
             Reply to patient
@@ -63,21 +78,14 @@ export function ConciergeReplyBox({
           placeholder="Type a message — it's delivered to the patient's iMessage and takes over the thread."
           className="focus-ring w-full resize-y rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] placeholder:text-muted hover:border-secondary/70"
         />
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            name="agentName"
-            aria-label="Your name"
-            placeholder="Your name (signs the message)"
-            className="focus-ring min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-ink transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] placeholder:text-muted hover:border-secondary/70"
-          />
+        <div className="flex items-center justify-end gap-2">
           {hasDraft && text.length > 0 ? (
             <Button type="button" variant="ghost" onClick={() => setText("")}>
               Clear draft
             </Button>
           ) : null}
-          <Button type="submit" variant="primary">
-            Send to patient
+          <Button type="submit" variant="primary" disabled={sending || !text.trim()}>
+            {sending ? "Sending…" : "Send to patient"}
           </Button>
         </div>
       </form>

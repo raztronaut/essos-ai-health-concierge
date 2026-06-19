@@ -9,7 +9,7 @@ export default defineTool({
     patient_id: z.string().min(1).describe("patient_id from the ESSOS_CONTEXT block"),
   }),
   async execute({ patient_id }) {
-    const p = getPatientById(patient_id);
+    const p = await getPatientById(patient_id);
     if (!p) return { found: false as const, patient_id };
     return {
       found: true as const,

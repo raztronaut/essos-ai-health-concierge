@@ -46,13 +46,13 @@ function firstName(patient: Patient): string {
 }
 
 /** The procedure-adjacent itinerary event a reminder is anchored to. */
-function selectPreopEvent(
+async function selectPreopEvent(
   patientId: string,
   now: Date,
   withinHours: number,
   force: boolean,
-): ItineraryEvent | null {
-  const candidates = listItinerary(patientId)
+): Promise<ItineraryEvent | null> {
+  const candidates = (await listItinerary(patientId))
     .filter((event) => (event.kind === "clinic" || event.kind === "preop") && event.starts_at)
     .sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at)));
   if (candidates.length === 0) return null;
@@ -69,8 +69,10 @@ function selectPreopEvent(
 }
 
 /** The verified, quotable pre-op instruction to ground the reminder in (fasting first). */
-function selectFastingInstruction(patientId: string): CareInstruction | null {
-  const preop = listCareInstructions(patientId, "preop").filter(
+async function selectFastingInstruction(
+  patientId: string,
+): Promise<CareInstruction | null> {
+  const preop = (await listCareInstructions(patientId, "preop")).filter(
     (care) => care.source_status === "verified" && care.answer_policy === "answer_reference",
   );
   if (preop.length === 0) return null;
@@ -113,21 +115,24 @@ export async function sendDuePreopReminders(
   const now = opts.now ?? new Date();
   const withinHours = opts.withinHours ?? REMINDER_WINDOW_HOURS;
   const force = opts.force ?? false;
-  const conversations = listConversations();
-  const patients = listPatients().filter((p) => !opts.patientId || p.id === opts.patientId);
+  const conversations = await listConversations();
+  const patients = (await listPatients()).filter(
+    (p) => !opts.patientId || p.id === opts.patientId,
+  );
 
   let sent = 0;
   for (const patient of patients) {
     const conversation = conversations.find((c) => c.patient_id === patient.id);
     if (!conversation) continue; // need an existing thread to message into
 
-    const event = selectPreopEvent(patient.id, now, withinHours, force);
+    const event = await selectPreopEvent(patient.id, now, withinHours, force);
     if (!event) continue;
 
     // One pre-op reminder per conversation unless forced (demo repeats).
-    if (!force && hasMessageWithMetaKind(conversation.id, "reminder")) continue;
+    if (!force && (await hasMessageWithMetaKind(conversation.id, "reminder")))
+      continue;
 
-    const instruction = selectFastingInstruction(patient.id);
+    const instruction = await selectFastingInstruction(patient.id);
     if (!instruction) continue;
 
     const text = buildReminder(patient, event, instruction);
@@ -137,13 +142,13 @@ export async function sendDuePreopReminders(
         debug("reminders", "could not resolve space for", patient.id, "- skipping");
         continue;
       }
-      appendMessage({
+      await appendMessage({
         conversationId: conversation.id,
         role: "agent",
         text,
         meta: { kind: "reminder", event_id: event.id },
       });
-      logActivity({
+      await logActivity({
         conversationId: conversation.id,
         event: "reminder",
         actor: "eve",

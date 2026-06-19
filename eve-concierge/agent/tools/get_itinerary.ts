@@ -37,11 +37,11 @@ export default defineTool({
     z.object({ found: z.literal(false), reason: z.string() }),
   ]),
   async execute({ patient_id }) {
-    const patient = getPatientById(patient_id);
+    const patient = await getPatientById(patient_id);
     if (!patient) {
       return { found: false as const, reason: "No patient matches that id." };
     }
-    const events = listItinerary(patient_id).map((event) => ({
+    const events = (await listItinerary(patient_id)).map((event) => ({
       kind: event.kind,
       title: event.title,
       // Drop null fields so only present itinerary data reaches the model.

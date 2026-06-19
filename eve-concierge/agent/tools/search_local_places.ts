@@ -17,7 +17,7 @@ export default defineTool({
       .describe("override the city; defaults to the patient's destination city"),
   }),
   async execute({ patient_id, query, city }) {
-    const patient = getPatientById(patient_id);
+    const patient = await getPatientById(patient_id);
     const resolvedCity = city ?? patient?.destination_city ?? "";
     const { results, source } = await searchLocalPlaces({
       query,

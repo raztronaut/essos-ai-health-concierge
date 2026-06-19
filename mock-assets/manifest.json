@@ -14,7 +14,7 @@
       "answer_policy": "answer_reference",
       "markdown_path": "mock-assets/source-docs/companion-and-after-hours-guide.md",
       "pdf_path": "mock-assets/pdf/essos/companion-and-after-hours-guide.pdf",
-      "sha256": "9d931a50865991346ca43122dfac78b1ae53ead53a1970136d064096aa855c57"
+      "sha256": "5cdc3473b5b8fce1c19f823cbd644300dae93f92087e734db7743c94163059a9"
     },
     {
       "id": "doc_diego_hair_preop",
@@ -28,7 +28,7 @@
       "answer_policy": "answer_reference",
       "markdown_path": "mock-assets/source-docs/diego-ramirez-hair-transplant-preop-packet.md",
       "pdf_path": "mock-assets/pdf/essos/diego-ramirez-hair-transplant-preop-packet.pdf",
-      "sha256": "70420fd0b614eb63081e75fbd11d3db5209d410c65f1516c7a7137191572176c"
+      "sha256": "35b0496025d9d3433c45034e439747e31bd5fdf491446ff2c02b1c378e40e1f8"
     },
     {
       "id": "doc_internal_escalation_runbook",
@@ -42,7 +42,7 @@
       "answer_policy": "escalate_only",
       "markdown_path": "mock-assets/source-docs/internal-eve-escalation-runbook.md",
       "pdf_path": "mock-assets/pdf/essos/internal-eve-escalation-runbook.pdf",
-      "sha256": "9c57a7df0b108fddff4a79d4d325f43cf16c8a07833a234b71960e06364eaac6"
+      "sha256": "b3b546d2592dd4544c546e04d04c68a2144e4fcde6cbc45347ebbc0e7f9ed254"
     },
     {
       "id": "doc_maya_itinerary",
@@ -56,7 +56,7 @@
       "answer_policy": "answer_reference",
       "markdown_path": "mock-assets/source-docs/maya-okafor-itinerary-packet.md",
       "pdf_path": "mock-assets/pdf/essos/maya-okafor-itinerary-packet.pdf",
-      "sha256": "e5ee128f99dd339a0463908b80c5b8987573ae7d108496af274cbc0b398c850f"
+      "sha256": "32b344c58020473350df5bb6a0d804d8b8e46ed45131e93251a9c8a4ddbcbacb"
     },
     {
       "id": "doc_maya_postop_pending",
@@ -70,7 +70,7 @@
       "answer_policy": "escalate_only",
       "markdown_path": "mock-assets/source-docs/maya-okafor-postop-pending-note.md",
       "pdf_path": "mock-assets/pdf/essos/maya-okafor-postop-pending-note.pdf",
-      "sha256": "08e9569b6bbd60c952a59c1b02a2d666023de4f89a55eefb2bd2b887a13ae0c1"
+      "sha256": "3d665d1aa8a9251d9d6a1a96b5a130d33a73f3dd9c0296d663bfff1e491e963c"
     },
     {
       "id": "doc_maya_rhino_preop",
@@ -84,7 +84,21 @@
       "answer_policy": "answer_reference",
       "markdown_path": "mock-assets/source-docs/maya-okafor-rhinoplasty-preop-packet.md",
       "pdf_path": "mock-assets/pdf/essos/maya-okafor-rhinoplasty-preop-packet.pdf",
-      "sha256": "2c7f63c108713c03dbd59e9d6c228027c5f68e6b0ae0e699ff8b183f88b04ee7"
+      "sha256": "13a6395c4caf8dcb4a87b11f406c189eec4c233f3a42e3dca91406235fc6e34e"
+    },
+    {
+      "id": "doc_medical_tourism_prep_guide",
+      "slug": "medical-tourism-prep-and-recovery-guide",
+      "title": "Medical Tourism Prep And Recovery Guide",
+      "patient_id": null,
+      "kind": "guide",
+      "phase": "general",
+      "source_type": "essos_summary",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "markdown_path": "mock-assets/source-docs/medical-tourism-prep-and-recovery-guide.md",
+      "pdf_path": "mock-assets/pdf/essos/medical-tourism-prep-and-recovery-guide.pdf",
+      "sha256": "6a3daf5fa4bad21ee1fa3e1c0c6eda45be28ca5f9ca7b234713704e9bcf55abc"
     },
     {
       "id": "doc_sofia_pickup_handoff",
@@ -98,7 +112,7 @@
       "answer_policy": "answer_reference",
       "markdown_path": "mock-assets/source-docs/sofia-lindqvist-airport-pickup-handoff.md",
       "pdf_path": "mock-assets/pdf/essos/sofia-lindqvist-airport-pickup-handoff.pdf",
-      "sha256": "ce6eea4566439ed009ec9183fc40caa47bc01be8d13b539e0ba3597272950a6b"
+      "sha256": "52a945ce28d0e40ce64062308ee849d9e0c595f498539ea41ebed4609862e487"
     }
   ]
 }

@@ -1,22 +1,27 @@
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { REPO_ROOT, listSourceDocuments } from "@essos/shared";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@convex/_generated/api";
 
 export const dynamic = "force-dynamic";
 
+// app/source-docs/[id] -> repo root is four levels up.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+
 /**
- * Serve a seeded source document. Reads the polished PDF from
- * `mock-assets/pdf/essos/` when present and returns it inline; if the PDF is
- * missing it falls back to the Markdown source, and if neither resolves it
- * returns a 404 rather than throwing. (Documents are small fixtures, so the
- * body is read fully into memory rather than streamed.)
+ * Serve a seeded source document. Looks the document up in Convex, then reads
+ * the polished PDF from `mock-assets/pdf/essos/` inline; falls back to the
+ * Markdown source, then a 404.
  */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await params;
-  const doc = listSourceDocuments().find((d) => d.id === id);
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? "http://127.0.0.1:3210";
+  const client = new ConvexHttpClient(convexUrl);
+  const doc = await client.query(api.queries.getSourceDocument, { id });
   if (!doc) {
     return new Response("Document not found", { status: 404 });
   }

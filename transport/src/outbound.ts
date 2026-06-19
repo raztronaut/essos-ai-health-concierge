@@ -21,26 +21,28 @@ const POLL_INTERVAL_MS = 3000;
  * success it is marked delivered so it is never sent twice. See decision 010.
  */
 async function drainPendingOutbound(app: SpectrumApp): Promise<void> {
-  const pending = listPendingOutbound();
+  const pending = await listPendingOutbound();
   if (pending.length === 0) return;
 
   for (const message of pending) {
-    const conversation = getConversationById(message.conversation_id);
-    const patient = conversation ? getPatientById(conversation.patient_id) : null;
+    const conversation = await getConversationById(message.conversation_id);
+    const patient = conversation
+      ? await getPatientById(conversation.patient_id)
+      : null;
     if (!conversation) {
       debug("outbound", "no conversation for", message.id, "- dropping");
-      markOutboundDelivered(message.id);
+      await markOutboundDelivered(message.id);
       continue;
     }
     try {
       const space = await resolveSpace(app, conversation.space_id, patient?.handle ?? null);
       if (!space) {
         debug("outbound", "could not resolve space for", message.id, "- dropping");
-        markOutboundDelivered(message.id);
+        await markOutboundDelivered(message.id);
         continue;
       }
       await space.send(toImessageText(message.text).text);
-      markOutboundDelivered(message.id);
+      await markOutboundDelivered(message.id);
       debug("outbound", "delivered", message.id);
     } catch (err) {
       // Leave it pending for the next tick (at-least-once delivery).

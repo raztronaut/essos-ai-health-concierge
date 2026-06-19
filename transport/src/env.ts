@@ -1,7 +1,10 @@
 import { config } from "dotenv";
-import { resolve } from "node:path";
-import { REPO_ROOT } from "@essos/shared";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { normalizeHandle } from "./handles.js";
+
+// Repo root is two levels up from transport/src.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Load environment from the repo root so all packages share one .env.
 config({ path: resolve(REPO_ROOT, ".env"), quiet: true });

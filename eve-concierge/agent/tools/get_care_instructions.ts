@@ -19,7 +19,7 @@ export default defineTool({
       .describe("Optional filter; omit to get all phases."),
   }),
   async execute({ patient_id, phase }) {
-    const docs = listCareInstructions(patient_id, phase).map((doc) => ({
+    const docs = (await listCareInstructions(patient_id, phase)).map((doc) => ({
       phase: doc.phase,
       title: doc.title,
       body: doc.body,

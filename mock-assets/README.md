@@ -4,7 +4,7 @@ This folder is the source-of-truth fixture pack for the Essos AI Concierge work
 trial. It supports two uses:
 
 - polished PDFs for the demo (`mock-assets/pdf/essos/`)
-- structured data for the shared SQLite seed (`shared/src/seed.ts`)
+- structured data for the Convex seed (`scripts/seed.ts` -> `convex/seed.ts`)
 
 All patient names, handles, clinics, hotels, drivers, confirmation numbers, and
 records are fictional. The only content derived from the provided project
