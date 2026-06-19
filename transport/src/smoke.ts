@@ -16,7 +16,7 @@ import { DEMO_PATIENT } from "./env.js";
  * flag + pause automation) when the message looks unsafe.
  */
 const stub: EveResponder = async (message, prior) => {
-  const session = prior ?? { sessionId: "stub_ses", continuationToken: "stub" };
+  const session = prior ?? { sessionId: "stub_ses", continuationToken: "stub", turns: 1 };
   const lower = message.toLowerCase();
 
   // Pull ids out of the context block the transport prepended.

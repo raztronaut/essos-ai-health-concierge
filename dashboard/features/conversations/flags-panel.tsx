@@ -1,19 +1,27 @@
 import type { Escalation } from "@essos/shared";
 import { Card } from "@/components/ui";
 import { LevelBadge, StatusBadge } from "@/components/badges";
-import { humanize } from "@/lib/format";
+import { formatRelativeTime, humanize } from "@/lib/format";
 import { EscalationActions } from "./escalation-actions";
 
 export function FlagsPanel({
   escalations,
   conversationId,
+  unansweredCount = 0,
 }: {
   escalations: Escalation[];
   conversationId: string;
+  /** Patient messages received since the last agent/concierge reply. */
+  unansweredCount?: number;
 }) {
   return (
     <Card>
       <h2 className="text-sm font-semibold">Flags</h2>
+      {unansweredCount > 0 ? (
+        <p className="mt-2 rounded-control bg-high-soft px-2 py-1 text-xs font-medium text-high">
+          {unansweredCount} patient message{unansweredCount > 1 ? "s" : ""} awaiting a reply
+        </p>
+      ) : null}
       {escalations.length === 0 ? (
         <p className="mt-2 text-sm text-muted">No escalations on this thread.</p>
       ) : (
@@ -26,6 +34,9 @@ export function FlagsPanel({
               <div className="flex items-center gap-2">
                 <LevelBadge level={esc.level} />
                 <StatusBadge status={esc.status} />
+                {esc.status === "open" ? (
+                  <span className="text-xs text-muted">waiting {formatRelativeTime(esc.created_at)}</span>
+                ) : null}
               </div>
               <div className="mt-1.5 text-xs font-medium">{humanize(esc.reason)}</div>
               <p className="mt-1 text-sm">{esc.summary}</p>

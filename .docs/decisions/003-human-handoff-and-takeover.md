@@ -9,7 +9,7 @@ Eve should support explicit conversation-level automation state so human concier
 | State | Meaning | Eve behavior |
 | --- | --- | --- |
 | `active` | Eve can answer eligible low-severity messages. | Classify and respond normally. |
-| `paused_for_review` | Eve escalated and is waiting for a human. | Do not answer new patient messages except brief acknowledgements if configured. |
+| `paused_for_review` | Eve escalated and is waiting for a human. | Do not answer new patient messages, except a single warm holding notice (see [ADR 010](010-handoff-patient-feedback-ux.md)). |
 | `taken_over` | A human concierge has taken control. | Do not auto-respond. Continue logging messages and telemetry. |
 | `resolved` | Human resolved the issue and automation may resume. | Dashboard can return conversation to `active`. |
 
@@ -33,7 +33,7 @@ Example:
 
 > I am flagging this for the Essos concierge team now so a human can confirm the right next step. I will keep this thread visible to them.
 
-When a human takes over, Eve should not answer patient messages until automation is resumed from the dashboard.
+When a human takes over, Eve should not answer patient messages until automation is resumed from the dashboard. The concierge can reply to the patient directly from the dashboard; those replies are delivered to the patient's iMessage by the transport ([ADR 010](010-handoff-patient-feedback-ux.md)).
 
 ## Dashboard Requirements
 

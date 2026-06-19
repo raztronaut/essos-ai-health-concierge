@@ -11,6 +11,23 @@ export function formatDateTime(value: string | null | undefined): string {
   });
 }
 
+/** Compact "time ago" label for SLA/waiting signals ("3m ago", "2h ago"). */
+export function formatRelativeTime(
+  value: string | null | undefined,
+  now: number = Date.now(),
+): string {
+  if (!value) return "—";
+  const ms = new Date(value).getTime();
+  if (Number.isNaN(ms)) return value;
+  const sec = Math.max(0, Math.round((now - ms) / 1000));
+  if (sec < 60) return "just now";
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.round(hr / 24)}d ago`;
+}
+
 /** Turn a snake_case enum into a human label ("travel_logistics" -> "Travel logistics"). */
 export function humanize(value: string): string {
   const spaced = value.replace(/_/g, " ");

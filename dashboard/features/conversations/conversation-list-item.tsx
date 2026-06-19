@@ -20,6 +20,11 @@ export function ConversationListItem({ conversation }: { conversation: Conversat
                   {c.open_flags} open flag{c.open_flags > 1 ? "s" : ""}
                 </span>
               ) : null}
+              {c.open_flags > 0 && c.last_role === "patient" ? (
+                <span className="rounded-pill bg-high-soft px-2 py-0.5 text-xs font-medium text-high">
+                  patient waiting
+                </span>
+              ) : null}
             </div>
             {c.patient_procedure ? (
               <div className="mt-0.5 text-xs text-muted">

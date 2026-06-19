@@ -4,6 +4,7 @@ import { imessage } from "spectrum-ts/providers/imessage";
 import { eveHealthy } from "./eveClient.js";
 import { normalizeHandle } from "./handles.js";
 import { runMessageLoop } from "./runLoop.js";
+import { startOutboundLoop } from "./outbound.js";
 
 /**
  * Live iMessage transport via Spectrum Cloud. Maps each iMessage space (group
@@ -36,6 +37,9 @@ async function main(): Promise<void> {
   });
 
   console.error("Essos concierge — iMessage transport running (Spectrum Cloud).");
+
+  // Deliver concierge replies queued by the dashboard back to the patient.
+  startOutboundLoop(app);
 
   await runMessageLoop({
     app,

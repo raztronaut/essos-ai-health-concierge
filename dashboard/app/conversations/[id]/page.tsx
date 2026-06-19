@@ -11,6 +11,7 @@ import {
 import { PageHeader } from "@/components/ui";
 import { AutomationBadge } from "@/components/badges";
 import { MessageThread } from "@/features/conversations/message-thread";
+import { ConciergeReplyBox } from "@/features/conversations/concierge-reply-box";
 import { PatientSummaryCard } from "@/features/conversations/patient-summary-card";
 import { FlagsPanel } from "@/features/conversations/flags-panel";
 import { ActivityLog } from "@/features/conversations/activity-log";
@@ -45,6 +46,15 @@ export default async function ConversationPage({
   const activity = listActivity(conversation.id);
   const canResume = conversation.automation_state !== "active";
 
+  // Patient messages received since the last agent/concierge reply — the
+  // concierge's "someone is waiting on you" signal.
+  const lastRepliedIndex = messages.findLastIndex(
+    (m) => m.role === "agent" || m.role === "concierge",
+  );
+  const unansweredCount = messages
+    .slice(lastRepliedIndex + 1)
+    .filter((m) => m.role === "patient").length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -63,10 +73,17 @@ export default async function ConversationPage({
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <MessageThread messages={messages} />
+        <div className="space-y-4">
+          <MessageThread messages={messages} />
+          <ConciergeReplyBox conversationId={conversation.id} />
+        </div>
         <aside className="space-y-4">
           {patient ? <PatientSummaryCard patient={patient} /> : null}
-          <FlagsPanel escalations={escalations} conversationId={conversation.id} />
+          <FlagsPanel
+            escalations={escalations}
+            conversationId={conversation.id}
+            unansweredCount={unansweredCount}
+          />
           <ActivityLog activity={activity} />
         </aside>
       </div>

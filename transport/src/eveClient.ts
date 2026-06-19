@@ -4,6 +4,12 @@ import { debug } from "./debug.js";
 export interface EveSession {
   sessionId: string;
   continuationToken: string;
+  /**
+   * How many turns this session has run. Eve's session stream replays the whole
+   * session from `session.started` on every connect, so to read the reply for
+   * the current turn we must wait for the Nth `turn.completed`, not the first.
+   */
+  turns: number;
 }
 
 export interface EveReply {
@@ -22,7 +28,6 @@ const FAILED_EVENTS = new Set([
   "session.failed",
   "error",
 ]);
-const TERMINAL_EVENTS = new Set(["turn.completed", "session.completed"]);
 
 interface SessionResponse {
   ok?: boolean;
@@ -121,12 +126,14 @@ async function postJson(url: string, body: unknown): Promise<SessionResponse> {
  * Read the session event stream and resolve with the final assistant message.
  *
  * The stream is opened after the create/continue POST returns. Eve's session
- * stream replays the turn's recorded events to a late subscriber (it is a
- * durable session, not a fire-and-forget socket), so no events are lost in the
- * gap between the POST resolving and this connecting. The `eveClient.test.ts`
- * fixtures pin the parsing/reduction half of this contract.
+ * is durable: the stream replays the session's recorded events from
+ * `session.started` on every connect — including all prior turns — so no events
+ * are lost in the gap between the POST resolving and this connecting. We count
+ * `turn.completed` events to find the turn we just sent (`expectedTurns`) and
+ * reduce only that turn's events. The `eveClient.test.ts` fixtures pin the
+ * parsing/reduction half of this contract.
  */
-async function collectReply(sessionId: string): Promise<string> {
+async function collectReply(sessionId: string, expectedTurns: number): Promise<string> {
   const url = `${EVE_BASE_URL}/eve/v1/session/${sessionId}/stream`;
   const res = await fetch(url, {
     headers: authHeaders({ accept: "application/x-ndjson" }),
@@ -137,6 +144,7 @@ async function collectReply(sessionId: string): Promise<string> {
 
   return await new Promise<string>((resolvePromise, reject) => {
     const events: EveEvent[] = [];
+    let turnsSeen = 0;
     let hardTimer: ReturnType<typeof setTimeout> | null = null;
     let done = false;
     const reader = res.body!.getReader();
@@ -183,10 +191,24 @@ async function collectReply(sessionId: string): Promise<string> {
         debug("eve", "non-json line", line.slice(0, LOG_PREVIEW));
         return;
       }
-      events.push(evt);
       const type = String(evt.type ?? "");
+      // The stream replays every turn from `session.started`. `reduceEveEvents`
+      // is a single-turn reducer, so keep only the current turn's events
+      // (reset at each `turn.started`) — otherwise a prior turn's clean answer
+      // would leak through when the latest turn's reply rides alongside a tool
+      // call and has no standalone final message.
+      if (type === "turn.started") events.length = 0;
+      events.push(evt);
       debug("eve", "event", type);
-      if (FAILED_EVENTS.has(type) || TERMINAL_EVENTS.has(type)) settle();
+      if (FAILED_EVENTS.has(type) || type === "session.completed") {
+        settle();
+        return;
+      }
+      // Settle only once we've seen the `turn.completed` for the turn we sent.
+      if (type === "turn.completed") {
+        turnsSeen += 1;
+        if (turnsSeen >= expectedTurns) settle();
+      }
     };
 
     const pump = async (): Promise<void> => {
@@ -216,6 +238,7 @@ export async function askEve(
 ): Promise<EveReply> {
   let sessionId: string;
   let continuationToken: string;
+  const expectedTurns = (prior?.turns ?? 0) + 1;
 
   if (!prior) {
     const created = await postJson(`${EVE_BASE_URL}/eve/v1/session`, { message });
@@ -234,8 +257,8 @@ export async function askEve(
     continuationToken = cont.continuationToken ?? prior.continuationToken;
   }
 
-  const text = await collectReply(sessionId);
-  return { text, session: { sessionId, continuationToken } };
+  const text = await collectReply(sessionId, expectedTurns);
+  return { text, session: { sessionId, continuationToken, turns: expectedTurns } };
 }
 
 /** Health check so the transport can fail fast with a clear message. */

@@ -98,6 +98,8 @@ Drive these as the patient (terminal, or iMessage in the group):
 
 Open flags surface on the dashboard Overview, where you can take over, resolve, and resume Eve.
 
+When Eve escalates, the patient is never left in silence: Eve acknowledges in-thread, and if the patient keeps texting while a human is being looped in, they get a single "the care team is reviewing this" holding notice. The concierge can reply to the patient straight from the dashboard conversation view — those replies are delivered to the patient's iMessage by the transport and mark the thread taken over. See [ADR 010](.docs/decisions/010-handoff-patient-feedback-ux.md).
+
 ## Live iMessage runbook
 
 1. Provision a Spectrum Cloud iMessage line (app.photon.codes); set `SPECTRUM_PROJECT_ID`/`SPECTRUM_PROJECT_SECRET` in `.env`.
@@ -134,6 +136,7 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [007](.docs/decisions/007-admin-dashboard-architecture.md) | Admin dashboard architecture |
 | [008](.docs/decisions/008-transport-eve-streaming-contract.md) | Transport / Eve streaming contract |
 | [009](.docs/decisions/009-agent-hardening-and-transport-auth.md) | Agent hardening and transport auth |
+| [010](.docs/decisions/010-handoff-patient-feedback-ux.md) | Handoff patient feedback + concierge reply bridge |
 
 ## Package docs
 

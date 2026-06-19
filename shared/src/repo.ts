@@ -402,6 +402,51 @@ export function countMessagesByRole(role: MessageRole): number {
 }
 
 // ---------------------------------------------------------------------------
+// Outbound bridge: concierge replies authored in the dashboard are persisted as
+// `concierge` messages tagged `meta_json.outbound = "pending"`. The transport
+// polls for these, delivers them to the patient's iMessage, and marks them
+// `sent`. This is what closes the human-handoff loop. See decision 010.
+// ---------------------------------------------------------------------------
+
+/** Record a concierge reply (from the dashboard) queued for delivery to the patient. */
+export function enqueueConciergeOutbound(args: {
+  conversationId: string;
+  text: string;
+  authorHandle?: string | null;
+}): Message {
+  return addMessage({
+    conversationId: args.conversationId,
+    role: "concierge",
+    authorHandle: args.authorHandle ?? null,
+    text: args.text,
+    meta: { outbound: "pending" },
+  });
+}
+
+/** Concierge messages still awaiting delivery to the patient, oldest first. */
+export function listPendingOutbound(): Message[] {
+  return getDb()
+    .prepare(
+      `select * from messages
+       where role = 'concierge'
+         and json_extract(meta_json, '$.outbound') = 'pending'
+       order by created_at`,
+    )
+    .all() as unknown as Message[];
+}
+
+/** Mark a queued concierge message as delivered so it is not sent again. */
+export function markOutboundDelivered(messageId: string): void {
+  getDb()
+    .prepare(
+      `update messages
+       set meta_json = json_set(coalesce(meta_json, '{}'), '$.outbound', 'sent')
+       where id = ?`,
+    )
+    .run(messageId);
+}
+
+// ---------------------------------------------------------------------------
 // Escalations (the "trip wires")
 // ---------------------------------------------------------------------------
 

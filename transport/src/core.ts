@@ -28,6 +28,18 @@ export type EveResponder = (
 // In-memory map of conversation -> durable Eve session, for multi-turn threads.
 const sessions = new Map<string, EveSession>();
 
+// Conversations we've already sent a "care team is reviewing" holding notice to
+// during the current pause. Cleared when the conversation goes active again so a
+// later re-escalation notifies afresh. See decision 010.
+const holdingNotified = new Set<string>();
+
+const HOLDING_NOTICE_MED =
+  "Thanks for your message. I've shared this with the Essos care team and someone " +
+  "will follow up with you right here shortly. I'll step back so they can take it from here.";
+const HOLDING_NOTICE_HIGH =
+  "I've flagged this to the Essos care team as a priority and someone is reviewing it now — " +
+  "they'll reply right here. If this is a medical emergency, please call your local emergency number.";
+
 export interface InboundResult {
   reply: string | null;
   reason:
@@ -104,15 +116,34 @@ export async function handleInbound(args: InboundArgs): Promise<InboundResult> {
   });
 
   // 4) Respect handoff state: if a human owns the thread, don't auto-respond.
+  //    While paused, send a single warm holding notice so the patient isn't left
+  //    in silence; stay quiet on follow-ups (and once a human has taken over,
+  //    their replies reach the patient via the dashboard bridge). See decision 010.
   const fresh = getConversationById(conversation.id)!;
   if (fresh.automation_state === "paused_for_review") {
-    return { reply: null, reason: "paused_for_review" };
+    if (holdingNotified.has(conversation.id)) {
+      return { reply: null, reason: "paused_for_review" };
+    }
+    holdingNotified.add(conversation.id);
+    const isHigh = listOpenEscalationsForConversation(conversation.id).some(
+      (e) => e.level === "High",
+    );
+    const notice = isHigh ? HOLDING_NOTICE_HIGH : HOLDING_NOTICE_MED;
+    appendMessage({
+      conversationId: conversation.id,
+      role: "agent",
+      text: notice,
+      meta: { kind: "handoff_holding" },
+    });
+    return { reply: notice, reason: "paused_for_review" };
   }
   if (fresh.automation_state === "taken_over") {
     return { reply: null, reason: "taken_over" };
   }
 
-  // 5) Ask the agent.
+  // 5) Automation is active — clear any prior holding-notice latch so a future
+  //    re-escalation notifies again, then ask the agent.
+  holdingNotified.delete(conversation.id);
   const contextMessage = buildContextMessage({
     patient,
     conversation: fresh,
