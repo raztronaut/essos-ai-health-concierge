@@ -1,0 +1,145 @@
+{
+  "patient": {
+    "id": "pat_sofia",
+    "name": "Sofia Lindqvist",
+    "handle": "+447700900231",
+    "procedure": "rhinoplasty",
+    "destination_city": "Istanbul",
+    "destination_country": "Turkey",
+    "clinic_name": "Estetik International Clinic",
+    "hotel_name": "CVK Park Bosphorus Hotel",
+    "companion_name": "Anna Lindqvist",
+    "dietary_notes": "Vegetarian"
+  },
+  "source_documents": [
+    "sofia-lindqvist-airport-pickup-handoff",
+    "maya-okafor-rhinoplasty-preop-packet",
+    "companion-and-after-hours-guide"
+  ],
+  "itinerary_source_document": "sofia-lindqvist-airport-pickup-handoff",
+  "itinerary": [
+    {
+      "kind": "flight",
+      "title": "LHR -> IST arrival",
+      "detail": "Arrives Istanbul (IST) 18:20, Jun 18.",
+      "location": "Istanbul Airport (IST)",
+      "starts_at": "2026-06-18T18:20",
+      "confirmation_number": "TK-1180HX"
+    },
+    {
+      "kind": "transport",
+      "title": "Airport pickup",
+      "detail": "Driver meets at IST international arrivals, name board 'Lindqvist'.",
+      "location": "IST international arrivals",
+      "starts_at": "2026-06-18T19:00",
+      "driver_name": "Kerem Aydin",
+      "driver_phone": "+905329990071"
+    },
+    {
+      "kind": "hotel",
+      "title": "Hotel check-in",
+      "detail": "CVK Park Bosphorus Hotel. Reservation under Sofia Lindqvist. Two guests.",
+      "location": "Taksim, Istanbul",
+      "starts_at": "2026-06-18T20:00",
+      "confirmation_number": "CVK-228814"
+    },
+    {
+      "kind": "clinic",
+      "title": "Rhinoplasty procedure",
+      "detail": "Morning of Jun 20 at Estetik International Clinic.",
+      "location": "Estetik International Clinic",
+      "starts_at": "2026-06-20T09:00",
+      "confirmation_number": "EIC-RH-3041"
+    }
+  ],
+  "care_instructions": [
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Food and drink before surgery",
+      "body": "Do not eat or drink anything, including water, at least 6-8 hours before your surgery. Have a light meal the night before and nothing after midnight.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-20T09:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Smoking and nicotine",
+      "body": "Stop all nicotine products at least 2 weeks before surgery. Nicotine negatively affects healing and increases anesthesia risks.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-20T09:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Blood-thinning medications",
+      "body": "Avoid blood-thinning medications such as Aspirin, Ibuprofen, Naproxen, Voltaren at least 5-7 days before surgery, and consult your doctor first. Do not take any medication without informing us.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-20T09:00"
+    },
+    {
+      "phase": "postop",
+      "procedure": "rhinoplasty",
+      "title": "Post-op recovery instructions",
+      "body": "Personalized post-operative instructions are provided after surgery and are not yet finalized. Post-op questions must be confirmed with the clinic.",
+      "source_type": "missing",
+      "source_status": "personalized_pending",
+      "answer_policy": "escalate_only"
+    }
+  ],
+  "seeded_conversation": {
+    "space_id": "demo-space-sofia",
+    "channel": "imessage",
+    "automation_state": "paused_for_review",
+    "messages": [
+      {
+        "role": "patient",
+        "author_handle": "+447700900231",
+        "text": "Hi! We just landed at IST a little early. Is the driver here yet? We're at international arrivals."
+      },
+      {
+        "role": "agent",
+        "text": "Welcome to Istanbul! Your driver is Kerem Aydin (+90 532 999 0071), meeting you at international arrivals with a name board 'Lindqvist'. Since you're early I'm checking on his ETA now.",
+        "category": "travel_logistics"
+      },
+      {
+        "role": "patient",
+        "author_handle": "+447700900231",
+        "text": "It's been 25 minutes and we can't find anyone with our name. No one is answering that number. We're getting nervous.",
+        "capture_as": "stranded"
+      },
+      {
+        "role": "agent",
+        "text": "I'm sorry - I'm flagging this to the Essos concierge team right now so a human can reach the driver and confirm your pickup. Please stay at international arrivals; someone will be with you shortly.",
+        "category": "travel_logistics"
+      }
+    ],
+    "escalation": {
+      "source_message_capture": "stranded",
+      "level": "High",
+      "reason": "travel_logistics",
+      "summary": "Patient stranded at IST arrivals; driver not located and not answering phone after 25 minutes."
+    },
+    "activity": [
+      {
+        "event": "escalated",
+        "actor": "eve",
+        "detail": "High - travel_logistics"
+      },
+      {
+        "event": "paused",
+        "actor": "eve",
+        "detail": "Automation paused pending human review."
+      }
+    ]
+  }
+}

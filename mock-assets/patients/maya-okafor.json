@@ -1,0 +1,239 @@
+{
+  "patient": {
+    "id": "pat_maya",
+    "name": "Maya Okafor",
+    "handle": "+16475719149",
+    "procedure": "rhinoplasty",
+    "destination_city": "Istanbul",
+    "destination_country": "Turkey",
+    "clinic_name": "Estetik International Clinic",
+    "hotel_name": "The Marmara Taksim",
+    "companion_name": "Daniel Okafor",
+    "dietary_notes": "No shellfish"
+  },
+  "source_documents": [
+    "maya-okafor-itinerary-packet",
+    "maya-okafor-rhinoplasty-preop-packet",
+    "maya-okafor-postop-pending-note",
+    "companion-and-after-hours-guide"
+  ],
+  "itinerary_source_document": "maya-okafor-itinerary-packet",
+  "itinerary": [
+    {
+      "kind": "flight",
+      "title": "LAX -> IST departure",
+      "detail": "Departs Los Angeles (LAX) 21:00 local, Jun 9. Turkish Airlines TK10.",
+      "location": "LAX Terminal B",
+      "starts_at": "2026-06-09T21:00",
+      "confirmation_number": "TK-8841Q2"
+    },
+    {
+      "kind": "flight",
+      "title": "IST arrival",
+      "detail": "Arrives Istanbul (IST) 03:30 local, Jun 11.",
+      "location": "Istanbul Airport (IST)",
+      "starts_at": "2026-06-11T03:30",
+      "confirmation_number": "TK-8841Q2"
+    },
+    {
+      "kind": "hotel",
+      "title": "Hotel check-in",
+      "detail": "The Marmara Taksim. Reservation under Maya Okafor. Breakfast included; two guests.",
+      "location": "Taksim, Istanbul",
+      "starts_at": "2026-06-11T06:00",
+      "confirmation_number": "MARM-5592017"
+    },
+    {
+      "kind": "transport",
+      "title": "Hotel pickup for clinic (pre-op)",
+      "detail": "Driver collects from hotel lobby 23:30, Jun 12 for pre-op tests.",
+      "location": "The Marmara Taksim lobby",
+      "starts_at": "2026-06-12T23:30",
+      "driver_name": "Emre Yilmaz",
+      "driver_phone": "+905321110042"
+    },
+    {
+      "kind": "clinic",
+      "title": "Rhinoplasty procedure",
+      "detail": "Morning of Jun 13 at Estetik International Clinic.",
+      "location": "Estetik International Clinic",
+      "starts_at": "2026-06-13T08:00",
+      "confirmation_number": "EIC-RH-3027"
+    },
+    {
+      "kind": "transport",
+      "title": "Clinic -> hotel",
+      "detail": "Return transport evening of Jun 13 after recovery clearance.",
+      "location": "Estetik International Clinic",
+      "starts_at": "2026-06-13T19:00",
+      "driver_name": "Emre Yilmaz",
+      "driver_phone": "+905321110042"
+    },
+    {
+      "kind": "transport",
+      "title": "Hotel pickup for clinic (post-op)",
+      "detail": "Driver collects from hotel lobby 07:00, Jun 17 for post-op visit.",
+      "location": "The Marmara Taksim lobby",
+      "starts_at": "2026-06-17T07:00",
+      "driver_name": "Emre Yilmaz",
+      "driver_phone": "+905321110042"
+    },
+    {
+      "kind": "followup",
+      "title": "Post-op consultation and cast removal",
+      "detail": "Jun 17 at Estetik International Clinic.",
+      "location": "Estetik International Clinic",
+      "starts_at": "2026-06-17T08:00",
+      "confirmation_number": "EIC-RH-3027"
+    },
+    {
+      "kind": "transport",
+      "title": "Hotel pickup for airport",
+      "detail": "Driver collects from hotel lobby 10:00, Jun 19.",
+      "location": "The Marmara Taksim lobby",
+      "starts_at": "2026-06-19T10:00",
+      "driver_name": "Emre Yilmaz",
+      "driver_phone": "+905321110042"
+    },
+    {
+      "kind": "flight",
+      "title": "SAW -> LAX departure",
+      "detail": "Departs Istanbul Sabiha Gokcen (SAW) 14:00 local, Jun 19. Arrives LAX 11:30, Jun 20.",
+      "location": "Sabiha Gokcen Airport (SAW)",
+      "starts_at": "2026-06-19T14:00",
+      "confirmation_number": "TK-9920LL"
+    }
+  ],
+  "care_instructions": [
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Food and drink before surgery",
+      "body": "Do not eat or drink anything, including water, at least 6-8 hours before your surgery. Have a light meal the night before and nothing after midnight.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Smoking and nicotine",
+      "body": "Stop all nicotine products at least 2 weeks before surgery, including cigarettes, vapes, e-cigarettes, patches, and gum. Nicotine negatively affects healing and increases anesthesia risks.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Alcohol",
+      "body": "Avoid alcohol at least 1 week before surgery, as it increases the risk of bleeding.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Blood-thinning medications",
+      "body": "Avoid blood-thinning medications such as Aspirin, Ibuprofen, Naproxen, Voltaren, etc., at least 5-7 days before surgery, and consult your doctor first. Do not take any medication without informing us.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Vitamins and supplements",
+      "body": "Stop all vitamins and herbal supplements at least 1 week before surgery, especially Vitamin E, fish oil, ginseng, ginkgo biloba, ginger, garlic supplements, and green tea extract, as they may increase bleeding risk.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Health condition",
+      "body": "If you have any illness such as flu, cold, sore throat, fever, or infection, inform us immediately before your procedure.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Facial procedures",
+      "body": "Avoid any additional facial treatments before surgery, such as fillers, Botox, PRP, skin treatments, or chemical peels.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Day-of personal preparation",
+      "body": "Do not wear makeup, cream, perfume, or lotion. Do not wear nail polish, jewelry, or contact lenses. Men must be clean-shaven. Wear comfortable, loose clothing, preferably tops that open from the front.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Physical activity",
+      "body": "Avoid heavy exercise and intense physical activity before the procedure.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-rhinoplasty-preop-packet",
+      "phase": "preop",
+      "procedure": "rhinoplasty",
+      "title": "Consultation and expectations",
+      "body": "Make sure all your expectations and desired results are clearly discussed with your doctor before surgery.",
+      "source_type": "clinic_packet",
+      "source_status": "verified",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-13T08:00"
+    },
+    {
+      "source_document": "maya-okafor-postop-pending-note",
+      "phase": "postop",
+      "procedure": "rhinoplasty",
+      "title": "Post-op recovery instructions",
+      "body": "Personalized post-operative instructions are provided by the surgical team after the procedure and are not yet finalized in the app. Any post-op symptom, recovery, activity, medication, or wound-care question must be confirmed with the clinic.",
+      "source_type": "missing",
+      "source_status": "personalized_pending",
+      "answer_policy": "escalate_only"
+    },
+    {
+      "source_document": "companion-and-after-hours-guide",
+      "phase": "general",
+      "procedure": "rhinoplasty",
+      "title": "After-hours contact",
+      "body": "For non-urgent questions at any hour, message this concierge thread. For anything that feels medically urgent, the Essos concierge team is flagged immediately and will coordinate with the clinic.",
+      "source_type": "essos_summary",
+      "source_status": "verified",
+      "answer_policy": "answer_reference"
+    }
+  ]
+}

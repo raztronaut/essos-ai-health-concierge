@@ -1,0 +1,124 @@
+{
+  "patient": {
+    "id": "pat_diego",
+    "name": "Diego Ramirez",
+    "handle": "+13105550172",
+    "procedure": "hair_transplant",
+    "destination_city": "Tijuana",
+    "destination_country": "Mexico",
+    "clinic_name": "Clinica Capilar Pacifico",
+    "hotel_name": "Grand Hotel Tijuana",
+    "companion_name": null,
+    "dietary_notes": null
+  },
+  "source_documents": [
+    "diego-ramirez-hair-transplant-preop-packet",
+    "companion-and-after-hours-guide"
+  ],
+  "itinerary": [
+    {
+      "kind": "flight",
+      "title": "SAN arrival",
+      "detail": "Arrives San Diego (SAN) 11:15, Jun 20. Cross-border pickup arranged.",
+      "location": "San Diego Airport (SAN)",
+      "starts_at": "2026-06-20T11:15",
+      "confirmation_number": "AA-2231RK"
+    },
+    {
+      "kind": "transport",
+      "title": "Airport -> hotel (cross-border)",
+      "detail": "Driver meets at SAN arrivals and escorts across the border to the hotel.",
+      "location": "SAN arrivals, Door 3",
+      "starts_at": "2026-06-20T12:00",
+      "driver_name": "Luis Herrera",
+      "driver_phone": "+526641230099"
+    },
+    {
+      "kind": "hotel",
+      "title": "Hotel check-in",
+      "detail": "Grand Hotel Tijuana. Reservation under Diego Ramirez. Single guest.",
+      "location": "Zona Rio, Tijuana",
+      "starts_at": "2026-06-20T13:30",
+      "confirmation_number": "GHT-770133"
+    },
+    {
+      "kind": "clinic",
+      "title": "FUE hair transplant",
+      "detail": "Full-day procedure Jun 21 at Clinica Capilar Pacifico.",
+      "location": "Clinica Capilar Pacifico",
+      "starts_at": "2026-06-21T08:30",
+      "confirmation_number": "CCP-FUE-1180"
+    },
+    {
+      "kind": "followup",
+      "title": "Post-op wash and check",
+      "detail": "First wash and graft check Jun 23 at the clinic.",
+      "location": "Clinica Capilar Pacifico",
+      "starts_at": "2026-06-23T10:00",
+      "confirmation_number": "CCP-FUE-1180"
+    },
+    {
+      "kind": "flight",
+      "title": "SAN -> home departure",
+      "detail": "Departs San Diego (SAN) 16:40, Jun 24.",
+      "location": "San Diego Airport (SAN)",
+      "starts_at": "2026-06-24T16:40",
+      "confirmation_number": "AA-5567TZ"
+    }
+  ],
+  "care_instructions": [
+    {
+      "source_document": "diego-ramirez-hair-transplant-preop-packet",
+      "phase": "preop",
+      "procedure": "hair_transplant",
+      "title": "Blood thinners and alcohol",
+      "body": "Avoid aspirin, ibuprofen, and other blood thinners for 7 days before the procedure, and avoid alcohol for 3 days before, to reduce bleeding during graft extraction.",
+      "source_type": "generated_notional",
+      "source_status": "demo_notional",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-21T08:30"
+    },
+    {
+      "source_document": "diego-ramirez-hair-transplant-preop-packet",
+      "phase": "preop",
+      "procedure": "hair_transplant",
+      "title": "Smoking and nicotine",
+      "body": "Stop nicotine for at least 1 week before the transplant. Nicotine constricts blood vessels and reduces graft survival.",
+      "source_type": "generated_notional",
+      "source_status": "demo_notional",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-21T08:30"
+    },
+    {
+      "source_document": "diego-ramirez-hair-transplant-preop-packet",
+      "phase": "preop",
+      "procedure": "hair_transplant",
+      "title": "Day-of preparation",
+      "body": "Wash your hair the morning of the procedure with regular shampoo, do not apply any product, and wear a button-up shirt so you do not pull anything over your head afterward.",
+      "source_type": "generated_notional",
+      "source_status": "demo_notional",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-21T08:30"
+    },
+    {
+      "source_document": "diego-ramirez-hair-transplant-preop-packet",
+      "phase": "preop",
+      "procedure": "hair_transplant",
+      "title": "Food before procedure",
+      "body": "Eat a normal breakfast the morning of the procedure unless told otherwise. FUE is performed under local anesthetic, so fasting is generally not required.",
+      "source_type": "generated_notional",
+      "source_status": "demo_notional",
+      "answer_policy": "answer_reference",
+      "effective_until": "2026-06-21T08:30"
+    },
+    {
+      "phase": "postop",
+      "procedure": "hair_transplant",
+      "title": "Post-op graft care",
+      "body": "Graft-care and washing instructions are personalized by the clinic after the procedure and are not yet finalized. Any post-op question must be confirmed with the clinic.",
+      "source_type": "missing",
+      "source_status": "personalized_pending",
+      "answer_policy": "escalate_only"
+    }
+  ]
+}
