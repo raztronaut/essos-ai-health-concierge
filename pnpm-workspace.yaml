@@ -5,3 +5,4 @@ packages:
   - shared
   - transport
   - dashboard
+  - slack

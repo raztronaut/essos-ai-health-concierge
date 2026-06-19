@@ -21,6 +21,7 @@
     "transport:terminal": "pnpm --filter @essos/transport run terminal",
     "transport:imessage": "pnpm --filter @essos/transport run imessage",
     "transport:remind": "pnpm --filter @essos/transport run remind",
+    "slack:dev": "pnpm --filter @essos/slack run dev",
     "dashboard:dev": "pnpm --filter @essos/dashboard run dev",
     "lint": "biome check .",
     "format": "biome check --write .",

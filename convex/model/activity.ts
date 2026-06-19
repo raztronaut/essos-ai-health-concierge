@@ -1,6 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { newId, nowIso } from "../lib/util.js";
+import * as Slack from "./slack.js";
 
 export type ActivityLogEntry = Doc<"activity_log">;
 export type ActivityEvent = ActivityLogEntry["event"];
@@ -30,6 +31,13 @@ export async function log(
   if (!created) {
     throw new Error("Failed to create activity entry");
   }
+  // Fan progress updates out to the Slack thread (no-op unless enabled + linked).
+  await Slack.enqueueActivity(ctx, {
+    conversationId: args.conversationId,
+    event: args.event,
+    actor: args.actor,
+    detail: args.detail ?? null,
+  });
   return created;
 }
 

@@ -18,6 +18,7 @@ import type * as model_conversations from "../model/conversations.js";
 import type * as model_escalations from "../model/escalations.js";
 import type * as model_messages from "../model/messages.js";
 import type * as model_patients from "../model/patients.js";
+import type * as model_slack from "../model/slack.js";
 import type * as model_telemetry from "../model/telemetry.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   "model/escalations": typeof model_escalations;
   "model/messages": typeof model_messages;
   "model/patients": typeof model_patients;
+  "model/slack": typeof model_slack;
   "model/telemetry": typeof model_telemetry;
   mutations: typeof mutations;
   queries: typeof queries;

@@ -19,13 +19,16 @@ flowchart LR
   Transport -->|"machine path (service secret)"| Convex
   Convex[("Convex (reactive store + functions)")]
   Dashboard["dashboard/ (Next.js + Clerk)"] -->|"useQuery (live) + mutations"| Convex
+  Slack["slack/ (Socket Mode bridge)"] <-->|"machine path (service secret)"| Convex
   Clerk["Clerk (concierge identity)"] --> Dashboard
   Human["Concierge team"] --> Dashboard
+  Human --> Slack
 ```
 
 - **Eve = brain**, **Spectrum = transport**, connected over Eve's HTTP session API so the transport stays swappable (terminal for dev, iMessage for the live demo).
 - **Convex** is the reactive source of truth ([ADR 013](.docs/decisions/013-convex-backend.md)). The dashboard subscribes with `useQuery` so escalations and telemetry update live; the agent + transport reach Convex through a service-secret HTTP action (no Clerk identity), while the dashboard uses Clerk-authenticated functions ([ADR 014](.docs/decisions/014-clerk-auth-and-identity.md)).
 - Eve answers low-severity messages in-thread and, on escalation, pings the human team and raises a flag in the dashboard while pausing automation for that conversation. Every turn is logged as telemetry for the AI-performance and team views ([ADR 015](.docs/decisions/015-agent-telemetry-and-analytics.md)).
+- The **Slack bridge** brings escalations and the handoff actions (reply, take over, resolve, `/essos` lookups, App Home) into where the concierge team already works — reducing cognitive switching to address team workload/burnout, while every action still flows through the same Convex state ([ADR 019](.docs/decisions/019-slack-concierge-bridge.md)).
 
 ## Repo layout
 
@@ -35,6 +38,7 @@ AI Health Tourism Concierge/
 ├── shared/          @essos/shared — types, taxonomy, places, Convex machine-path client (workspace)
 ├── transport/       @essos/transport — Spectrum bridge (terminal + iMessage) (workspace)
 ├── dashboard/       @essos/dashboard — Next.js admin dashboard (Convex + Clerk) (workspace)
+├── slack/           @essos/slack — Slack concierge bridge (Socket Mode) (workspace)
 ├── eve-concierge/   Eve agent app (isolated sub-project; authored surface in agent/)
 ├── scripts/         seed runner (parses mock-assets/ -> Convex import mutation)
 ├── mock-assets/     fixture pack: patient JSON, source-doc Markdown, generated PDFs
@@ -43,7 +47,7 @@ AI Health Tourism Concierge/
 └── .essos_branding/ extracted brand tokens
 ```
 
-`shared`, `transport`, and `dashboard` are pnpm workspace packages; `convex/` lives at the workspace root. `eve-concierge` is an isolated Eve sub-project with its own lockfile (it pins beta deps); it links `@essos/shared` via `link:`. See [ADR 005](.docs/decisions/005-eve-agent-project-structure.md).
+`shared`, `transport`, `dashboard`, and `slack` are pnpm workspace packages; `convex/` lives at the workspace root. `eve-concierge` is an isolated Eve sub-project with its own lockfile (it pins beta deps); it links `@essos/shared` via `link:`. See [ADR 005](.docs/decisions/005-eve-agent-project-structure.md).
 
 ## Prerequisites
 
@@ -88,6 +92,12 @@ pnpm transport:terminal     # local: play the patient in your shell
 pnpm transport:imessage     # live: Spectrum Cloud iMessage group chat
 ```
 
+The optional **Slack bridge** is another long-running worker — run it in its own terminal once a Slack app is configured (see [slack/README.md](slack/README.md)):
+
+```bash
+pnpm slack:dev              # post escalations to Slack; reply/act from threads
+```
+
 Then open the dashboard at http://localhost:4000.
 
 > The dashboard needs Convex running — `pnpm dev` guarantees that. If you ever start the dashboard alone, start `pnpm convex:dev` too, or its data will hang on "Loading…" (the reactive client retries until Convex is up).
@@ -114,6 +124,8 @@ When Eve escalates, the patient is never left in silence: Eve acknowledges in-th
 On top of that handoff, the concierge gets an **AI-assist**: every escalation arrives with a source-grounded draft reply Eve prepared (from the itinerary and verified packets, never medical advice), prefilled into the reply box so a human can review, edit, and send in one tap. Eve also introduces itself as an AI on its first message (with the human team on the thread), asks a clarifying question for ambiguous logistics instead of guessing, and sends proactive pre-op reminders before a procedure (`pnpm transport:remind` to fire one on demand). See [ADR 011](.docs/decisions/011-concierge-ai-assist-and-proactive-care.md).
 
 Eve is tuned to read like a person texting, not a bot. iMessage has no rich text, so the transport runs every outbound message through a Markdown→plaintext normalizer (no stray `**bold**` or `# headers` ever reach a patient), and the agent instructions add a poke-inspired texting voice: match the patient's length, drop robotic filler, mirror emoji, and use native tapbacks for light acknowledgements. See [ADR 012](.docs/decisions/012-imessage-plaintext-and-voice.md).
+
+The concierge team doesn't have to live in the dashboard to catch a flag: the optional **Slack bridge** posts each escalation as a threaded card (level, reason, summary, Eve's draft) into a shared channel, and a concierge can **reply to the patient, take over, resolve, or resume Eve right from the thread** — plus look up a patient's status/schedule/files with `/essos` and see their queue in App Home. The point is to bring the work to where the team already is and cut the cognitive switching that drives burnout; every Slack action still flows through the same Convex state as the dashboard. Opt-in (`SLACK_ENABLED` + Slack tokens); setup in [slack/README.md](slack/README.md). See [ADR 019](.docs/decisions/019-slack-concierge-bridge.md).
 
 ## Demo guide — accounts & roles
 
@@ -219,11 +231,13 @@ See [.docs/decisions/](.docs/decisions/README.md) for the full ADR index:
 | [016](.docs/decisions/016-concierge-ownership-and-rbac.md) | Concierge patient ownership + RBAC |
 | [017](.docs/decisions/017-guest-onboarding-and-deployment.md) | Guest iMessage onboarding + deployment topology |
 | [018](.docs/decisions/018-deploy-pipeline-cicd.md) | Deploy pipeline (CI/CD) |
+| [019](.docs/decisions/019-slack-concierge-bridge.md) | Slack concierge bridge |
 
 ## Package docs
 
 - [eve-concierge/README.md](eve-concierge/README.md) — the agent brain (tools, skills, instructions, model)
 - [transport/README.md](transport/README.md) — the Spectrum bridge
 - [dashboard/README.md](dashboard/README.md) — the admin dashboard
+- [slack/README.md](slack/README.md) — the Slack concierge bridge
 - [shared/README.md](shared/README.md) — types, taxonomy, and the Convex machine-path client
 - [mock-assets/README.md](mock-assets/README.md) — the fixture pack

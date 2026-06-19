@@ -236,8 +236,38 @@ export const userDoc = v.object({
   pictureUrl: v.union(v.string(), v.null()),
   orgId: v.union(v.string(), v.null()),
   role: v.string(),
+  slack_user_id: v.optional(v.union(v.string(), v.null())),
   createdAt: v.string(),
   updatedAt: v.union(v.string(), v.null()),
+});
+
+const slackOutboxKind = v.union(
+  v.literal("escalation"),
+  v.literal("activity"),
+  v.literal("patient_message")
+);
+
+export const slackOutboxDoc = v.object({
+  _id: v.id("slack_outbox"),
+  _creationTime: v.number(),
+  id: v.string(),
+  kind: slackOutboxKind,
+  conversation_id: v.string(),
+  escalation_id: v.union(v.string(), v.null()),
+  payload_json: v.union(v.string(), v.null()),
+  status: v.union(v.literal("pending"), v.literal("posted")),
+  slack_ts: v.union(v.string(), v.null()),
+  created_at: v.string(),
+});
+
+export const slackLinkDoc = v.object({
+  _id: v.id("slack_links"),
+  _creationTime: v.number(),
+  conversation_id: v.string(),
+  escalation_id: v.union(v.string(), v.null()),
+  channel_id: v.string(),
+  thread_ts: v.string(),
+  created_at: v.string(),
 });
 
 /** Persisted Eve session blob. */

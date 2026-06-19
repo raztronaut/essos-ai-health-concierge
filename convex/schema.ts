@@ -99,6 +99,12 @@ const activityEvent = v.union(
   v.literal("reminder")
 );
 
+const slackOutboxKind = v.union(
+  v.literal("escalation"),
+  v.literal("activity"),
+  v.literal("patient_message")
+);
+
 export default defineSchema({
   patients: defineTable({
     id: v.string(),
@@ -284,11 +290,47 @@ export default defineSchema({
     pictureUrl: v.union(v.string(), v.null()),
     orgId: v.union(v.string(), v.null()),
     role: v.string(),
+    /** Slack user id (e.g. "U0123"), set once a concierge is matched by email. */
+    slack_user_id: v.optional(v.union(v.string(), v.null())),
     createdAt: v.string(),
     updatedAt: v.union(v.string(), v.null()),
   })
     .index("by_token", ["tokenIdentifier"])
     .index("by_clerk_id", ["clerkId"])
     .index("by_email", ["email"])
-    .index("by_org", ["orgId"]),
+    .index("by_org", ["orgId"])
+    .index("by_slack_user", ["slack_user_id"]),
+
+  // --- New: Slack concierge bridge ---
+  //
+  // The Slack service polls `slack_outbox` (mirroring the concierge-reply
+  // outbound pattern on `messages`) and posts each pending row to Slack, then
+  // records the resulting thread in `slack_links` so follow-up activity and
+  // patient messages thread under the original escalation card.
+  slack_outbox: defineTable({
+    id: v.string(),
+    kind: slackOutboxKind,
+    conversation_id: v.string(),
+    escalation_id: v.union(v.string(), v.null()),
+    /** Serialized extra payload (activity event/detail, patient message text). */
+    payload_json: v.union(v.string(), v.null()),
+    status: v.union(v.literal("pending"), v.literal("posted")),
+    /** Slack message ts assigned on post (for dedup/debugging). */
+    slack_ts: v.union(v.string(), v.null()),
+    created_at: v.string(),
+  })
+    .index("by_external_id", ["id"])
+    .index("by_status", ["status", "created_at"])
+    .index("by_conversation", ["conversation_id"]),
+
+  slack_links: defineTable({
+    conversation_id: v.string(),
+    escalation_id: v.union(v.string(), v.null()),
+    channel_id: v.string(),
+    /** Slack thread parent ts; every threaded update replies to this. */
+    thread_ts: v.string(),
+    created_at: v.string(),
+  })
+    .index("by_conversation", ["conversation_id"])
+    .index("by_thread", ["thread_ts"]),
 });

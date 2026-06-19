@@ -187,6 +187,70 @@ export interface ActivityLogEntry {
   id: string;
 }
 
+// --------------------------- Slack bridge ---------------------------
+
+export type SlackOutboxKind = "escalation" | "activity" | "patient_message";
+
+/** A queued Slack post the Slack service drains and delivers. */
+export interface SlackOutbox {
+  conversation_id: string;
+  created_at: string;
+  escalation_id: string | null;
+  id: string;
+  kind: SlackOutboxKind;
+  payload_json: string | null;
+  slack_ts: string | null;
+  status: "pending" | "posted";
+}
+
+/** Maps a conversation to its Slack thread so updates thread correctly. */
+export interface SlackLink {
+  channel_id: string;
+  conversation_id: string;
+  created_at: string;
+  escalation_id: string | null;
+  thread_ts: string;
+}
+
+/** Full data needed to render an escalation card in Slack. */
+export interface EscalationCard {
+  conversation: Conversation | null;
+  escalation: Escalation;
+  patient: Patient | null;
+}
+
+/** Patient status snapshot for the `/essos patient` slash command. */
+export interface PatientOverview {
+  conversation: Conversation | null;
+  itinerary: ItineraryEvent[];
+  openEscalations: number;
+  patient: Patient;
+}
+
+/** A patient source document with a resolved download URL (uploaded docs only). */
+export interface SourceDocumentRef {
+  file_name: string | null;
+  id: string;
+  kind: string;
+  title: string;
+  url: string | null;
+}
+
+/** Patients + open escalations a concierge should see in the App Home queue. */
+export interface QueueData {
+  escalations: Escalation[];
+  patients: Patient[];
+}
+
+/** A Slack user resolved (or not) to a concierge identity. */
+export interface ConciergeIdentity {
+  clerkId: string | null;
+  email: string | null;
+  isLead: boolean;
+  label: string;
+  name: string;
+}
+
 /** Denormalized conversation row for the dashboard list (patient + last message + open flags). */
 export interface ConversationSummary {
   /** Owning concierge (Clerk user id), or null when unassigned. */

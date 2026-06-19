@@ -2,6 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { newId, nowIso } from "../lib/util.js";
 import * as Conversations from "./conversations.js";
+import * as Slack from "./slack.js";
 
 export type Message = Doc<"messages">;
 export type MessageRole = Message["role"];
@@ -56,6 +57,14 @@ export async function add(
     .unique();
   if (!created) {
     throw new Error("Failed to create message");
+  }
+  // Mirror patient messages into the Slack thread (no-op unless enabled + linked).
+  if (args.role === "patient") {
+    await Slack.enqueuePatientMessage(ctx, {
+      conversationId: args.conversationId,
+      text: args.text,
+      authorHandle: args.authorHandle ?? null,
+    });
   }
   return created;
 }

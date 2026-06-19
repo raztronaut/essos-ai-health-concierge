@@ -10,13 +10,24 @@ import {
   itineraryEventDoc,
   messageDoc,
   patientDoc,
+  slackLinkDoc,
+  slackOutboxDoc,
 } from "./lib/validators.js";
 import * as Activity from "./model/activity.js";
 import * as Conversations from "./model/conversations.js";
 import * as Escalations from "./model/escalations.js";
 import * as Messages from "./model/messages.js";
 import * as Patients from "./model/patients.js";
+import * as Slack from "./model/slack.js";
 import * as Telemetry from "./model/telemetry.js";
+
+/** Patient-facing signature appended to every concierge reply (matches dashboard). */
+function composeConciergeReply(text: string, agentName: string): string {
+  const signature = agentName
+    ? `— ${agentName}, Essos Care Team`
+    : "— Essos Care Team";
+  return `${text}\n\n${signature}`;
+}
 
 /**
  * Machine-path functions for the Eve agent + Spectrum transport. These are
@@ -289,6 +300,11 @@ export const escalateToHuman = internalMutation({
       actor: "eve",
       detail: "Automation paused pending human review.",
     });
+    // Fan the escalation out to Slack (no-op unless SLACK_ENABLED).
+    await Slack.enqueueEscalation(ctx, {
+      conversationId: args.conversationId,
+      escalationId: escalation.id,
+    });
     return { escalationId: escalation.id, level: args.level };
   },
 });
@@ -377,4 +393,291 @@ export const recordAgentTurn = internalMutation({
       ok: args.ok,
       error: args.error ?? null,
     }),
+});
+
+// --------------------------- Slack bridge ---------------------------
+
+const conciergeIdentity = v.object({
+  clerkId: v.union(v.string(), v.null()),
+  name: v.string(),
+  email: v.union(v.string(), v.null()),
+  isLead: v.boolean(),
+  label: v.string(),
+});
+
+export const listPendingSlackOutbox = internalQuery({
+  args: {},
+  returns: v.array(slackOutboxDoc),
+  handler: async (ctx) => Slack.listPending(ctx),
+});
+
+export const getSlackLinkByConversation = internalQuery({
+  args: { conversationId: v.string() },
+  returns: v.union(slackLinkDoc, v.null()),
+  handler: async (ctx, { conversationId }) =>
+    Slack.getLinkByConversation(ctx, conversationId),
+});
+
+export const getSlackLinkByThread = internalQuery({
+  args: { threadTs: v.string() },
+  returns: v.union(slackLinkDoc, v.null()),
+  handler: async (ctx, { threadTs }) => Slack.getLinkByThread(ctx, threadTs),
+});
+
+/** Full data for an escalation card: the escalation plus its patient + conversation. */
+export const getEscalationCard = internalQuery({
+  args: { escalationId: v.string() },
+  returns: v.union(
+    v.object({
+      escalation: escalationDoc,
+      patient: v.union(patientDoc, v.null()),
+      conversation: v.union(conversationDoc, v.null()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, { escalationId }) => {
+    const escalation = await Escalations.getByExternalId(ctx, escalationId);
+    if (!escalation) {
+      return null;
+    }
+    const [patient, conversation] = await Promise.all([
+      Patients.getByExternalId(ctx, escalation.patient_id),
+      Conversations.getByExternalId(ctx, escalation.conversation_id),
+    ]);
+    return { escalation, patient, conversation };
+  },
+});
+
+/** Patient status snapshot for the `/essos patient` slash command. */
+export const getPatientOverview = internalQuery({
+  args: { patientId: v.string() },
+  returns: v.union(
+    v.object({
+      patient: patientDoc,
+      conversation: v.union(conversationDoc, v.null()),
+      openEscalations: v.number(),
+      itinerary: v.array(itineraryEventDoc),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, { patientId }) => {
+    const patient = await Patients.getByExternalId(ctx, patientId);
+    if (!patient) {
+      return null;
+    }
+    const conversations = await ctx.db
+      .query("conversations")
+      .withIndex("by_patient", (q) => q.eq("patient_id", patientId))
+      .collect();
+    const conversation =
+      conversations.sort((a, b) =>
+        b.updated_at.localeCompare(a.updated_at)
+      )[0] ?? null;
+    let openEscalations = 0;
+    if (conversation) {
+      const open = await Escalations.listOpenForConversation(
+        ctx,
+        conversation.id
+      );
+      openEscalations = open.length;
+    }
+    const itinerary = await Patients.listItinerary(ctx, patientId);
+    return { patient, conversation, openEscalations, itinerary };
+  },
+});
+
+/** Patient source documents with resolved download URLs for `/essos files`. */
+export const listSourceDocumentsWithUrls = internalQuery({
+  args: { patientId: v.string() },
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      title: v.string(),
+      kind: v.string(),
+      file_name: v.union(v.string(), v.null()),
+      url: v.union(v.string(), v.null()),
+    })
+  ),
+  handler: async (ctx, { patientId }) => {
+    const docs = await Patients.listSourceDocumentsForPatient(ctx, patientId);
+    const out: {
+      id: string;
+      title: string;
+      kind: string;
+      file_name: string | null;
+      url: string | null;
+    }[] = [];
+    for (const doc of docs) {
+      const url = doc.storage_id
+        ? await ctx.storage.getUrl(doc.storage_id)
+        : null;
+      out.push({
+        id: doc.id,
+        title: doc.title,
+        kind: doc.kind,
+        file_name: doc.file_name ?? null,
+        url,
+      });
+    }
+    return out;
+  },
+});
+
+/** Patients + open escalations a concierge should see (App Home queue). */
+export const getQueueForConcierge = internalQuery({
+  args: { clerkId: v.union(v.string(), v.null()), isLead: v.boolean() },
+  returns: v.object({
+    patients: v.array(patientDoc),
+    escalations: v.array(escalationDoc),
+  }),
+  handler: async (ctx, { clerkId, isLead }) => {
+    const [patients, escalations] = await Promise.all([
+      Patients.listForConcierge(ctx, { clerkId, isLead }),
+      Escalations.listByStatus(ctx, "open"),
+    ]);
+    return { patients, escalations };
+  },
+});
+
+/**
+ * Resolve a Slack user to a concierge, matching by email and persisting the
+ * Slack user id for future fast lookups. Returns a usable identity even when no
+ * concierge matches (label falls back to the Slack display name).
+ */
+export const resolveConciergeBySlackUser = internalMutation({
+  args: {
+    slackUserId: v.string(),
+    email: v.union(v.string(), v.null()),
+    displayName: v.union(v.string(), v.null()),
+  },
+  returns: conciergeIdentity,
+  handler: async (ctx, { slackUserId, email, displayName }) => {
+    const bySlack = await ctx.db
+      .query("users")
+      .withIndex("by_slack_user", (q) => q.eq("slack_user_id", slackUserId))
+      .first();
+    let user = bySlack;
+    if (!user && email) {
+      const byEmail = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .unique();
+      if (byEmail) {
+        await ctx.db.patch(byEmail._id, { slack_user_id: slackUserId });
+        user = byEmail;
+      }
+    }
+    if (user) {
+      return {
+        clerkId: user.clerkId,
+        name: user.name,
+        email: user.email,
+        isLead: user.role === "org:admin",
+        label: user.name || user.email,
+      };
+    }
+    return {
+      clerkId: null,
+      name: displayName ?? "Concierge",
+      email,
+      isLead: false,
+      label: displayName ?? "Concierge",
+    };
+  },
+});
+
+export const markSlackOutboxPosted = internalMutation({
+  args: { id: v.string(), slackTs: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { id, slackTs }) => {
+    await Slack.markPosted(ctx, id, slackTs);
+    return null;
+  },
+});
+
+export const upsertSlackLink = internalMutation({
+  args: {
+    conversationId: v.string(),
+    escalationId: v.optional(v.union(v.string(), v.null())),
+    channelId: v.string(),
+    threadTs: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await Slack.upsertLink(ctx, {
+      conversationId: args.conversationId,
+      escalationId: args.escalationId ?? null,
+      channelId: args.channelId,
+      threadTs: args.threadTs,
+    });
+    return null;
+  },
+});
+
+/** Concierge reply authored in Slack: sign, queue for delivery, take over. */
+export const conciergeReplyFromSlack = internalMutation({
+  args: {
+    conversationId: v.string(),
+    text: v.string(),
+    label: v.string(),
+    clerkId: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, text, label, clerkId }) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const composed = composeConciergeReply(trimmed, label);
+    await Messages.enqueueConciergeOutbound(ctx, {
+      conversationId,
+      text: composed,
+      authorHandle: label,
+    });
+    await Escalations.markConciergeTakeover(
+      ctx,
+      conversationId,
+      label,
+      clerkId ?? null
+    );
+    return null;
+  },
+});
+
+export const takeOverFromSlack = internalMutation({
+  args: {
+    conversationId: v.string(),
+    label: v.string(),
+    clerkId: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, label, clerkId }) => {
+    await Escalations.markConciergeTakeover(
+      ctx,
+      conversationId,
+      label,
+      clerkId ?? null
+    );
+    return null;
+  },
+});
+
+export const resolveEscalationFromSlack = internalMutation({
+  args: {
+    escalationId: v.string(),
+    label: v.string(),
+    clerkId: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.null(),
+  handler: async (ctx, { escalationId, label, clerkId }) => {
+    await Escalations.resolve(ctx, escalationId, label, clerkId ?? null);
+    return null;
+  },
+});
+
+export const resumeAutomationFromSlack = internalMutation({
+  args: { conversationId: v.string(), label: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, label }) =>
+    Escalations.resumeAutomation(ctx, conversationId, label),
 });

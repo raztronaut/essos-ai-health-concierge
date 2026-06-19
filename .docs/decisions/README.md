@@ -24,6 +24,7 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 | [016](016-concierge-ownership-and-rbac.md) | Concierge patient ownership + RBAC | Per-patient owning concierge, role-scoped reads (lead vs member), assignment + self-claim, single-org now / multi-tenant later. |
 | [017](017-guest-onboarding-and-deployment.md) | Guest iMessage onboarding + deployment | Unknown senders auto-provisioned a cloned demo patient; Convex Cloud + Vercel (dashboard, Eve) + persistent transport host. |
 | [018](018-deploy-pipeline-cicd.md) | Deploy pipeline (CI/CD) | One GitHub Actions workflow deploys Convex → Vercel + Railway on push to `main`; Convex-first, no concurrent deploys, remote Vercel build. |
+| [019](019-slack-concierge-bridge.md) | Slack concierge bridge | A staff-facing Slack surface that brings escalations + handoff actions (reply, take over, resolve, `/essos` lookups, App Home) into where the team works, reducing cognitive switching/load to address concierge burnout. |
 
 ## Grouping
 
@@ -31,4 +32,5 @@ Format: `# Title` followed by `## Decision` and supporting sections (Why, conseq
 - **Transport:** 004, 008, 010, 011, 012, 017
 - **Agent + model:** 005, 006, 009, 011, 012
 - **Dashboard:** 007, 010, 011, 014, 015, 016
-- **Platform (backend / auth / observability):** 013, 014, 015, 016, 017, 018
+- **Concierge experience / team well-being:** 010, 011, 016, 019
+- **Platform (backend / auth / observability):** 013, 014, 015, 016, 017, 018, 019

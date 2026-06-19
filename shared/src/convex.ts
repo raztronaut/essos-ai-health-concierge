@@ -16,12 +16,19 @@ import type {
   CareInstruction,
   CarePhase,
   Channel,
+  ConciergeIdentity,
   Conversation,
   Escalation,
+  EscalationCard,
   ItineraryEvent,
   Message,
   MessageRole,
   Patient,
+  PatientOverview,
+  QueueData,
+  SlackLink,
+  SlackOutbox,
+  SourceDocumentRef,
 } from "./types.js";
 
 export interface PersistedEveSession {
@@ -243,6 +250,93 @@ export function recordAgentTurn(args: {
   error?: string | null;
 }): Promise<void> {
   return call("recordAgentTurn", args);
+}
+
+// --------------------------- Slack bridge ---------------------------
+
+/** Pending Slack posts the Slack service should deliver, oldest first. */
+export function listPendingSlackOutbox(): Promise<SlackOutbox[]> {
+  return call("listPendingSlackOutbox");
+}
+export function markSlackOutboxPosted(
+  id: string,
+  slackTs: string
+): Promise<void> {
+  return call("markSlackOutboxPosted", { id, slackTs });
+}
+export function getSlackLinkByConversation(
+  conversationId: string
+): Promise<SlackLink | null> {
+  return call("getSlackLinkByConversation", { conversationId });
+}
+export function getSlackLinkByThread(
+  threadTs: string
+): Promise<SlackLink | null> {
+  return call("getSlackLinkByThread", { threadTs });
+}
+export function upsertSlackLink(args: {
+  conversationId: string;
+  escalationId?: string | null;
+  channelId: string;
+  threadTs: string;
+}): Promise<void> {
+  return call("upsertSlackLink", args);
+}
+export function getEscalationCard(
+  escalationId: string
+): Promise<EscalationCard | null> {
+  return call("getEscalationCard", { escalationId });
+}
+export function getPatientOverview(
+  patientId: string
+): Promise<PatientOverview | null> {
+  return call("getPatientOverview", { patientId });
+}
+export function listSourceDocumentsWithUrls(
+  patientId: string
+): Promise<SourceDocumentRef[]> {
+  return call("listSourceDocumentsWithUrls", { patientId });
+}
+export function getQueueForConcierge(args: {
+  clerkId: string | null;
+  isLead: boolean;
+}): Promise<QueueData> {
+  return call("getQueueForConcierge", args);
+}
+export function resolveConciergeBySlackUser(args: {
+  slackUserId: string;
+  email: string | null;
+  displayName: string | null;
+}): Promise<ConciergeIdentity> {
+  return call("resolveConciergeBySlackUser", args);
+}
+export function conciergeReplyFromSlack(args: {
+  conversationId: string;
+  text: string;
+  label: string;
+  clerkId?: string | null;
+}): Promise<void> {
+  return call("conciergeReplyFromSlack", args);
+}
+export function takeOverFromSlack(args: {
+  conversationId: string;
+  label: string;
+  clerkId?: string | null;
+}): Promise<void> {
+  return call("takeOverFromSlack", args);
+}
+export function resolveEscalationFromSlack(args: {
+  escalationId: string;
+  label: string;
+  clerkId?: string | null;
+}): Promise<void> {
+  return call("resolveEscalationFromSlack", args);
+}
+export function resumeAutomationFromSlack(args: {
+  conversationId: string;
+  label: string;
+}): Promise<void> {
+  return call("resumeAutomationFromSlack", args);
 }
 
 /** Parse the JSON array on escalations.suggested_reply_sources. */

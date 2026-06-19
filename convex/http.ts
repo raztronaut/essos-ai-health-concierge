@@ -34,6 +34,13 @@ const QUERIES: Record<string, AnyRef> = {
     internal.machine.listOpenEscalationsForConversation,
   hasMessageWithMetaKind: internal.machine.hasMessageWithMetaKind,
   listPendingOutbound: internal.machine.listPendingOutbound,
+  listPendingSlackOutbox: internal.machine.listPendingSlackOutbox,
+  getSlackLinkByConversation: internal.machine.getSlackLinkByConversation,
+  getSlackLinkByThread: internal.machine.getSlackLinkByThread,
+  getEscalationCard: internal.machine.getEscalationCard,
+  getPatientOverview: internal.machine.getPatientOverview,
+  listSourceDocumentsWithUrls: internal.machine.listSourceDocumentsWithUrls,
+  getQueueForConcierge: internal.machine.getQueueForConcierge,
 };
 
 const MUTATIONS: Record<string, AnyRef> = {
@@ -53,6 +60,13 @@ const MUTATIONS: Record<string, AnyRef> = {
   upsertClerkUser: internal.users.upsertClerkUser,
   setClerkMembership: internal.users.setClerkMembership,
   deleteClerkUser: internal.users.deleteClerkUser,
+  resolveConciergeBySlackUser: internal.machine.resolveConciergeBySlackUser,
+  markSlackOutboxPosted: internal.machine.markSlackOutboxPosted,
+  upsertSlackLink: internal.machine.upsertSlackLink,
+  conciergeReplyFromSlack: internal.machine.conciergeReplyFromSlack,
+  takeOverFromSlack: internal.machine.takeOverFromSlack,
+  resolveEscalationFromSlack: internal.machine.resolveEscalationFromSlack,
+  resumeAutomationFromSlack: internal.machine.resumeAutomationFromSlack,
 };
 
 const machine = httpAction(async (ctx, request) => {
