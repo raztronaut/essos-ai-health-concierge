@@ -3,8 +3,14 @@
 import { api } from "@convex/_generated/api";
 import type { EscalationStatus } from "@essos/shared";
 import { useMutation } from "convex/react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
+
+function errorMessage(fallback: string) {
+  return (error: unknown) =>
+    error instanceof Error ? error.message : fallback;
+}
 
 /** Take-over / resolve actions for a single escalation (queue + thread). */
 export function EscalationActions({
@@ -23,7 +29,13 @@ export function EscalationActions({
     <div className="flex shrink-0 items-center gap-2">
       {status === "open" ? (
         <Button
-          onClick={() => void takeOver({ conversationId, viewAs })}
+          onClick={() =>
+            toast.promise(takeOver({ conversationId, viewAs }), {
+              loading: "Taking over…",
+              success: "Thread taken over — Eve paused",
+              error: errorMessage("Couldn’t take over the thread"),
+            })
+          }
           variant="ghost"
         >
           Take over
@@ -31,7 +43,13 @@ export function EscalationActions({
       ) : null}
       {status === "resolved" ? null : (
         <Button
-          onClick={() => void resolve({ escalationId, viewAs })}
+          onClick={() =>
+            toast.promise(resolve({ escalationId, viewAs }), {
+              loading: "Resolving…",
+              success: "Escalation resolved",
+              error: errorMessage("Couldn’t resolve the escalation"),
+            })
+          }
           variant="ok"
         >
           Resolve
@@ -51,7 +69,13 @@ export function ResumeAutomationButton({
   const resume = useMutation(api.mutations.resumeAutomation);
   return (
     <Button
-      onClick={() => void resume({ conversationId, viewAs })}
+      onClick={() =>
+        toast.promise(resume({ conversationId, viewAs }), {
+          loading: "Resuming…",
+          success: "Eve resumed on this thread",
+          error: errorMessage("Couldn’t resume Eve"),
+        })
+      }
       variant="primary"
     >
       Resume Eve

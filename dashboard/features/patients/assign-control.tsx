@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
+import { toast } from "sonner";
 import { Card, Select, Button } from "@/components/ui";
 import { useDemoIdentity } from "@/features/demo/demo-identity";
 
@@ -27,6 +28,22 @@ export function AssignControl({
 
   const canClaim = !isLead && assigneeUserId === null && effectiveId !== null;
 
+  function runAssign(nextAssignee: string | null) {
+    const nextName = nextAssignee
+      ? (concierges.find((c) => c.clerkId === nextAssignee)?.name ??
+        "concierge")
+      : null;
+    toast.promise(
+      assign({ patientId, assigneeUserId: nextAssignee, viewAs }),
+      {
+        loading: "Updating owner…",
+        success: nextName ? `Assigned to ${nextName}` : "Patient unassigned",
+        error: (error) =>
+          error instanceof Error ? error.message : "Couldn’t update owner",
+      },
+    );
+  }
+
   return (
     <Card>
       <div className="flex items-center justify-between gap-3">
@@ -41,13 +58,7 @@ export function AssignControl({
           <div className="w-40">
             <Select
               aria-label="Assign patient to owner"
-              onChange={(e) =>
-                assign({
-                  patientId,
-                  assigneeUserId: e.target.value || null,
-                  viewAs,
-                })
-              }
+              onChange={(e) => runAssign(e.target.value || null)}
               value={assigneeUserId ?? ""}
             >
               <option value="">Unassigned</option>
@@ -59,12 +70,7 @@ export function AssignControl({
             </Select>
           </div>
         ) : canClaim ? (
-          <Button
-            onClick={() =>
-              assign({ patientId, assigneeUserId: effectiveId, viewAs })
-            }
-            variant="primary"
-          >
+          <Button onClick={() => runAssign(effectiveId)} variant="primary">
             Claim
           </Button>
         ) : null}
