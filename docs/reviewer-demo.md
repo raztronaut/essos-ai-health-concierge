@@ -13,6 +13,7 @@ This is the live work-trial path for Essos reviewers.
 Text these from any reviewer iPhone. Guest mode provisions a private demo patient cloned from the seeded Maya itinerary, so no phone pre-binding is required.
 
 - `What's my hotel confirmation number?`
+- `Hey`
 - `Send me my itinerary card`
 - `Can I see my source documents?`
 - `What's my clinic address?`
@@ -22,6 +23,7 @@ Text these from any reviewer iPhone. Guest mode provisions a private demo patien
 ## Expected behavior
 
 - Routine itinerary questions are answered in iMessage from Convex itinerary/source data.
+- A brand-new contact's first reply is intentionally one text-only bubble for iMessage deliverability. Ask for the itinerary/source card after that first exchange.
 - Card requests arrive as a Spectrum mini-app card when available, or a normal URL fallback.
 - Opening the card shows itinerary, clinic, hotel, transport, confirmations, and source documents.
 - Document rows can be viewed, shared, copied, or downloaded when the source file is available.
@@ -34,4 +36,5 @@ Text these from any reviewer iPhone. Guest mode provisions a private demo patien
 - The transport should use prod Convex: `CONVEX_SITE_URL=https://intent-hare-36.convex.site`.
 - The transport should use `ESSOS_MINIAPP_DELIVERY=spectrum_app`.
 - The transport should use `ESSOS_APPLE_TEAM_ID=6JY9M75PT4`.
+- A new-contact send failure containing `replies are limited` means the first turn tried to send too many bubbles/media before the reviewer replied again. The transport should keep first turns text-only.
 - Do not run a local iMessage transport while Railway is live; Spectrum Cloud should have one live consumer.
